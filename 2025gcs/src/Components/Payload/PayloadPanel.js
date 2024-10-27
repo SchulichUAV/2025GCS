@@ -1,11 +1,11 @@
 import React from 'react'
 
-const PayLoadPanel = () => {
+const PayloadPanel = () => {
   return (
-    <div>
-      
-    </div>
+    <div className="payload-panel">
+    PayloadPanel
+  </div>
   )
 }
 
-export default PayLoadPanel
+export default PayloadPanel;

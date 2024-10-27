@@ -2,9 +2,9 @@ import React from 'react'
 
 const FlightModePanel = () => {
   return (
-    <div>
-      
-    </div>
+    <div className="flight-mode-panel">
+    FlightModePanel
+  </div>
   )
 }
 

@@ -2,9 +2,9 @@ import React from 'react'
 
 const AIPanel = () => {
   return (
-    <div>
-      
-    </div>
+    <div className="ai-panel">
+    AIPanel
+  </div>
   )
 }
 
