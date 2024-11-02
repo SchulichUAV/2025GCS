@@ -24,7 +24,7 @@ function App() {
         <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "3 / 4", height: '20%' }}>
           <FlightModePanel />
         </div>
-        <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", gridRow: "3 / 4", height: '20%' }}>
+        <div className="p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", gridRow: "3 / 4", height: '20%' }}>
           <AltitudePanel />
         </div>
       </div>
