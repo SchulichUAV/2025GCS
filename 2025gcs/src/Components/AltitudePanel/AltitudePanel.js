@@ -49,7 +49,7 @@ const AltitudePanel = () => {
   }
 
   return (
-    <div className="altitude-panel py-6 px-20 max-w-xl mx-auto space-y-2 bg-white rounded-xl shadow-lg">
+    <div className="altitude-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-2 bg-white rounded-xl shadow-lg">
       <div className="p-2 mb-2">
         <div className="flex items-center">
           <div className="relative flex-grow">
