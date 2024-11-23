@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-screen bg-gray-100">
       <NavBar />
-      <div className="grid grid-cols-2 gap-4 p-4 h-full w-full mt-16"> {/* Adjusting spacing from NavBar */}
+      <div className="grid grid-cols-2 gap-4 p-4 h-full w-full mt-16"> 
         <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "1 / span 2", height: '80%' }}>
           <PhotoPanel />
         </div>
