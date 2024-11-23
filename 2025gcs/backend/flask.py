@@ -32,27 +32,8 @@ def save_json(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
-# Target Management
-@app.route('/addTarget', methods=['POST'])
-def add_target():
-    data = request.json
-    new_target = {
-        "shape": data.get('shape'),
-        "shapeColor": data.get('shapeColor'),
-        "x": data.get('x'),
-        "y": data.get('y'),
-        "letter": data.get('letter'),
-        "letterColor": data.get('letterColor')
-    }
-    targets_list.append(new_target)
-    
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    target_data = load_json(target_info_path)
-    target_data.setdefault('targetsList', []).append(new_target)
-    save_json(target_info_path, target_data)
 
-    return jsonify({'success': True, 'target_id': len(targets_list) - 1})
-
+# indiated target completion - not sure if we will keep this for SUAS 2025
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
     global current_target
@@ -60,87 +41,109 @@ def complete_target():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
 
-    if not data.get('targetsList'):
+    items = data.get('ITEM', [])
+    
+    if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
-    completed = data['targetsList'].pop(0)
+    # Pop the first item (target) from the list and append to completed targets
+    completed = items.pop(0)
+    data['ITEM'] = items
     data.setdefault('completedTargets', []).append(completed)
-    current_target = data['targetsList'][0] if data['targetsList'] else None
+    current_target = items[0] if items else None
     save_json(target_info_path, data)
 
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
+#return current target 
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
+    # Get the index from the query parameters
+    index = request.args.get('index', type=int)
+
+    if index is None:
+        return jsonify({'success': False, 'error': 'Index parameter is required'}), 400
+
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-    targets_list = data.get('targetsList', [])
 
-    if not targets_list:
+    items = data.get('ITEM', [])
+    
+    if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
-    return jsonify({'success': True, 'currentTarget': targets_list[0]})
+    # Check if the index is within the valid range
+    if index < 0 or index >= len(items):
+        return jsonify({'success': False, 'error': 'Index out of range'}), 400
+
+    # Return the target at the specified index
+    return jsonify({'success': True, 'currentTarget': items[index]})
 
 @app.route('/getTargets', methods=['GET'])
 def get_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-    return jsonify({'success': True, 'targets': data.get('targetsList', [])})
+    items = data.get('ITEM', [])
+    
+    return jsonify({'success': True, 'targets': items})
+
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-    return jsonify({'success': True, 'completed_targets': data.get('completedTargets', [])})
+    completed_targets = data.get('completedTargets', [])
+    
+    return jsonify({'success': True, 'completed_targets': completed_targets})
 
 # Coordinate Management
-@app.route('/addCoords', methods=['POST'])
-def add_coords():
-    data = request.get_json()
-    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    coords_data = load_json(coord_data_path)
-    coords_data.setdefault('coordinates', []).append({
-        'longitude': data['longitude'],
-        'latitude': data['latitude']
-    })
-    save_json(coord_data_path, coords_data)
-    return jsonify({'status': 'success'})
+# @app.route('/addCoords', methods=['POST'])
+# def add_coords():
+#     data = request.get_json()
+#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+#     coords_data = load_json(coord_data_path)
+#     coords_data.setdefault('coordinates', []).append({
+#         'longitude': data['longitude'],
+#         'latitude': data['latitude']
+#     })
+#     save_json(coord_data_path, coords_data)
+#     return jsonify({'status': 'success'})
 
-@app.route('/deleteCoords', methods=['POST'])
-def delete_coords():
-    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    save_json(coord_data_path, {'coordinates': []})
-    return jsonify({'status': 'success'})
+# @app.route('/deleteCoords', methods=['POST'])
+# def delete_coords():
+#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+#     save_json(coord_data_path, {'coordinates': []})
+#     return jsonify({'status': 'success'})
 
-# Target Coordinates
-@app.route('/addTargetCoordInfo', methods=['POST'])
-def add_target_coord_info():
-    data = request.get_json()
-    target_data_path = os.path.join(DATA_DIR, 'SavedTargets.json')
-    targets_data = load_json(target_data_path)
-    targets_data.setdefault(data['activeTarget'], []).append({
-        'longitude': data['longitude'],
-        'latitude': data['latitude']
-    })
-    save_json(target_data_path, targets_data)
-    return jsonify({'status': 'success'})
+# # Target Coordinates
+# @app.route('/addTargetCoordInfo', methods=['POST'])
+# def add_target_coord_info():
+#     data = request.get_json()
+#     target_data_path = os.path.join(DATA_DIR, 'SavedTargets.json')
+#     targets_data = load_json(target_data_path)
+#     targets_data.setdefault(data['activeTarget'], []).append({
+#         'longitude': data['longitude'],
+#         'latitude': data['latitude']
+#     })
+#     save_json(target_data_path, targets_data)
+#     return jsonify({'status': 'success'})
 
-# File Management
-@app.route('/retrieveData', methods=['GET'])
-def retrieve_data():
-    file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    try:
-        return send_file(file_path, mimetype='application/json')
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+# # File Management
+# @app.route('/retrieveData', methods=['GET'])
+# def retrieve_data():
+#     file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+#     try:
+#         return send_file(file_path, mimetype='application/json')
+#     except FileNotFoundError:
+#         return jsonify({"error": "File not found"}), 404
 
-@app.route('/retrieveImageJson/<image_number>', methods=['GET'])
-def retrieve_image_json(image_number):
-    file_path = os.path.join(IMAGES_DIR, f'{image_number}.json')
-    try:
-        return send_file(file_path, mimetype='application/json')
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+# @app.route('/retrieveImageJson/<image_number>', methods=['GET'])
+# def retrieve_image_json(image_number):
+#     file_path = os.path.join(IMAGES_DIR, f'{image_number}.json')
+#     try:
+#         return send_file(file_path, mimetype='application/json')
+#     except FileNotFoundError:
+#         return jsonify({"error": "File not found"}), 404
 
 # Location Computation
 @app.route('/computeLocation', methods=['POST'])
