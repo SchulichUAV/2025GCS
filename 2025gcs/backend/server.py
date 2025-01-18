@@ -44,7 +44,7 @@ def complete_target():
     items = data.get('ITEM', [])
     
     if not items:
-        return jsonify({'success': False, 'error': 'No targets available'})
+        return jsonify({'success': False, 'error': 'No targets available'}), 400
 
     # Pop the first item (target) from the list and append to completed targets
     completed = items.pop(0)
@@ -70,7 +70,7 @@ def get_current_target():
     items = data.get('ITEM', [])
     
     if not items:
-        return jsonify({'success': False, 'error': 'No targets available'})
+        return jsonify({'success': False, 'error': 'No targets available'}), 400
 
     # Check if the index is within the valid range
     if index < 0 or index >= len(items):
@@ -96,23 +96,40 @@ def get_completed_targets():
     
     return jsonify({'success': True, 'completed_targets': completed_targets})
 
-@app.route('/addCoords', methods=['POST'])
-def add_coords():
-    data = request.get_json()
-    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    coords_data = load_json(coord_data_path)
-    coords_data.setdefault('coordinates', []).append({
-        'longitude': data['longitude'],
-        'latitude': data['latitude']
-    })
-    save_json(coord_data_path, coords_data)
-    return jsonify({'status': 'success'})
+@app.route('/coords', methods=['POST', 'DELETE'])
+def coords():
+    if request.method == 'POST':
+        data = request.get_json()
+        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        coords_data = load_json(coords_data_path)
 
-# @app.route('/deleteCoords', methods=['POST'])
-# def delete_coords():
-#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     save_json(coord_data_path, {'coordinates': []})
-#     return jsonify({'status': 'success'})
+        if 'latitude' not in data or 'longitude' not in data:
+            return jsonify({'success': False, 'error': 'Coordinates must be provided in JSON data.'}), 400
+        
+        latitude = data['latitude']
+        longitude = data['longitude']
+
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Coordinates must be floating point values.'}), 400
+
+        if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
+            return jsonify({'success': False, 'error': 'Latitude must be between -90 and 90, longitude must be between -180 and 180.'}), 400
+
+        coords_data.setdefault('coordinates', []).append({
+            'latitude': data['latitude'],
+            'longitude': data['longitude']
+        })
+        save_json(coords_data_path, coords_data)
+        return jsonify({'success': True})
+    elif request.method == 'DELETE':
+        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        save_json(coords_data_path, {'coordinates': []})
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': 'Invalid request method.'}), 405
 
 # # Target Coordinates
 # @app.route('/addTargetCoordInfo', methods=['POST'])
