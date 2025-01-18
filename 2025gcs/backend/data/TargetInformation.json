@@ -1,17 +1,38 @@
 {
-    "ITEM": [
-      {
-        "Long": -122.4194,
-        "Lat": 37.7749,
-        "Confidence": 0.95,
-        "ImgNum": 1
-      },
-      {
-        "Long": -118.2437,
-        "Lat": 34.0522,
-        "Confidence": 0.85,
-        "ImgNum": 2
-      }
-    ]
-  }
-  
+  "image": {
+    "width": 640,
+    "height": 640
+  },
+  "predictions": [
+    {
+      "width": 109.0,
+      "height": 554.0,
+      "x": 320.5,
+      "y": 323.0,
+      "confidence": 0.7895625829696655,
+      "class": "snowboard",
+      "detection_id": "a24dde93-06a2-4133-b5b1-a84765d3dad1",
+      "parent_id": "image"
+    },
+    {
+      "width": 106.0,
+      "height": 553.0,
+      "x": 162.0,
+      "y": 318.5,
+      "confidence": 0.7563248872756958,
+      "class": "snowboard",
+      "detection_id": "3352694d-1dbf-4b93-9ebb-a0037393bc88",
+      "parent_id": "image"
+    },
+    {
+      "width": 111.0,
+      "height": 550.0,
+      "x": 486.5,
+      "y": 320.0,
+      "confidence": 0.5693749189376831,
+      "class": "snowboard",
+      "detection_id": "495bc74c-6553-4a72-9250-0c1e505bc8af",
+      "parent_id": "image"
+    }
+  ]
+}

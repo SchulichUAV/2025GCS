@@ -6,6 +6,7 @@ import PayloadPanel from './Components/Payload/PayloadPanel';
 import AIPanel from './Components/AI/AIPanel';
 import FlightModePanel from './Components/FlightMode/FlightModePanel';
 import AltitudePanel from './Components/AltitudePanel/AltitudePanel';
+import data from "./data/TargetInformation.json";
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
           <PayloadPanel />
         </div>
         <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", height: '40%' }}>
-          <AIPanel />
+          <AIPanel data={data} />
         </div>
         <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "3 / 4", height: '20%' }}>
           <FlightModePanel />
