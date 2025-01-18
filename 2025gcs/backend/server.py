@@ -96,18 +96,17 @@ def get_completed_targets():
     
     return jsonify({'success': True, 'completed_targets': completed_targets})
 
-# Coordinate Management
-# @app.route('/addCoords', methods=['POST'])
-# def add_coords():
-#     data = request.get_json()
-#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     coords_data = load_json(coord_data_path)
-#     coords_data.setdefault('coordinates', []).append({
-#         'longitude': data['longitude'],
-#         'latitude': data['latitude']
-#     })
-#     save_json(coord_data_path, coords_data)
-#     return jsonify({'status': 'success'})
+@app.route('/addCoords', methods=['POST'])
+def add_coords():
+    data = request.get_json()
+    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+    coords_data = load_json(coord_data_path)
+    coords_data.setdefault('coordinates', []).append({
+        'longitude': data['longitude'],
+        'latitude': data['latitude']
+    })
+    save_json(coord_data_path, coords_data)
+    return jsonify({'status': 'success'})
 
 # @app.route('/deleteCoords', methods=['POST'])
 # def delete_coords():
