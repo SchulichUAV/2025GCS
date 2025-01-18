@@ -44,7 +44,7 @@ def complete_target():
     items = data.get('ITEM', [])
     
     if not items:
-        return jsonify({'success': False, 'error': 'No targets available'}), 400
+        return jsonify({'success': False, 'error': 'No targets available.'}), 400
 
     # Pop the first item (target) from the list and append to completed targets
     completed = items.pop(0)
@@ -96,15 +96,22 @@ def get_completed_targets():
     
     return jsonify({'success': True, 'completed_targets': completed_targets})
 
-@app.route('/coords', methods=['POST', 'DELETE'])
+@app.route('/coords', methods=['GET', 'POST', 'DELETE'])
 def coords():
-    if request.method == 'POST':
-        data = request.get_json()
+    if request.method == 'GET':
         coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
         coords_data = load_json(coords_data_path)
+        return jsonify({'coordinates': coords_data.get('coordinates', [])})
+    elif request.method == 'POST':
+        data = request.get_json()
+        if data is None:
+            return jsonify({'success': False, 'error': 'Request must be JSON data.'}), 415
 
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'success': False, 'error': 'Coordinates must be provided in JSON data.'}), 400
+        
+        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        coords_data = load_json(coords_data_path)
         
         latitude = data['latitude']
         longitude = data['longitude']
@@ -130,6 +137,34 @@ def coords():
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'error': 'Invalid request method.'}), 405
+    
+@app.route('/deleteSavedTargetData', methods=['DELETE'])
+def delete_saved_target_data():
+    data = request.get_json()
+    if data is None:
+        return jsonify({'success': False, 'error': 'Request must be JSON data.'}), 415
+    
+    if 'target' not in data:
+        return jsonify({'success': False, 'error': 'Target ID must be provided in JSON data.'}), 400
+    
+    if not isinstance(data['target'], str):
+        return jsonify({'success': False, 'error': 'Target ID must be a string.'}), 400
+
+    target_data_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    target_data = load_json(target_data_path)
+
+    if "predictions" not in target_data:
+        target_data["predictions"] = []
+
+    target = [t for t in target_data["predictions"] if t["detection_id"] == data["target"]]
+    if not target:
+        return jsonify({'success': False, 'error': 'Target not found.'}), 404
+    
+    target_data["predictions"].remove(target[0])
+    save_json(target_data_path, target_data)
+
+    return jsonify({'success': True})   
+
 
 # # Target Coordinates
 # @app.route('/addTargetCoordInfo', methods=['POST'])
