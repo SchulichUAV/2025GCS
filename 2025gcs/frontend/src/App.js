@@ -1,3 +1,40 @@
+// // src/App.js
+// import React from 'react';
+// import NavBar from './Components/NavBar/NavBar';
+// import PhotoPanel from './Components/PhotoSelection/PhotoPanel';
+// import PayloadPanel from './Components/Payload/PayloadPanel';
+// import AIPanel from './Components/AI/AIPanel';
+// import FlightModePanel from './Components/FlightMode/FlightModePanel';
+// import AltitudePanel from './Components/AltitudePanel/AltitudePanel';
+// import data from "./data/TargetInformation.json";
+
+// function App() {
+//   return (
+//     <div className="flex flex-col h-screen w-screen bg-gray-100">
+//       <NavBar />
+//       <div className="grid grid-cols-2 gap-4 p-4 h-full w-full mt-32"> {/* Adjusting spacing from NavBar */}
+//         <div className=" p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "1 / span 2", height: '80%' }}>
+//           <PhotoPanel />
+//         </div>
+//         <div className=" p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", height: '40%' }}>
+//           <PayloadPanel />
+//         </div>
+//         <div className=" p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", height: '40%' }}>
+//           <AIPanel data={data} />
+//         </div>
+//         <div className=" p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "3 / 4", height: '20%' }}>
+//           <FlightModePanel />
+//         </div>
+//         <div className="p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", gridRow: "3 / 4", height: '20%' }}>
+//           <AltitudePanel />
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default App;
+
 // src/App.js
 import React from 'react';
 import NavBar from './Components/NavBar/NavBar';
@@ -12,22 +49,36 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-screen bg-gray-100">
       <NavBar />
-      <div className="grid grid-cols-2 gap-4 p-4 h-full w-full mt-32"> {/* Adjusting spacing from NavBar */}
-        <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "1 / span 2", height: '80%' }}>
-          <PhotoPanel />
+      <div className="flex flex-grow p-4 mt-32 gap-4">
+        
+        {/* Left Column - Wider (55%) */}
+        <div className="flex flex-col w-[45%] gap-4">
+          <div className="flex justify-center items-center p-4 flex-grow">
+            <PhotoPanel />
+          </div>
+          <div className="flex justify-center items-center p-4 flex-grow">
+            <FlightModePanel />
+          </div>
         </div>
-        <div className="border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", height: '40%' }}>
-          <PayloadPanel />
+
+        {/* Right Column - Narrower (45%) */}
+        <div className="flex flex-col w-[45%] gap-4">
+          {/* Top Right Panels */}
+          <div className="flex flex-col gap-4 flex-grow">
+            <div className="flex justify-center items-center p-4 flex-grow">
+              <PayloadPanel />
+            </div>
+            <div className="flex justify-center items-center p-4 flex-grow">
+              <AIPanel data={data} />
+            </div>
+          </div>
+
+          {/* Bottom Right Panel */}
+          <div className="flex justify-center items-center p-4 flex-grow">
+            <AltitudePanel />
+          </div>
         </div>
-        <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", height: '40%' }}>
-          <AIPanel data={data} />
-        </div>
-        <div className="border border-gray-300 p-4 flex justify-center items-center" style={{ gridColumn: "1 / 2", gridRow: "3 / 4", height: '20%' }}>
-          <FlightModePanel />
-        </div>
-        <div className="p-4 flex justify-center items-center" style={{ gridColumn: "2 / 3", gridRow: "3 / 4", height: '20%' }}>
-          <AltitudePanel />
-        </div>
+
       </div>
     </div>
   );

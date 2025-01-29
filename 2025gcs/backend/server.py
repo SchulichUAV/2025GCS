@@ -164,7 +164,8 @@ def compute_location():
 @app.route('/getImageCount', methods=['GET'])
 def get_image_count():
     """Endpoint to count the number of images in the images folder."""
-    IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
+    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
+    IMAGES_DIR = "../frontend//public//images"
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
@@ -178,7 +179,8 @@ def get_image_count():
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
     """Delete an image from the server if it matches 'captureX.jpg' format."""
-    IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
+    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
+    IMAGES_DIR = "../frontend//public//images"
     data = request.get_json()
     image_name = data.get("imageName")
 
@@ -200,11 +202,15 @@ def delete_image():
 @app.route('/clearAllImages', methods=['POST'])
 def clear_all_images():
     """Delete all images from the images directory in both frontend and backend."""
-    IMAGE_DIRS = [
-        "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images",
-        "C://Users//nehap//Desktop//2025GCS//2025gcs//backend//images"
-    ]
+    # IMAGE_DIRS = [
+    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images",
+    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//backend//images"
+    # ]
 
+    IMAGE_DIRS = [
+        "../frontend//public//images",
+        "./images"
+    ]
 
     deleted_files = []
     errors = []
