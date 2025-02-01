@@ -49,10 +49,10 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-screen bg-gray-100">
       <NavBar />
-      <div className="flex flex-grow p-4 mt-32 gap-4">
+      <div className="flex flex-grow p-4 mt-20 gap-4">
         
-        {/* Left Column - Wider (55%) */}
-        <div className="flex flex-col w-[45%] gap-4">
+        {/* Left Column */}
+        <div className="flex flex-col w-[45%] gap-1">
           <div className="flex justify-center items-center p-4 flex-grow">
             <PhotoPanel />
           </div>
@@ -61,8 +61,8 @@ function App() {
           </div>
         </div>
 
-        {/* Right Column - Narrower (45%) */}
-        <div className="flex flex-col w-[45%] gap-4">
+        {/* Right Column */}
+        <div className="flex flex-col w-[55%] h-[40%] gap-6">
           {/* Top Right Panels */}
           <div className="flex flex-col gap-4 flex-grow">
             <div className="flex justify-center items-center p-4 flex-grow">

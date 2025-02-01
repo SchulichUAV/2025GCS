@@ -145,7 +145,7 @@ const PhotoPanel = () => {
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex flex-grow w-full">
-        <div className="flex flex-col gap-4 p-4 w-1/5 bg-gray-200 border-r border-gray-300">
+        <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
           <button
             onClick={handleToggleCamera}
             className={`px-3 py-2 rounded ${
@@ -168,7 +168,7 @@ const PhotoPanel = () => {
         </div>
 
 
-        <div className="flex-1 border border-gray-300 flex items-center justify-center bg-gray-100">
+        <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px]">
           {mainPhoto ? (
             <img
               src={`/images/${mainPhoto}`}
@@ -179,15 +179,16 @@ const PhotoPanel = () => {
             <p className="text-gray-500">No Photo</p>
           )}
         </div>
-      </div>
+        </div>
 
 
-      <div className="flex flex-col items-center justify-between p-4 bg-gray-100 border-t border-gray-300">
+
+      <div className="flex flex-col items-center justify-between p-4 bg-white border-t border-gray-300">
         <div className="flex items-center w-full">
           <button
             onClick={handleLeftArrow}
             disabled={currentStartIndex === 0}
-            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-gray-200"
+            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
           >
             &lt;
           </button>
@@ -203,7 +204,7 @@ const PhotoPanel = () => {
                 <img
                   src={`/images/${photo}`}
                   alt={photo}
-                  className="w-full h-full object-cover rounded"
+                  className="w-16 h-16 object-cover rounded"
                 />
                 <div className="text-xs absolute bottom-1 ">
                   {photo.replace(/[^\d]/g, "")}
@@ -225,7 +226,7 @@ const PhotoPanel = () => {
           <button
             onClick={handleRightArrow}
             disabled={currentStartIndex + visibleImagesCount >= photos.length}
-            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-gray-200"
+            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
           >
             &gt;
           </button>
