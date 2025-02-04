@@ -1,0 +1,3 @@
+[submodule "2025gcs/backend/2025GEOMATICSCONTENT"]
+	path = 2025gcs/backend/2025GEOMATICSCONTENT
+	url = https://github.com/SchulichUAV/2025GEOMATICSCONTENT.git
