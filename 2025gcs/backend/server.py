@@ -4,6 +4,7 @@ import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sys
+import requests
 
 sys.path.append(r'') # add the path here 
 
@@ -15,9 +16,33 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
+ENDPOINT_IP = "192.168.1.67"
+VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
+
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+
+# Dictionary to maintain vehicle state
+vehicle_data = {
+    "last_time": 0,
+    "lat": 0,
+    "lon": 0,
+    "rel_alt": 0,
+    "alt": 0,
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "dlat": 0,
+    "dlon": 0,
+    "dalt": 0,
+    "heading": 0,
+    "num_satellites": 0,
+    "position_uncertainty": 0,
+    "alt_uncertainty": 0,
+    "speed_uncertainty": 0,
+    "heading_uncertainty": 0
+}
 
 def load_json(file_path):
     """Utility to load JSON data from a file."""
@@ -206,8 +231,23 @@ def clear_all_images():
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
 
-
-
+@app.route('heartbeat', methods=['GET'])
+def heartbeat():
+    try:
+        response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
+        heartbeat_data = response.json()
+        vehicle_data.update(heartbeat_data)
+        print("Heartbeat success!")
+        return jsonify({'success': True}), 200
+    except requests.exceptions.Timeout:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': str(e)}),
+    except requests.exceptions.RequestException as e:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
