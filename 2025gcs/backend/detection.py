@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from geo import locate_target
 
+IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
 SCANNED_INDEX = 0
 
 def run_inference_batch(base64_images, client):
@@ -75,7 +76,7 @@ def geomatics_worker(detection_queue,stop_event):
         detection_queue.task_done()
 
 
-def image_watcher(image_queue, stop_event, image_folder="/Users/dominicgartner/Desktop/SUAV/2025GCS/2025gcs/backend/images", batch_size=5):
+def image_watcher(image_queue, stop_event, batch_size=5):
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(image_folder):
         print(f"Error: Directory '{image_folder}' does not exist.")
