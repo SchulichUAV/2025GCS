@@ -232,7 +232,7 @@ def clear_all_images():
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
 
-@app.route('heartbeat', methods=['GET'])
+@app.route('/heartbeat', methods=['GET'])
 def heartbeat():
     try:
         response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
@@ -268,7 +268,7 @@ def toggle_camera_state():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=80)
 
 
 
