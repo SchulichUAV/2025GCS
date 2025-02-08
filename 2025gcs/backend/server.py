@@ -32,7 +32,6 @@ def save_json(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
-
 # indiated target completion - not sure if we will keep this for SUAS 2025
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
@@ -86,7 +85,6 @@ def get_targets():
     items = data.get('ITEM', [])
     
     return jsonify({'success': True, 'targets': items})
-
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
@@ -153,12 +151,8 @@ def get_image_count():
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
-
     image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
     return jsonify({'success': True, 'imageCount': len(image_files)})
-
-
-
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
@@ -168,14 +162,11 @@ def delete_image():
     data = request.get_json()
     image_name = data.get("imageName")
 
-
     # Validate image name format: "captureX.jpg"
     if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
-
     image_path = os.path.join(IMAGES_DIR, image_name)
-
 
     if os.path.exists(image_path):
         os.remove(image_path)
@@ -199,7 +190,6 @@ def clear_all_images():
     deleted_files = []
     errors = []
 
-
     for img_dir in IMAGE_DIRS:
         if os.path.exists(img_dir):
             for filename in os.listdir(img_dir):
@@ -211,10 +201,8 @@ def clear_all_images():
                     except Exception as e:
                         errors.append(str(e))
 
-
     if errors:
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
-
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
 
