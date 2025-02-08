@@ -1,0 +1,45 @@
+import time
+import os
+import json
+
+TARGETS_CACHE = os.path.join(os.path.dirname(__file__), './data/TargetInformation.json')
+
+def locate_target(detection):
+    """Performs geomatics calculations."""
+    print(detection)
+    try:
+        print("Performing geomatics calculations...")
+        time.sleep(0.4)  # Simulating processing time
+        print(f"Geomatics calculations complete")
+        append_to_cache(detection)
+    except Exception as e:
+        print(f"Geomatics calculation error: {e}")
+
+
+def append_to_cache(detection):
+    """Appends detections to the cache file."""
+    try:
+        # Read existing data from the JSON file
+        if os.path.exists(TARGETS_CACHE):
+            with open(TARGETS_CACHE, 'r') as file:
+                data = json.load(file)
+        else:
+            data = {}
+
+        # Update data with new detections
+        class_name = detection['class']
+        if class_name not in data:
+            data[class_name] = []
+        data[class_name].append({
+            'lat': 99.7,
+            'lon': 80.7,
+            'confidence': detection['confidence']
+        })
+
+        # Write updated data back to the JSON file
+        with open(TARGETS_CACHE, 'w') as file:
+            json.dump(data, file, indent=4)
+
+        print("Detections appended to cache.")
+    except Exception as e:
+        print(f"Error appending to cache: {e}")

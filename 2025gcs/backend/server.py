@@ -5,7 +5,10 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import locate
 import sys
-
+from queue import Queue
+from inference_sdk import InferenceHTTPClient
+from threading import Thread, Event, enumerate
+from detection import image_watcher, inference_worker, geomatics_worker
 sys.path.append(r'') # add the path here 
 
 app = Flask(__name__)
@@ -15,6 +18,16 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
+
+# Inference client
+client = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com", # Inference API URL
+    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+)
+
+image_queue = Queue()
+detection_queue = Queue()
+stop_event = Event()  # Used to signal threads to stop on program exit
 
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
@@ -87,7 +100,6 @@ def get_targets():
     items = data.get('ITEM', [])
     
     return jsonify({'success': True, 'targets': items})
-
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
@@ -169,12 +181,8 @@ def get_image_count():
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
-
     image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
     return jsonify({'success': True, 'imageCount': len(image_files)})
-
-
-
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
@@ -184,14 +192,11 @@ def delete_image():
     data = request.get_json()
     image_name = data.get("imageName")
 
-
     # Validate image name format: "captureX.jpg"
     if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
-
     image_path = os.path.join(IMAGES_DIR, image_name)
-
 
     if os.path.exists(image_path):
         os.remove(image_path)
@@ -215,7 +220,6 @@ def clear_all_images():
     deleted_files = []
     errors = []
 
-
     for img_dir in IMAGE_DIRS:
         if os.path.exists(img_dir):
             for filename in os.listdir(img_dir):
@@ -227,14 +231,47 @@ def clear_all_images():
                     except Exception as e:
                         errors.append(str(e))
 
-
     if errors:
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
-
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
 
 
+# AI Processing.
+# Workflow starts when the AI endpoint is called through the frontend.
+# The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
+@app.route('/AI', methods=['POST'])
+def start_AI_workers():
+    threads = [
+        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
+        Thread(target=inference_worker, args=(image_queue, stop_event, detection_queue, client), daemon=True, name="InferenceWorker"),
+        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
+    ]
+
+    # Start worker threads
+    for thread in threads:
+        thread.start()
+    
+    return jsonify({"message": "AI processing started"}), 200  # Return valid JSON response
+
+
+@app.route('/AI-Shutdown', methods=['POST'])
+def shutdown_workers():
+    """Gracefully stops all AI worker threads."""
+    # Signal threads to stop
+    stop_event.set()
+    # Clean up queues
+    image_queue.put(None)
+    detection_queue.put(None)
+
+    # Wait for all threads to finish
+    for thread in enumerate():
+        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+            thread.join()
+
+    # Reset stop event for future use
+    stop_event.clear()
+    return jsonify({"message": "AI processing stopped"}), 200
 
 
 if __name__ == '__main__':

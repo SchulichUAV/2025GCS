@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 const AIPanel = ({ data }) => {
   const [openClasses, setOpenClasses] = useState({}); // Track open state for each class
+  const [isAIActive, setIsAIActive] = useState(false);
 
   // Group predictions by class
   const groupedPredictions = data?.predictions?.reduce((acc, prediction) => {
@@ -20,11 +21,37 @@ const AIPanel = ({ data }) => {
     }));
   };
 
+  const ENDPOINT_IP = '10.0.0.120';
+  const AI = async () => {
+    let response;
+    if(isAIActive){
+      response = await fetch(`http://${ENDPOINT_IP}:8888/AI-Shutdown`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+    }
+    else{
+      response = await fetch(`http://${ENDPOINT_IP}:8888/AI`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+    }
+    setIsAIActive(!isAIActive);
+    
+    const data = await response.json();
+    console.log(data.message);
+  };
+
   return (
     <div
       className="ai-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative overflow-hidden"
       style={{ transition: "all 0.3s ease-in-out" }} // Smooth transition for the panel
     >
+      <button onClick={() => AI()}>{isAIActive? "STOP" : "START"}</button>
       {groupedPredictions &&
         Object.entries(groupedPredictions).map(([className, predictions]) => (
           <div
@@ -48,24 +75,25 @@ const AIPanel = ({ data }) => {
                 openClasses[className] ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               }`}
             >
-              {predictions.map((prediction, index) => (
-                <div
-                  key={index}
-                  className="bg-white p-3 mb-2 rounded-lg shadow-md border border-gray-200"
-                >
-                  <h4 className="font-semibold text-sm">Prediction {index + 1}</h4>
-                  <p className="text-sm">
-                    <strong>X:</strong> {prediction.x}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Y:</strong> {prediction.y}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Confidence:</strong>{" "}
-                    {Math.round(prediction.confidence * 100)}%
-                  </p>
-                </div>
-              ))}
+              <div className="flex overflow-auto flex-wrap max-h-44">
+                {predictions.map((prediction, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-2 mb-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
+                  >
+                    <p className="text-sm">
+                      <strong>lat:</strong> {prediction.lat}
+                    </p>
+                    <p className="text-sm">
+                      <strong>long:</strong> {prediction.long}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Conf:</strong>{" "}
+                      {Math.round(prediction.confidence * 100)}%
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ))}
