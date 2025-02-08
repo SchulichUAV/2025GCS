@@ -18,6 +18,7 @@ current_target = None
 
 ENDPOINT_IP = "192.168.1.67"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
+CAMERA_STATE = False
 
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
@@ -247,6 +248,23 @@ def heartbeat():
         return jsonify({'success': False, 'error': str(e)}),
     except requests.exceptions.RequestException as e:
         print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/toggle_camera_state', methods=['POST'])
+def toggle_camera_state():
+    global CAMERA_STATE
+    CAMERA_STATE = not CAMERA_STATE
+    data = { "is_camera_on": CAMERA_STATE }
+
+    try:
+        response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
+        print(f"Camera on: {CAMERA_STATE}")
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
