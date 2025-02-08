@@ -22,7 +22,7 @@ current_target = None
 # Inference client
 client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com", # Inference API URL
-    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+    api_key=""  # API key
 )
 
 image_queue = Queue()
