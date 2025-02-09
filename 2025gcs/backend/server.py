@@ -3,7 +3,7 @@ import json
 import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
-import locate
+# import locate
 import sys
 from queue import Queue
 from inference_sdk import InferenceHTTPClient
@@ -22,7 +22,7 @@ current_target = None
 # Inference client
 client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com", # Inference API URL
-    api_key=""  # API key
+    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
 )
 
 image_queue = Queue()
@@ -158,18 +158,18 @@ def add_coords():
 #         return jsonify({"error": "File not found"}), 404
 
 # Location Computation
-@app.route('/computeLocation', methods=['POST'])
-def compute_location():
-    data = request.get_json()
-    lat, lon = locate.locate(
-        uav_latitude=float(data['lat']),
-        uav_longitude=float(data['lon']),
-        uav_altitude=float(data['rel_alt']),
-        bearing=float(data['yaw']),
-        obj_x_px=float(data['x']),
-        obj_y_px=float(data['y'])
-    )
-    return jsonify({'latitude': lat, 'longitude': lon})
+# @app.route('/computeLocation', methods=['POST'])
+# def compute_location():
+#     data = request.get_json()
+#     lat, lon = locate.locate(
+#         uav_latitude=float(data['lat']),
+#         uav_longitude=float(data['lon']),
+#         uav_altitude=float(data['rel_alt']),
+#         bearing=float(data['yaw']),
+#         obj_x_px=float(data['x']),
+#         obj_y_px=float(data['y'])
+#     )
+#     return jsonify({'latitude': lat, 'longitude': lon})
 
 
 # change all absolute paths to local paths and test
@@ -252,7 +252,7 @@ def start_AI_workers():
     for thread in threads:
         thread.start()
     
-    return jsonify({"message": "AI processing started"}), 200  # Return valid JSON response
+    return jsonify({"message": "AI processing started"}), 200
 
 
 @app.route('/AI-Shutdown', methods=['POST'])

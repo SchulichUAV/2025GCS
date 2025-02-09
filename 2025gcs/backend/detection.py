@@ -56,11 +56,10 @@ def inference_worker(image_queue,stop_event, detection_queue, client):
             image_queue.task_done()
 
         if not batch:
-            time.sleep(1)
+            time.sleep(1.5)
             continue  # No images to process
 
         results = run_inference_batch(batch, client)
-
         if results:
             for result in results:
                 for detection in result[0]['consensus_predictions']['predictions']:
@@ -75,19 +74,19 @@ def geomatics_worker(detection_queue,stop_event):
         locate_target(detections)
         detection_queue.task_done()
 
-
 def image_watcher(image_queue, stop_event, batch_size=5):
     """Continuously monitors the folder for new images and adds them to the queue."""
-    if not os.path.exists(image_folder):
-        print(f"Error: Directory '{image_folder}' does not exist.")
+    if not os.path.exists(IMAGE_FOLDER):
+        print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
         return
-
+    
+    global SCANNED_INDEX
     while not stop_event.is_set():
         new_images = []
         try:
-            for file in itertools.islice(sorted(os.listdir(image_folder)), SCANNED_INDEX, None):
+            for file in itertools.islice(sorted(os.listdir(IMAGE_FOLDER)), SCANNED_INDEX, None):
                 print(f"New image detected: {file}")
-                file_path = os.path.join(image_folder, file)
+                file_path = os.path.join(IMAGE_FOLDER, file)
                 new_images.append(file_path)
 
                 SCANNED_INDEX += 1  # Track processed files
@@ -99,7 +98,7 @@ def image_watcher(image_queue, stop_event, batch_size=5):
             for img_path in new_images:
                 image_queue.put(img_path)
 
-            time.sleep(3)  # wait 1s before scanning again to reduce CPU usage
+            time.sleep(2)  # wait 2s before scanning again to reduce CPU usage
         except FileNotFoundError as e:
             print(f"Error accessing directory: {e}")
             break  # Stop watching if directory disappears

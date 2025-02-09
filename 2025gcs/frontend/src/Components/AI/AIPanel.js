@@ -25,7 +25,7 @@ const AIPanel = ({ data }) => {
   const AI = async () => {
     let response;
     if(isAIActive){
-      response = await fetch(`http://${ENDPOINT_IP}:8888/AI-Shutdown`, {
+      response = await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ const AIPanel = ({ data }) => {
       });
     }
     else{
-      response = await fetch(`http://${ENDPOINT_IP}:8888/AI`, {
+      response = await fetch(`http://${ENDPOINT_IP}:80/AI`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,22 +48,34 @@ const AIPanel = ({ data }) => {
 
   return (
     <div
-      className="ai-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative overflow-hidden"
+      className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative"
       style={{ transition: "all 0.3s ease-in-out" }} // Smooth transition for the panel
     >
-      <button onClick={() => AI()}>{isAIActive? "STOP" : "START"}</button>
+    <div className="top-0 z-10 flex">
+      <button
+        onClick={() => AI()}
+        className={`px-4 py-2 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          isAIActive
+            ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
+            : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
+        }`}
+      >
+        {isAIActive ? "STOP" : "START"}
+      </button>
+    </div>
+      <div className="overflow-auto h-56">
       {groupedPredictions &&
         Object.entries(groupedPredictions).map(([className, predictions]) => (
           <div
             key={className}
-            className="prediction-panel bg-gray-100 p-4 rounded-lg shadow-md mb-4"
+            className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md"
           >
             {/* Class Header */}
             <div
-              className="flex justify-between items-center cursor-pointer"
+              className="flex justify-between cursor-pointer"
               onClick={() => toggleClassDropdown(className)}
             >
-              <h3 className="text-lg font-semibold">{className}</h3>
+              <h3 className="font-bold">{className}</h3>
               <button className="text-gray-500">
                 {openClasses[className] ? "▲" : "▼"}
               </button>
@@ -71,7 +83,7 @@ const AIPanel = ({ data }) => {
 
             {/* Expandable Section */}
             <div
-              className={`mt-3 overflow-hidden transition-all duration-300 ease-in-out ${
+              className={`overflow-hidden transition-all duration-200 ease-in-out ${
                 openClasses[className] ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               }`}
             >
@@ -79,7 +91,7 @@ const AIPanel = ({ data }) => {
                 {predictions.map((prediction, index) => (
                   <div
                     key={index}
-                    className="bg-white p-2 mb-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
+                    className="bg-white mt-2 p-2 mb-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
                   >
                     <p className="text-sm">
                       <strong>lat:</strong> {prediction.lat}
@@ -97,6 +109,7 @@ const AIPanel = ({ data }) => {
             </div>
           </div>
         ))}
+      </div>
     </div>
   );
 };
