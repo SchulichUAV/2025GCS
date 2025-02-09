@@ -71,9 +71,6 @@ def inference_worker(image_queue, detection_queue, stop_event, client) -> None:
         try:
             print("Waiting for images...")
             img_path = image_queue.get()  # Wait indefinitely for an image (blocking call)
-            if img_path is None:
-                print("Stopping inference worker.")
-                return
             batch.append(img_path)
         except Exception as e:
             print(f"Error fetching image from queue: {e}")
@@ -98,8 +95,6 @@ def geomatics_worker(detection_queue, stop_event) -> None:
     while not stop_event.is_set():
         print("Waiting for detections...")
         detections = detection_queue.get()  # Wait indefinitely for a detection (blocking call)
-        if detections is None:
-            return  # Stop thread
         locate_target(detections)
         detection_queue.task_done()
 
