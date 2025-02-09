@@ -1,0 +1,2 @@
+This file is used to hold the folder for the symlink.
+The symlink points to the TargetInformation.json file in the backend data directory.
