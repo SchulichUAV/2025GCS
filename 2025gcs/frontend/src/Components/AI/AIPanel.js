@@ -1,17 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const AIPanel = ({ data }) => {
-  const [openClasses, setOpenClasses] = useState({}); // Track open state for each class
+  const [openClasses, setOpenClasses] = useState({});
   const [isAIActive, setIsAIActive] = useState(false);
+  const [newDetections, setNewDetections] = useState({});
+  const [prevData, setPrevData] = useState(() => {
+    const storedData = localStorage.getItem("prevData");
+    return storedData ? JSON.parse(storedData) : {};
+  });
+
+  useEffect(() => {
+    if (!data) return;
+  
+    setNewDetections((prevDetections) => {
+      const updatedDetections = { ...prevDetections };
+  
+      Object.keys(data).forEach((className) => {
+        const prevCount = prevData[className]?.length || 0;
+        const newCount = data[className]?.length || 0;
+
+        if (newCount > prevCount) {
+          updatedDetections[className] = true;
+          setTimeout(() => {
+            setNewDetections((prev) => ({ ...prev, [className]: false }));
+          }, 3500);
+        }
+      });
+      return updatedDetections;
+    });
+  
+    setPrevData(data);
+    localStorage.setItem("prevData", JSON.stringify(data));
+  }, [data, prevData]);
+  
 
   const toggleClassDropdown = (className) => {
     setOpenClasses((prevState) => ({
       ...prevState,
-      [className]: !prevState[className], 
+      [className]: !prevState[className],
     }));
   };
 
-  const ENDPOINT_IP = 'ENTER YOUR IP ADDRESS HERE';
+  const ENDPOINT_IP = "IP_ADDRESS";
   const HandleAIWorkflow = async () => {
     let response;
     if (isAIActive) {
@@ -30,19 +60,15 @@ const AIPanel = ({ data }) => {
       });
     }
     setIsAIActive(!isAIActive);
-    
     const responseData = await response.json();
     console.log(responseData.message);
   };
 
   return (
-    <div
-      className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative"
-      style={{ transition: "all 0.3s ease-in-out" }} // Smooth transition for the panel
-    >
+    <div className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
       <div className="top-0 z-10 flex">
         <button
-          onClick={() => HandleAIWorkflow()}
+          onClick={HandleAIWorkflow}
           className={`px-4 py-2 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             isAIActive
               ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
@@ -57,14 +83,16 @@ const AIPanel = ({ data }) => {
           Object.entries(data).map(([className, predictions]) => (
             <div
               key={className}
-              className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300"
+              className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300 relative"
             >
               {/* Class Header */}
               <div
                 className="flex justify-between cursor-pointer"
                 onClick={() => toggleClassDropdown(className)}
               >
-                <h3 className="font-bold">{className}</h3>
+                <h3 className="font-bold text-gray-900">
+                  {className} {newDetections[className] && <span className="text-blue-500">●</span>}
+                </h3>
                 <button className="font-bold">
                   {openClasses[className] ? "▲" : "▼"}
                 </button>
@@ -80,17 +108,16 @@ const AIPanel = ({ data }) => {
                   {predictions.map((prediction, index) => (
                     <div
                       key={index}
-                      className="bg-white mt-2 p-2 mb-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
+                      className="bg-white mt-1 p-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
                     >
-                      <p className="text-sm">
-                        <strong>lat:</strong> {prediction.lat.toFixed(2)}
+                      <p className="text-xs">
+                        <strong className="underline">lat:</strong> {prediction.lat.toFixed(2)}
                       </p>
-                      <p className="text-sm">
-                        <strong>lon:</strong> {prediction.lon.toFixed(2)}
+                      <p className="text-xs">
+                        <strong className="underline">lon:</strong> {prediction.lon.toFixed(2)}
                       </p>
-                      <p className="text-sm">
-                        <strong>Conf:</strong>{" "}
-                        {Math.round(prediction.confidence * 100)}%
+                      <p className="text-xs">
+                        <strong className="underline">Conf:</strong> {Math.round(prediction.confidence * 100)}%
                       </p>
                     </div>
                   ))}
