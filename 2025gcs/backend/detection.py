@@ -3,14 +3,15 @@ import time
 import base64
 import cv2
 import numpy as np
+import queue
 from PIL import Image
 from geo import locate_target
 
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
-SCANNED_INDEX = 0
+LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
 
-def run_inference_batch(base64_images, client):
+def run_inference_batch_(base64_images, client) -> list:
     """Runs inference on a batch of images using the detection workflow."""
     try:
         print(f"Workflow started for batch of {len(base64_images)} images")
@@ -27,67 +28,100 @@ def run_inference_batch(base64_images, client):
 
         print(f"Workflow finished. Execution time: {time.time() - start_time:.2f} seconds")
         return results_total
-
+    
     except Exception as e:
         print(f"Inference error: {e}")
         return None
+    
 
-def inference_worker(image_queue,stop_event, detection_queue, client):
-    """Worker thread to process images in batches and run inference."""
-    while not stop_event.is_set():
-        batch = []
-
-        while len(batch) < BATCH_SIZE and not image_queue.empty():
-            img_path = image_queue.get()
-            if img_path is None:
-                return  # Stop thread
-
-            try:
-                pil_image = Image.open(img_path)
-                cv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-                _, buffer = cv2.imencode('.png', cv_image)
-                base64_image = base64.b64encode(buffer).decode('utf-8')
-                batch.append(base64_image)
-            except Exception as e:
-                print(f"Error processing image {img_path}: {e}")
-
+def pre_process_detect_batch_(batch, image_queue, detection_queue, client) -> None:
+    """Pre-processes images in a batch before running inference."""
+    base64_images = []
+    for img_path in batch:   # Convert images to base64
+        try:
+            pil_image = Image.open(img_path)
+            cv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+            _, buffer = cv2.imencode('.png', cv_image)
+            base64_image = base64.b64encode(buffer).decode('utf-8')
+            base64_images.append(base64_image)
+        except Exception as e:
+            print(f"Error processing image {img_path}: {e}")
+        finally:
             image_queue.task_done()
+    detect_batch_(base64_images, detection_queue, client)
 
-        if not batch:
-            time.sleep(1.5)
-            continue  # No images to process
 
-        results = run_inference_batch(batch, client)
+def detect_batch_(base64_images, detection_queue, client):
+    """Detects objects in a batch of images."""
+    if base64_images:
+        results = run_inference_batch_(base64_images, client)
         if results:
             for result in results:
                 for detection in result[0]['consensus_predictions']['predictions']:
                     detection_queue.put(detection)
 
-def geomatics_worker(detection_queue,stop_event):
+
+# ======================================== Worker Threads ========================================
+# Inference worker thread
+# Run inference on images in batches until no images are queued or the stop event is set.
+def inference_worker(image_queue, detection_queue, stop_event, client) -> None:
+    """Worker thread to process images in batches and run inference."""
+    while not stop_event.is_set():
+        batch = []
+        try:
+            print("Waiting for images...")
+            img_path = image_queue.get()  # Wait indefinitely for an image (blocking call)
+            if img_path is None:
+                print("Stopping inference worker.")
+                return
+            batch.append(img_path)
+        except Exception as e:
+            print(f"Error fetching image from queue: {e}")
+            continue
+
+        while len(batch) < BATCH_SIZE:  # Collect remaining images up to BATCH_SIZE
+            try:
+                img_path = image_queue.get_nowait()  # Fetch without waiting
+                if img_path is None:
+                    break
+                batch.append(img_path)
+            except queue.Empty:
+                break  # No more images to process
+
+        pre_process_detect_batch_(batch, image_queue, detection_queue, client)
+
+
+# Geomatics worker thread
+# Run and process detections from the queue until no detections queued or the stop event is set.
+def geomatics_worker(detection_queue, stop_event) -> None:
     """Worker thread to process detections and perform geomatics calculations."""
     while not stop_event.is_set():
-        detections = detection_queue.get()
+        print("Waiting for detections...")
+        detections = detection_queue.get()  # Wait indefinitely for a detection (blocking call)
         if detections is None:
             return  # Stop thread
         locate_target(detections)
         detection_queue.task_done()
 
-def image_watcher(image_queue, stop_event):
+
+# Image watcher thread
+# Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
+def image_watcher(image_queue, stop_event) -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
         return
     
-    global SCANNED_INDEX
+    global LAST_SCANNED_INDEX
     while not stop_event.is_set():
         try:
-            new_files = sorted(os.listdir(IMAGE_FOLDER))[SCANNED_INDEX:]  # Get new files
+            new_files = sorted(os.listdir(IMAGE_FOLDER))[LAST_SCANNED_INDEX:]
             if new_files:
                 for file in new_files:
-                    print(f"New image detected: {file}")
                     file_path = os.path.join(IMAGE_FOLDER, file)
                     image_queue.put(file_path)
-                    SCANNED_INDEX += 1  # Track processed files
+                    print(f"{file} added to queue")
+                    LAST_SCANNED_INDEX += 1
             
             time.sleep(2)  # wait before scanning again to reduce CPU usage
         except FileNotFoundError as e:

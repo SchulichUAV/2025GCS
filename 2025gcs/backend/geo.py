@@ -6,11 +6,10 @@ TARGETS_CACHE = os.path.join(os.path.dirname(__file__), './data/TargetInformatio
 
 def locate_target(detection):
     """Performs geomatics calculations."""
-    print(detection)
     try:
-        print("Performing geomatics calculations...")
+        print("Performing geo calc...")
         time.sleep(0.4)  # Simulating processing time
-        print(f"Geomatics calculations complete")
+        print(f"Geo calc complete")
         append_to_cache(detection)
     except Exception as e:
         print(f"Geomatics calculation error: {e}")
@@ -40,6 +39,6 @@ def append_to_cache(detection):
         with open(TARGETS_CACHE, 'w') as file:
             json.dump(data, file, indent=4)
 
-        print("Detections appended to cache.")
+        print("Detection cached.")
     except Exception as e:
         print(f"Error appending to cache: {e}")

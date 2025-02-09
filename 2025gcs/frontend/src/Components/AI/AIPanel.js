@@ -68,7 +68,7 @@ const AIPanel = ({ data }) => {
         Object.entries(groupedPredictions).map(([className, predictions]) => (
           <div
             key={className}
-            className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md"
+            className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300"
           >
             {/* Class Header */}
             <div
@@ -76,7 +76,7 @@ const AIPanel = ({ data }) => {
               onClick={() => toggleClassDropdown(className)}
             >
               <h3 className="font-bold">{className}</h3>
-              <button className="text-gray-500">
+              <button className="font-bold">
                 {openClasses[className] ? "▲" : "▼"}
               </button>
             </div>

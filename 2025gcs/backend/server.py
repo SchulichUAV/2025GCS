@@ -244,7 +244,7 @@ def clear_all_images():
 def start_AI_workers():
     threads = [
         Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, stop_event, detection_queue, client), daemon=True, name="InferenceWorker"),
+        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
         Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
     ]
 
@@ -257,7 +257,7 @@ def start_AI_workers():
 
 @app.route('/AI-Shutdown', methods=['POST'])
 def shutdown_workers():
-    """Gracefully stops all AI worker threads."""
+    """Stops all running AI worker threads."""
     # Signal threads to stop
     stop_event.set()
     # Clean up queues
