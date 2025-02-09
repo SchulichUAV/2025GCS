@@ -22,7 +22,7 @@ const AIPanel = ({ data }) => {
   };
 
   const ENDPOINT_IP = '10.0.0.120';
-  const AI = async () => {
+  const HandleAIWorkflow = async () => {
     let response;
     if(isAIActive){
       response = await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
@@ -53,14 +53,14 @@ const AIPanel = ({ data }) => {
     >
     <div className="top-0 z-10 flex">
       <button
-        onClick={() => AI()}
+        onClick={() => HandleAIWorkflow()}
         className={`px-4 py-2 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
           isAIActive
             ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
             : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
         }`}
       >
-        {isAIActive ? "STOP" : "START"}
+        {isAIActive ? "STOP DETECTIONS" : "START DETECTIONS"}
       </button>
     </div>
       <div className="overflow-auto h-56">

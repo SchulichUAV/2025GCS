@@ -51,7 +51,7 @@ def pre_process_detect_batch_(batch, image_queue, detection_queue, client) -> No
     detect_batch_(base64_images, detection_queue, client)
 
 
-def detect_batch_(base64_images, detection_queue, client):
+def detect_batch_(base64_images, detection_queue, client) -> None:
     """Detects objects in a batch of images."""
     if base64_images:
         results = run_inference_batch_(base64_images, client)

@@ -10,12 +10,12 @@ def locate_target(detection):
         print("Performing geo calc...")
         time.sleep(0.4)  # Simulating processing time
         print(f"Geo calc complete")
-        append_to_cache(detection)
+        append_to_cache(detection['class'], detection['confidence'], lat=99.7, lon=80.7)
     except Exception as e:
         print(f"Geomatics calculation error: {e}")
 
 
-def append_to_cache(detection):
+def append_to_cache(class_name, conf, lat, lon):
     """Appends detections to the cache file."""
     try:
         # Read existing data from the JSON file
@@ -26,13 +26,12 @@ def append_to_cache(detection):
             data = {}
 
         # Update data with new detections
-        class_name = detection['class']
         if class_name not in data:
             data[class_name] = []
         data[class_name].append({
-            'lat': 99.7,
-            'lon': 80.7,
-            'confidence': detection['confidence']
+            'lat': lat,
+            'lon': lon,
+            'confidence': conf
         })
 
         # Write updated data back to the JSON file
