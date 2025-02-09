@@ -1,5 +1,4 @@
 import os
-import itertools
 import time
 import base64
 import cv2
@@ -9,6 +8,7 @@ from geo import locate_target
 
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
 SCANNED_INDEX = 0
+BATCH_SIZE = 12
 
 def run_inference_batch(base64_images, client):
     """Runs inference on a batch of images using the detection workflow."""
@@ -37,7 +37,7 @@ def inference_worker(image_queue,stop_event, detection_queue, client):
     while not stop_event.is_set():
         batch = []
 
-        while len(batch) < 12 and not image_queue.empty():
+        while len(batch) < BATCH_SIZE and not image_queue.empty():
             img_path = image_queue.get()
             if img_path is None:
                 return  # Stop thread
@@ -45,10 +45,8 @@ def inference_worker(image_queue,stop_event, detection_queue, client):
             try:
                 pil_image = Image.open(img_path)
                 cv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-
                 _, buffer = cv2.imencode('.png', cv_image)
                 base64_image = base64.b64encode(buffer).decode('utf-8')
-
                 batch.append(base64_image)
             except Exception as e:
                 print(f"Error processing image {img_path}: {e}")
@@ -74,7 +72,7 @@ def geomatics_worker(detection_queue,stop_event):
         locate_target(detections)
         detection_queue.task_done()
 
-def image_watcher(image_queue, stop_event, batch_size=5):
+def image_watcher(image_queue, stop_event):
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
@@ -82,23 +80,16 @@ def image_watcher(image_queue, stop_event, batch_size=5):
     
     global SCANNED_INDEX
     while not stop_event.is_set():
-        new_images = []
         try:
-            for file in itertools.islice(sorted(os.listdir(IMAGE_FOLDER)), SCANNED_INDEX, None):
-                print(f"New image detected: {file}")
-                file_path = os.path.join(IMAGE_FOLDER, file)
-                new_images.append(file_path)
-
-                SCANNED_INDEX += 1  # Track processed files
-    
-                if len(new_images) == batch_size:
-                    print(f"Batch full: {batch_size} images")
-                    break  # Stop when batch is full
-
-            for img_path in new_images:
-                image_queue.put(img_path)
-
-            time.sleep(2)  # wait 2s before scanning again to reduce CPU usage
+            new_files = sorted(os.listdir(IMAGE_FOLDER))[SCANNED_INDEX:]  # Get new files
+            if new_files:
+                for file in new_files:
+                    print(f"New image detected: {file}")
+                    file_path = os.path.join(IMAGE_FOLDER, file)
+                    image_queue.put(file_path)
+                    SCANNED_INDEX += 1  # Track processed files
+            
+            time.sleep(2)  # wait before scanning again to reduce CPU usage
         except FileNotFoundError as e:
             print(f"Error accessing directory: {e}")
-            break  # Stop watching if directory disappears
+            break
