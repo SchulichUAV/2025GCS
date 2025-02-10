@@ -4,9 +4,10 @@ import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import locate
+import requests
 import sys
 
-sys.path.append(r'') # add the path here 
+sys.path.append(r'')  # add the path here
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -20,6 +21,7 @@ current_target = None
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
 
+
 def load_json(file_path):
     """Utility to load JSON data from a file."""
     try:
@@ -28,13 +30,58 @@ def load_json(file_path):
     except FileNotFoundError:
         return {}
 
+
 def save_json(file_path, data):
     """Utility to save JSON data to a file."""
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
 
+# heartbeat route
+'''
+so this method should be called every like
+5 seconds from the frontend and update 
+the display based on that data.
+'''
+
+RASPBERRY_PI_URI = "http://127.0.0.1:5000/heartbeat-validate"
+
+
+@app.route('/getHeartbeat', methods=['GET'])
+def get_heartbeat():
+    try:
+        # max timeout of 10 here btw
+        response = requests.get(RASPBERRY_PI_URI, timeout=10)
+        response.raise_for_status()
+        vehicle_data = response.json()
+
+        '''
+            so this is gonna return something like:
+            vehicle_data = {
+                "last_time": 0,
+                "lat": 0,
+                "lon": 0,
+                "rel_alt": 0,
+                "alt": 0,
+                "roll": 0,
+                "pitch": 0,
+                "yaw": 0,
+                "dlat": 0,
+                "dlon": 0,
+                "dalt": 0,
+                "heading": 0
+            }
+        '''
+
+        return jsonify({'success': True, 'vehicle_data': vehicle_data})
+
+    except requests.exceptions.RequestException as e:
+
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # indiated target completion - not sure if we will keep this for SUAS 2025
+
+
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
     global current_target
@@ -43,7 +90,7 @@ def complete_target():
     data = load_json(target_info_path)
 
     items = data.get('ITEM', [])
-    
+
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -56,7 +103,9 @@ def complete_target():
 
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
-#return current target 
+# return current target
+
+
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
     # Get the index from the query parameters
@@ -69,7 +118,7 @@ def get_current_target():
     data = load_json(target_info_path)
 
     items = data.get('ITEM', [])
-    
+
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -80,12 +129,13 @@ def get_current_target():
     # Return the target at the specified index
     return jsonify({'success': True, 'currentTarget': items[index]})
 
+
 @app.route('/getTargets', methods=['GET'])
 def get_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     items = data.get('ITEM', [])
-    
+
     return jsonify({'success': True, 'targets': items})
 
 
@@ -94,8 +144,9 @@ def get_completed_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     completed_targets = data.get('completedTargets', [])
-    
+
     return jsonify({'success': True, 'completed_targets': completed_targets})
+
 
 @app.route('/addCoords', methods=['POST'])
 def add_coords():
@@ -146,6 +197,8 @@ def add_coords():
 #         return jsonify({"error": "File not found"}), 404
 
 # Location Computation
+
+
 @app.route('/computeLocation', methods=['POST'])
 def compute_location():
     data = request.get_json()
