@@ -10,12 +10,12 @@ const NavBar = () => (
     </div>
     <div className="space-x-8 mr-6">
       <a className="group transition-all ease-in-out hover:text-lg duration-300" href="home">
-        <span class="bg-left-bottom bg-gradient-to-r from-gray-100 to-gray-200 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out">
+        <span className="bg-left-bottom bg-gradient-to-r from-gray-100 to-gray-200 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out">
           Home
         </span>
       </a>
       <a className="group transition-all ease-in-out hover:text-lg duration-300" href="data">
-        <span class="bg-left-bottom bg-gradient-to-r from-gray-100 to-gray-200 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out">
+        <span className="bg-left-bottom bg-gradient-to-r from-gray-100 to-gray-200 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out">
           Data
         </span>
       </a>

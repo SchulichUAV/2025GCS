@@ -10,6 +10,13 @@ from threading import Thread, Event, enumerate
 from detection import image_watcher, inference_worker, geomatics_worker
 sys.path.append(r'') # add the path here 
 
+import locate
+import requests
+import sys
+import requests
+
+sys.path.append(r'')  # add the path here
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -17,6 +24,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
+
 
 # Inference client
 client = InferenceHTTPClient(
@@ -28,9 +36,36 @@ image_queue = Queue()
 detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop on program exit
 
+ENDPOINT_IP = "192.168.1.67"
+VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
+CAMERA_STATE = False
+
+
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+
+# Dictionary to maintain vehicle state
+vehicle_data = {
+    "last_time": 0,
+    "lat": 0,
+    "lon": 0,
+    "rel_alt": 0,
+    "alt": 0,
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "dlat": 0,
+    "dlon": 0,
+    "dalt": 0,
+    "heading": 0,
+    "num_satellites": 0,
+    "position_uncertainty": 0,
+    "alt_uncertainty": 0,
+    "speed_uncertainty": 0,
+    "heading_uncertainty": 0
+}
+
 
 def load_json(file_path):
     """Utility to load JSON data from a file."""
@@ -40,13 +75,57 @@ def load_json(file_path):
     except FileNotFoundError:
         return {}
 
+
 def save_json(file_path, data):
     """Utility to save JSON data to a file."""
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
+# heartbeat route
+'''
+so this method should be called every like
+5 seconds from the frontend and update 
+the display based on that data.
+'''
+
+RASPBERRY_PI_URI = "http://127.0.0.1:5000/heartbeat-validate"
+
+
+@app.route('/getHeartbeat', methods=['GET'])
+def get_heartbeat():
+    try:
+        # max timeout of 10 here btw
+        response = requests.get(RASPBERRY_PI_URI, timeout=10)
+        response.raise_for_status()
+        vehicle_data = response.json()
+
+        '''
+            so this is gonna return something like:
+            vehicle_data = {
+                "last_time": 0,
+                "lat": 0,
+                "lon": 0,
+                "rel_alt": 0,
+                "alt": 0,
+                "roll": 0,
+                "pitch": 0,
+                "yaw": 0,
+                "dlat": 0,
+                "dlon": 0,
+                "dalt": 0,
+                "heading": 0
+            }
+        '''
+
+        return jsonify({'success': True, 'vehicle_data': vehicle_data})
+
+    except requests.exceptions.RequestException as e:
+
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
+
+
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
     global current_target
@@ -55,7 +134,7 @@ def complete_target():
     data = load_json(target_info_path)
 
     items = data.get('ITEM', [])
-    
+
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -68,7 +147,9 @@ def complete_target():
 
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
-#return current target 
+# return current target
+
+
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
     # Get the index from the query parameters
@@ -81,7 +162,7 @@ def get_current_target():
     data = load_json(target_info_path)
 
     items = data.get('ITEM', [])
-    
+
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -92,21 +173,24 @@ def get_current_target():
     # Return the target at the specified index
     return jsonify({'success': True, 'currentTarget': items[index]})
 
+
 @app.route('/getTargets', methods=['GET'])
 def get_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     items = data.get('ITEM', [])
-    
+
     return jsonify({'success': True, 'targets': items})
+
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     completed_targets = data.get('completedTargets', [])
-    
+
     return jsonify({'success': True, 'completed_targets': completed_targets})
+
 
 @app.route('/addCoords', methods=['POST'])
 def add_coords():
@@ -141,7 +225,7 @@ def add_coords():
 
 # # File Management
 # @app.route('/retrieveData', methods=['GET'])
-# def retrieve_data():
+# def retrieve_data():i
 #     file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
 #     try:
 #         return send_file(file_path, mimetype='application/json')
@@ -155,6 +239,23 @@ def add_coords():
 #         return send_file(file_path, mimetype='application/json')
 #     except FileNotFoundError:
 #         return jsonify({"error": "File not found"}), 404
+
+
+# Location Computation
+
+
+@app.route('/computeLocation', methods=['POST'])
+def compute_location():
+    data = request.get_json()
+    lat, lon = locate.locate(
+        uav_latitude=float(data['lat']),
+        uav_longitude=float(data['lon']),
+        uav_altitude=float(data['rel_alt']),
+        bearing=float(data['yaw']),
+        obj_x_px=float(data['x']),
+        obj_y_px=float(data['y'])
+    )
+    return jsonify({'latitude': lat, 'longitude': lon})
 
 # change all absolute paths to local paths and test
 @app.route('/getImageCount', methods=['GET'])
@@ -220,6 +321,30 @@ def clear_all_images():
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
 
+@app.route('/heartbeat', methods=['GET'])
+def heartbeat():
+    try:
+        response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
+        heartbeat_data = response.json()
+        vehicle_data.update(heartbeat_data)
+        print("Heartbeat success!")
+        return jsonify({'success': True}), 200
+    except requests.exceptions.Timeout:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': str(e)}),
+    except requests.exceptions.RequestException as e:
+        print("Heartbeat failure... RocketM5 disconnect?")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/toggle_camera_state', methods=['POST'])
+def toggle_camera_state():
+    global CAMERA_STATE
+    CAMERA_STATE = not CAMERA_STATE
+    data = { "is_camera_on": CAMERA_STATE }
+
 
 # AI Processing.
 # Workflow starts when the AI endpoint is called through the frontend.
@@ -265,6 +390,16 @@ def ClearCache():
     save_json(target_info_path, {})
     return jsonify({"message": "TargetInformation cache cleared"}), 200
 
+    try:
+        response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
+        print(f"Camera on: {CAMERA_STATE}")
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=80)

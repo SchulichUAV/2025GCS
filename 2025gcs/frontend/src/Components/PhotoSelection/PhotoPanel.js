@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+let BACKEND_IP = '127.0.0.1:80/';
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
@@ -14,7 +15,7 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/getImageCount");
+        const response = await axios.get("http://127.0.0.1:80/getImageCount");
         if (response.data.success) {
           const imageCount = response.data.imageCount;
           const loadedPhotos = Array.from(
@@ -32,10 +33,8 @@ const PhotoPanel = () => {
       }
     };
 
-
     fetchImages();
   }, []);
-
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
@@ -106,10 +105,26 @@ const PhotoPanel = () => {
   };
 
 
-  const handleToggleCamera = () => {
-    setIsCameraOn((prevState) => !prevState);
-  };
+  const handleToggleCamera = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsCameraOn(data.cameraState);
+      } else {
+        console.error("Error toggling camera:", data.error);
+      }
+    } catch (error) {
+      console.error("Request failed:", error);
+    }
+  };
 
   const clearImages = async () => {
     const userConfirmed = window.confirm(
