@@ -41,7 +41,7 @@ const AIPanel = ({ data }) => {
     }));
   };
 
-  const ENDPOINT_IP = "IP_ADDRESS";
+  const ENDPOINT_IP = "127.0.0.1";
   const HandleAIWorkflow = async () => {
     let response;
     if (isAIActive) {
@@ -64,18 +64,32 @@ const AIPanel = ({ data }) => {
     console.log(responseData.message);
   };
 
+  const ClearCache = async () => {
+    const response = await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    const responseData = await response.json();
+    console.log(responseData.message);
+  }
+
   return (
     <div className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
       <div className="top-0 z-10 flex">
         <button
           onClick={HandleAIWorkflow}
-          className={`px-4 py-2 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             isAIActive
               ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
               : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
           }`}
         >
-          {isAIActive ? "STOP DETECTIONS" : "START DETECTIONS"}
+          {isAIActive ? "STOP DETECTING" : "START DETECTING"}
+        </button>
+        <button onClick={ClearCache} className="px-4 py-2 font-semibold text-sm rounded-lg shadow-md bg-red-300 hover:bg-red-400">
+          CLEAR CACHE
         </button>
       </div>
       <div className="overflow-auto h-56">
@@ -91,7 +105,7 @@ const AIPanel = ({ data }) => {
                 onClick={() => toggleClassDropdown(className)}
               >
                 <h3 className="font-bold text-gray-900">
-                  {className} {newDetections[className] && <span className="text-blue-500">●</span>}
+                  {className} ({predictions.length}) {newDetections[className] && <span className="text-blue-500">●</span>}
                 </h3>
                 <button className="font-bold">
                   {openClasses[className] ? "▲" : "▼"}
@@ -111,10 +125,10 @@ const AIPanel = ({ data }) => {
                       className="bg-white mt-1 p-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
                     >
                       <p className="text-xs">
-                        <strong className="underline">lat:</strong> {prediction.lat.toFixed(2)}
+                        <strong className="underline">Lat:</strong> {prediction.lat.toFixed(2)}
                       </p>
                       <p className="text-xs">
-                        <strong className="underline">lon:</strong> {prediction.lon.toFixed(2)}
+                        <strong className="underline">Lon:</strong> {prediction.lon.toFixed(2)}
                       </p>
                       <p className="text-xs">
                         <strong className="underline">Conf:</strong> {Math.round(prediction.confidence * 100)}%

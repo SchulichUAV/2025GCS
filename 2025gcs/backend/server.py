@@ -258,6 +258,14 @@ def shutdown_workers():
     return jsonify({"message": "AI processing stopped"}), 200
 
 
+@app.route('/Clear-Detections-Cache', methods=['POST'])
+def ClearCache():
+    """Clears the TargetInformation.json cache file."""
+    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    save_json(target_info_path, {})
+    return jsonify({"message": "TargetInformation cache cleared"}), 200
+
+
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=80)
 
