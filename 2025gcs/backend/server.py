@@ -3,6 +3,13 @@ import json
 import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
+import sys
+from queue import Queue
+from inference_sdk import InferenceHTTPClient
+from threading import Thread, Event, enumerate
+from detection import image_watcher, inference_worker, geomatics_worker
+sys.path.append(r'') # add the path here 
+
 import locate
 import requests
 import sys
@@ -18,9 +25,21 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
+
+# Inference client
+client = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com", # Inference API URL
+    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+)
+
+image_queue = Queue()
+detection_queue = Queue()
+stop_event = Event()  # Used to signal threads to stop on program exit
+
 ENDPOINT_IP = "192.168.1.67"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
+
 
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
@@ -162,6 +181,7 @@ def get_targets():
     items = data.get('ITEM', [])
 
     return jsonify({'success': True, 'targets': items})
+
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
@@ -324,6 +344,51 @@ def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
     data = { "is_camera_on": CAMERA_STATE }
+
+
+# AI Processing.
+# Workflow starts when the AI endpoint is called through the frontend.
+# The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
+@app.route('/AI', methods=['POST'])
+def start_AI_workers():
+    threads = [
+        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
+        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
+        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
+    ]
+
+    # Start worker threads
+    for thread in threads:
+        thread.start()
+    
+    return jsonify({"message": "AI processing started"}), 200
+
+
+@app.route('/AI-Shutdown', methods=['POST'])
+def shutdown_workers():
+    """Stops all running AI worker threads."""
+    # Signal threads to stop
+    stop_event.set()
+    # Clean up queues
+    image_queue.put(None)
+    detection_queue.put(None)
+
+    # Wait for all threads to finish
+    for thread in enumerate():
+        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+            thread.join()
+
+    # Reset stop event for future use
+    stop_event.clear()
+    return jsonify({"message": "AI processing stopped"}), 200
+
+
+@app.route('/Clear-Detections-Cache', methods=['POST'])
+def ClearCache():
+    """Clears the TargetInformation.json cache file."""
+    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    save_json(target_info_path, {})
+    return jsonify({"message": "TargetInformation cache cleared"}), 200
 
     try:
         response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
