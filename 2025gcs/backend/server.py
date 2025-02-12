@@ -7,6 +7,7 @@ import locate
 import requests
 import sys
 import requests
+import json
 
 sys.path.append(r'')  # add the path here
 
@@ -18,7 +19,7 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "192.168.1.67"
+ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -323,10 +324,14 @@ def heartbeat():
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    data = { "is_camera_on": CAMERA_STATE }
+    
+    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
-        response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
+        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
         print(f"Camera on: {CAMERA_STATE}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
@@ -335,6 +340,14 @@ def toggle_camera_state():
         return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
+@app.post('/submit/')
+def submit_data():
+    file = request.files["file"]
+    file.save('./images/' + file.filename) 
+    print('Saved file', file.filename)
+    return 'ok'
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=80)
