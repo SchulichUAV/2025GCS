@@ -348,5 +348,8 @@ def submit_data():
     return 'ok'
 
 if __name__ == '__main__':
+    '''
+    May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
+    '''
     app.run(debug=False, host='0.0.0.0', port=80)
 
