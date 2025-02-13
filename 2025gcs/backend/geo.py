@@ -4,13 +4,13 @@ import json
 
 TARGETS_CACHE = os.path.join(os.path.dirname(__file__), './data/TargetInformation.json')
 
-def locate_target(detection):
+def locate_target(detection, metadata):
     """Performs geomatics calculations."""
     try:
         print("Performing geo calc...")
         time.sleep(0.4)  # Simulating processing time
         print(f"Geo calc complete")
-        append_to_cache(detection['class'], detection['confidence'], lat=99.7, lon=80.7)
+        append_to_cache(detection['class'], detection['confidence'], lat=metadata['lat'], lon=metadata['lon'])
     except Exception as e:
         print(f"Geomatics calculation error: {e}")
 

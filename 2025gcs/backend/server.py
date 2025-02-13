@@ -5,12 +5,10 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sys
 from queue import Queue
-from inference_sdk import InferenceHTTPClient
 from threading import Thread, Event, enumerate
 from detection import image_watcher, inference_worker, geomatics_worker
 sys.path.append(r'') # add the path here 
 
-import locate
 import requests
 import sys
 import requests
@@ -25,13 +23,6 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-
-# Inference client
-client = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com", # Inference API URL
-    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
-)
-
 image_queue = Queue()
 detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop on program exit
@@ -43,7 +34,7 @@ CAMERA_STATE = False
 
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 
 # Dictionary to maintain vehicle state
 vehicle_data = {
@@ -243,20 +234,6 @@ def add_coords():
 
 # Location Computation
 
-
-@app.route('/computeLocation', methods=['POST'])
-def compute_location():
-    data = request.get_json()
-    lat, lon = locate.locate(
-        uav_latitude=float(data['lat']),
-        uav_longitude=float(data['lon']),
-        uav_altitude=float(data['rel_alt']),
-        bearing=float(data['yaw']),
-        obj_x_px=float(data['x']),
-        obj_y_px=float(data['y'])
-    )
-    return jsonify({'latitude': lat, 'longitude': lon})
-
 # change all absolute paths to local paths and test
 @app.route('/getImageCount', methods=['GET'])
 def get_image_count():
@@ -353,53 +330,49 @@ def toggle_camera_state():
 def start_AI_workers():
     threads = [
         Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
+        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event), daemon=True, name="InferenceWorker"),
         Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
     ]
 
-    # Start worker threads
-    for thread in threads:
-        thread.start()
-    
-    return jsonify({"message": "AI processing started"}), 200
+    try:
+        # Start worker threads
+        for thread in threads:
+            thread.start()
+        return jsonify({"message": "AI processing started"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
 
 @app.route('/AI-Shutdown', methods=['POST'])
 def shutdown_workers():
     """Stops all running AI worker threads."""
-    # Signal threads to stop
-    stop_event.set()
-    # Clean up queues
-    image_queue.put(None)
-    detection_queue.put(None)
-
-    # Wait for all threads to finish
-    for thread in enumerate():
-        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
-            thread.join()
-
-    # Reset stop event for future use
-    stop_event.clear()
-    return jsonify({"message": "AI processing stopped"}), 200
+    try:
+        # Signal threads to stop
+        stop_event.set()
+        # Clean up queues
+        image_queue.put(None)
+        detection_queue.put(None)
+        # Wait for all threads to finish
+        for thread in enumerate():
+            if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+                thread.join()
+        # Reset stop event for future use
+        stop_event.clear()
+        return jsonify({"message": "AI processing stopped"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
 
 @app.route('/Clear-Detections-Cache', methods=['POST'])
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    save_json(target_info_path, {})
-    return jsonify({"message": "TargetInformation cache cleared"}), 200
-
     try:
-        response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
-        print(f"Camera on: {CAMERA_STATE}")
-        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-    except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+        save_json(target_info_path, {})
+        return jsonify({"message": "TargetInformation cache cleared"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error clearing cache: {e}"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=80)
