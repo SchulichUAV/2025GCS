@@ -36,7 +36,7 @@ image_queue = Queue()
 detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop on program exit
 
-ENDPOINT_IP = "192.168.1.67"
+ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -92,7 +92,9 @@ the display based on that data.
 def get_heartbeat():
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-        response = requests.get(VEHICLE_API_URL + 'heartbeat', headers=headers, timeout=5)
+        print("sending api request")
+        response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
+        print("sent request")
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
 
@@ -118,7 +120,7 @@ def get_heartbeat():
                 "heading_uncertainty": 0
             }
         '''
-
+        
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
