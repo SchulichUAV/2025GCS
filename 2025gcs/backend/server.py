@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sys
 from queue import Queue
-from inference_sdk import InferenceHTTPClient
+# from inference_sdk import InferenceHTTPClient
 from threading import Thread, Event, enumerate
 from detection import image_watcher, inference_worker, geomatics_worker
 sys.path.append(r'') # add the path here 
@@ -27,10 +27,10 @@ current_target = None
 
 
 # Inference client
-client = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com", # Inference API URL
-    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
-)
+# client = InferenceHTTPClient(
+#     api_url="https://detect.roboflow.com", # Inference API URL
+#     api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+# )
 
 image_queue = Queue()
 detection_queue = Queue()
