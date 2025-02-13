@@ -3,7 +3,13 @@ import json
 import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
-# import locate
+import sys
+from queue import Queue
+from inference_sdk import InferenceHTTPClient
+from threading import Thread, Event, enumerate
+from detection import image_watcher, inference_worker, geomatics_worker
+sys.path.append(r'') # add the path here 
+
 import requests
 import sys
 import requests
@@ -19,9 +25,21 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "192.168.1.66"
+
+# Inference client
+client = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com", # Inference API URL
+    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+)
+
+image_queue = Queue()
+detection_queue = Queue()
+stop_event = Event()  # Used to signal threads to stop on program exit
+
+ENDPOINT_IP = "192.168.1.67"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
+
 
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
@@ -70,16 +88,13 @@ so this method should be called every like
 the display based on that data.
 '''
 
-RASPBERRY_PI_URI = "http://127.0.0.1:5000/heartbeat-validate"
-
-
-@app.route('/getHeartbeat', methods=['GET'])
+@app.route('/get_heartbeat', methods=['GET'])
 def get_heartbeat():
     try:
-        # max timeout of 10 here btw
-        response = requests.get(RASPBERRY_PI_URI, timeout=10)
-        response.raise_for_status()
-        vehicle_data = response.json()
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        response = requests.get(VEHICLE_API_URL + 'heartbeat', headers=headers, timeout=5)
+        heartbeat_data = response.json()
+        vehicle_data.update(heartbeat_data)
 
         '''
             so this is gonna return something like:
@@ -95,18 +110,22 @@ def get_heartbeat():
                 "dlat": 0,
                 "dlon": 0,
                 "dalt": 0,
-                "heading": 0
+                "heading": 0,
+                "num_statellites": 0,
+                "position_uncertainty": 0,
+                "alt_uncertainty": 0,
+                "speed_uncertainty": 0,
+                "heading_uncertainty": 0
             }
         '''
 
-        return jsonify({'success': True, 'vehicle_data': vehicle_data})
+        return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
-
+        print("Heartbeat failure - RocketM5 disconnect")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
-
 
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
@@ -163,6 +182,7 @@ def get_targets():
     items = data.get('ITEM', [])
 
     return jsonify({'success': True, 'targets': items})
+
 
 @app.route('/getCompletedTargets', methods=['GET'])
 def get_completed_targets():
@@ -299,25 +319,6 @@ def clear_all_images():
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
-
-@app.route('/heartbeat', methods=['GET'])
-def heartbeat():
-    try:
-        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-        response = requests.get(VEHICLE_API_URL + 'heartbeat', headers=headers, timeout=5)
-        heartbeat_data = response.json()
-        vehicle_data.update(heartbeat_data)
-        print("Heartbeat success!")
-        return jsonify({'success': True}), 200
-    except requests.exceptions.Timeout:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}),
-    except requests.exceptions.RequestException as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}), 500
     
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
@@ -339,6 +340,50 @@ def toggle_camera_state():
         return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# AI Processing.
+# Workflow starts when the AI endpoint is called through the frontend.
+# The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
+@app.route('/AI', methods=['POST'])
+def start_AI_workers():
+    threads = [
+        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
+        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
+        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
+    ]
+
+    # Start worker threads
+    for thread in threads:
+        thread.start()
+    
+    return jsonify({"message": "AI processing started"}), 200
+
+
+@app.route('/AI-Shutdown', methods=['POST'])
+def shutdown_workers():
+    """Stops all running AI worker threads."""
+    # Signal threads to stop
+    stop_event.set()
+    # Clean up queues
+    image_queue.put(None)
+    detection_queue.put(None)
+
+    # Wait for all threads to finish
+    for thread in enumerate():
+        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+            thread.join()
+
+    # Reset stop event for future use
+    stop_event.clear()
+    return jsonify({"message": "AI processing stopped"}), 200
+
+
+@app.route('/Clear-Detections-Cache', methods=['POST'])
+def ClearCache():
+    """Clears the TargetInformation.json cache file."""
+    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    save_json(target_info_path, {})
+    return jsonify({"message": "TargetInformation cache cleared"}), 200
 
 # POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
 @app.post('/submit/')
