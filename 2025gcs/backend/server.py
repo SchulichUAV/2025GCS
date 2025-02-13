@@ -10,7 +10,6 @@ from threading import Thread, Event, enumerate
 from detection import image_watcher, inference_worker, geomatics_worker
 sys.path.append(r'') # add the path here 
 
-import locate
 import requests
 import sys
 import requests
@@ -239,23 +238,6 @@ def add_coords():
 #         return send_file(file_path, mimetype='application/json')
 #     except FileNotFoundError:
 #         return jsonify({"error": "File not found"}), 404
-
-
-# Location Computation
-
-
-@app.route('/computeLocation', methods=['POST'])
-def compute_location():
-    data = request.get_json()
-    lat, lon = locate.locate(
-        uav_latitude=float(data['lat']),
-        uav_longitude=float(data['lon']),
-        uav_altitude=float(data['rel_alt']),
-        bearing=float(data['yaw']),
-        obj_x_px=float(data['x']),
-        obj_y_px=float(data['y'])
-    )
-    return jsonify({'latitude': lat, 'longitude': lon})
 
 # change all absolute paths to local paths and test
 @app.route('/getImageCount', methods=['GET'])
