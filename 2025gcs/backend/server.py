@@ -303,7 +303,8 @@ def clear_all_images():
 @app.route('/heartbeat', methods=['GET'])
 def heartbeat():
     try:
-        response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        response = requests.get(VEHICLE_API_URL + 'heartbeat', headers=headers, timeout=5)
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
         print("Heartbeat success!")
