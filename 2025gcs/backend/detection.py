@@ -4,7 +4,7 @@ import base64
 import cv2
 import numpy as np
 import json
-import queue
+from queue import Queue, Empty
 from threading import Thread, Event, enumerate
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
@@ -17,8 +17,8 @@ IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
 
-image_queue = queue.Queue()
-detection_queue = queue.Queue()
+image_queue = Queue()
+detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop on program exit
 
 load_dotenv()
@@ -47,8 +47,8 @@ def run_inference_batch_(base64_images : list[str], client : InferenceHTTPClient
 
 def pre_process_detect_batch_(
         batch : list[Image.Image], 
-        image_queue : queue.Queue, 
-        detection_queue : queue.Queue, 
+        image_queue : Queue, 
+        detection_queue : Queue, 
         client : InferenceHTTPClient
     ) -> None:
     """Pre-processes images in a batch before running inference."""
@@ -70,7 +70,7 @@ def pre_process_detect_batch_(
 def detect_batch_(
         base64_images : list[str], 
         batch : list[Image.Image], 
-        detection_queue : queue.Queue, 
+        detection_queue : Queue, 
         client : InferenceHTTPClient
     ) -> None:
     """Detects objects in a batch of images."""
@@ -117,7 +117,7 @@ def convert_to_txt_(x: int, y: int, json_data: dict) -> str:
 # ======================================== Worker Threads ========================================
 # Inference worker thread
 # Run inference on images in batches until no images are queued or the stop event is set.
-def inference_worker(image_queue : queue.Queue, detection_queue : queue.Queue, stop_event) -> None:
+def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event) -> None:
     """Worker thread to process images in batches and run inference."""
     # Inference client
     client = InferenceHTTPClient(
@@ -143,7 +143,7 @@ def inference_worker(image_queue : queue.Queue, detection_queue : queue.Queue, s
                 if img_path is None:
                     continue    # Skip
                 batch.append(img_path)
-            except queue.Empty:
+            except Empty:
                 break  # No more images to process
 
         pre_process_detect_batch_(batch, image_queue, detection_queue, client)
@@ -151,7 +151,7 @@ def inference_worker(image_queue : queue.Queue, detection_queue : queue.Queue, s
 
 # Geomatics worker thread
 # Run and process detections from the queue until no detections queued or the stop event is set.
-def geomatics_worker(detection_queue : queue.Queue, stop_event) -> None:
+def geomatics_worker(detection_queue : Queue, stop_event) -> None:
     """Worker thread to process detections and perform geomatics calculations."""
     while not stop_event.is_set():
         print("Waiting for detections...")
@@ -168,7 +168,7 @@ def geomatics_worker(detection_queue : queue.Queue, stop_event) -> None:
 
 # Image watcher thread
 # Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
-def image_watcher(image_queue : queue.Queue, stop_event) -> None:
+def image_watcher(image_queue : Queue, stop_event) -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
