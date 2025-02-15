@@ -7,6 +7,7 @@ import json
 import queue
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
+from dotenv import load_dotenv
 from geo import locate_target
 
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'images')
@@ -15,7 +16,9 @@ IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
 
-def run_inference_batch_(base64_images, client) -> list:
+load_dotenv()
+
+def run_inference_batch_(base64_images : list[str], client : InferenceHTTPClient) -> list:
     """Runs inference on a batch of images using the detection workflow."""
     try:
         print(f"Workflow started for batch of {len(base64_images)} images")
@@ -32,13 +35,17 @@ def run_inference_batch_(base64_images, client) -> list:
 
         print(f"Workflow finished. Execution time: {time.time() - start_time:.2f} seconds")
         return results_total
-    
     except Exception as e:
         print(f"Inference error: {e}")
         return None
     
 
-def pre_process_detect_batch_(batch, image_queue, detection_queue, client) -> None:
+def pre_process_detect_batch_(
+        batch : list[Image.Image], 
+        image_queue : queue.Queue, 
+        detection_queue : queue.Queue, 
+        client : InferenceHTTPClient
+    ) -> None:
     """Pre-processes images in a batch before running inference."""
     base64_images = []
     for img_path in batch:   # Convert images to base64
@@ -55,7 +62,12 @@ def pre_process_detect_batch_(batch, image_queue, detection_queue, client) -> No
     detect_batch_(base64_images, batch, detection_queue, client)
 
 
-def detect_batch_(base64_images, batch, detection_queue, client) -> None:
+def detect_batch_(
+        base64_images : list[str], 
+        batch : list[Image.Image], 
+        detection_queue : queue.Queue, 
+        client : InferenceHTTPClient
+    ) -> None:
     """Detects objects in a batch of images."""
     if base64_images:
         results = run_inference_batch_(base64_images, client)
@@ -65,15 +77,41 @@ def detect_batch_(base64_images, batch, detection_queue, client) -> None:
                     detection_queue.put((img_path, detection))
 
 
+def process_data_and_locate_target_(detection : dict, path : str) -> None:
+    json_file_name = os.path.basename(path).replace('.jpg', '.json')  # Get corresponding JSON file
+    json_file_path = os.path.join(IMAGE_DATA_FOLDER, json_file_name)
+    if os.path.exists(json_file_path):
+        with open(json_file_path, 'r') as json_file:
+            json_data = json.load(json_file)
+        locate_target(detection, convert_to_txt_(detection['x'], detection['y'], json_data))
+
+
+def convert_to_txt_(x : int, y : int, json_data : dict) -> str:
+    """Converts JSON data to text with field names."""
+    fields = [
+        'lat', 'lon', 'alt', 'roll', 'pitch', 'yaw', 'heading',
+        'position_uncertainty', 'alt_uncertainty', 'speed_uncertainty', 'heading_uncertainty'
+    ]
+    # Normalize center bounding box x and y coordinates between [0,1]
+    # [0.5, 0.5] is the center of the image
+    normalized_x = x / 640
+    normalized_y = y / 640
+
+    # Extract the required fields from the JSON data
+    json_values = [f"{field}: {json_data[field]}" for field in fields]
+    detection_values = [f"x: {normalized_x}", f"y: {normalized_y}"]
+    return '\n'.join(detection_values + json_values)
+
+
 # ======================================== Worker Threads ========================================
 # Inference worker thread
 # Run inference on images in batches until no images are queued or the stop event is set.
-def inference_worker(image_queue, detection_queue, stop_event) -> None:
+def inference_worker(image_queue : queue.Queue, detection_queue : queue.Queue, stop_event) -> None:
     """Worker thread to process images in batches and run inference."""
     # Inference client
     client = InferenceHTTPClient(
-        api_url="https://detect.roboflow.com", # Inference API URL
-        api_key="7dEiP3o3XQGNET8f4jlC"  # API key
+        api_url=f"{os.getenv('ML_URI')}",   # Inference API URL
+        api_key=f"{os.getenv('API_KEY')}"   # API Key
     )
 
     while not stop_event.is_set():
@@ -102,23 +140,15 @@ def inference_worker(image_queue, detection_queue, stop_event) -> None:
 
 # Geomatics worker thread
 # Run and process detections from the queue until no detections queued or the stop event is set.
-def geomatics_worker(detection_queue, stop_event) -> None:
+def geomatics_worker(detection_queue : queue.Queue, stop_event) -> None:
     """Worker thread to process detections and perform geomatics calculations."""
     while not stop_event.is_set():
         print("Waiting for detections...")
         try:
-            img_path, detections = detection_queue.get()  # Wait indefinitely for a detection (blocking call)
-            if detections is None or img_path is None:
+            img_path, detection = detection_queue.get()  # Wait indefinitely for a detection (blocking call)
+            if detection is None or img_path is None:
                 continue    # Skip
-            json_file_name = os.path.basename(img_path).replace('.jpg', '.json')  # Get corresponding JSON file
-            json_file_path = os.path.join(IMAGE_DATA_FOLDER, json_file_name)
-            if os.path.exists(json_file_path):
-                with open(json_file_path, 'r') as json_file:
-                    json_data = json.load(json_file)
-                print(f"JSON data loaded: {json_data}")
-                locate_target(detections, json_data)
-            else:
-                print(f"Error: JSON file {json_file_path} does not exist.")
+            process_data_and_locate_target_(detection, img_path)
         except Exception as e:
             print(f"Error processing detection: {e}")
         finally:
@@ -127,7 +157,7 @@ def geomatics_worker(detection_queue, stop_event) -> None:
 
 # Image watcher thread
 # Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
-def image_watcher(image_queue, stop_event) -> None:
+def image_watcher(image_queue : queue.Queue, stop_event) -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
