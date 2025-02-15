@@ -117,7 +117,7 @@ def convert_to_txt_(x: int, y: int, json_data: dict) -> str:
 # ======================================== Worker Threads ========================================
 # Inference worker thread
 # Run inference on images in batches until no images are queued or the stop event is set.
-def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event) -> None:
+def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event : Event) -> None:
     """Worker thread to process images in batches and run inference."""
     # Inference client
     client = InferenceHTTPClient(
@@ -151,7 +151,7 @@ def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event) -
 
 # Geomatics worker thread
 # Run and process detections from the queue until no detections queued or the stop event is set.
-def geomatics_worker(detection_queue : Queue, stop_event) -> None:
+def geomatics_worker(detection_queue : Queue, stop_event : Event) -> None:
     """Worker thread to process detections and perform geomatics calculations."""
     while not stop_event.is_set():
         print("Waiting for detections...")
@@ -168,7 +168,7 @@ def geomatics_worker(detection_queue : Queue, stop_event) -> None:
 
 # Image watcher thread
 # Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
-def image_watcher(image_queue : Queue, stop_event) -> None:
+def image_watcher(image_queue : Queue, stop_event : Event) -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
