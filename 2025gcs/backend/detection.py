@@ -11,6 +11,7 @@ from PIL import Image
 from dotenv import load_dotenv
 from geo import locate_target
 
+TARGETS_CACHE = os.path.join(os.path.dirname(__file__), 'data', 'TargetInformation.json')
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'images')
 IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
 
@@ -19,9 +20,34 @@ BATCH_SIZE = 12
 
 image_queue = Queue()
 detection_queue = Queue()
-stop_event = Event()  # Used to signal threads to stop on program exit
+stop_event = Event()  # Used to signal threads to stop
 
 load_dotenv()
+
+def serialize_(class_name : str, conf : int, lat : int, lon : int) -> None:
+    """Caches detections to JSON."""
+    try:
+        if os.path.exists(TARGETS_CACHE):
+            with open(TARGETS_CACHE, 'r') as file:
+                data = json.load(file)
+        else:
+            data = {}
+
+        # Update data with new detections
+        if class_name not in data:
+            data[class_name] = []
+        data[class_name].append({
+            'lat': lat,
+            'lon': lon,
+            'confidence': conf
+        })
+
+        with open(TARGETS_CACHE, 'w') as file:
+            json.dump(data, file, indent=4)
+        print("Detection cached.")
+    except Exception as e:
+        print(f"Error appending to cache: {e}")
+
 
 def run_inference_batch_(base64_images : list[str], client : InferenceHTTPClient) -> list:
     """Runs inference on a batch of images using the detection workflow."""
@@ -88,8 +114,9 @@ def process_data_and_locate_target_(detection : dict, path : str) -> None:
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             json_data = json.load(json_file)
-        # Perform geomatics calculations
-        locate_target(detection, convert_to_txt_(detection['x'], detection['y'], json_data))
+        # Perform geomatics calculations and cache the detection
+        [lat,lon] = locate_target(convert_to_txt_(detection['x'], detection['y'], json_data))
+        serialize_(detection['class'], detection['confidence'], lat, lon)
     else:
         print(f"JSON file not found for {path} - Skipping detection.")
 
