@@ -88,8 +88,6 @@ so this method should be called every like
 the display based on that data.
 '''
 
-<<<<<<< Updated upstream
-=======
 '''
 This function will return the number images under backend\images
 '''
@@ -102,7 +100,6 @@ def get_image_count():
         image_count = len([image for image in os.listdir(IMAGES_DIR) if image.endswith('.jpg')])
         return image_count
 
->>>>>>> Stashed changes
 @app.route('/get_heartbeat', methods=['GET'])
 def get_heartbeat():
     try:
