@@ -47,8 +47,6 @@ def run_inference_batch_(base64_images : list[str], client : InferenceHTTPClient
 
 def pre_process_detect_batch_(
         batch : list[Image.Image], 
-        image_queue : Queue, 
-        detection_queue : Queue, 
         client : InferenceHTTPClient
     ) -> None:
     """Pre-processes images in a batch before running inference."""
@@ -64,13 +62,12 @@ def pre_process_detect_batch_(
             print(f"Error processing image {img_path}: {e}")
         finally:
             image_queue.task_done()
-    detect_batch_(base64_images, batch, detection_queue, client)
+    detect_batch_(base64_images, batch, client)
 
 
 def detect_batch_(
         base64_images : list[str], 
         batch : list[Image.Image], 
-        detection_queue : Queue, 
         client : InferenceHTTPClient
     ) -> None:
     """Detects objects in a batch of images."""
@@ -117,7 +114,7 @@ def convert_to_txt_(x: int, y: int, json_data: dict) -> str:
 # ======================================== Worker Threads ========================================
 # Inference worker thread
 # Run inference on images in batches until no images are queued or the stop event is set.
-def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event : Event) -> None:
+def inference_worker() -> None:
     """Worker thread to process images in batches and run inference."""
     # Inference client
     client = InferenceHTTPClient(
@@ -146,16 +143,16 @@ def inference_worker(image_queue : Queue, detection_queue : Queue, stop_event : 
             except Empty:
                 break  # No more images to process
 
-        pre_process_detect_batch_(batch, image_queue, detection_queue, client)
+        pre_process_detect_batch_(batch, client)
 
 
 # Geomatics worker thread
 # Run and process detections from the queue until no detections queued or the stop event is set.
-def geomatics_worker(detection_queue : Queue, stop_event : Event) -> None:
+def geomatics_worker() -> None:
     """Worker thread to process detections and perform geomatics calculations."""
     while not stop_event.is_set():
-        print("Waiting for detections...")
         try:
+            print("Waiting for detections...")
             img_path, detection = detection_queue.get()  # Wait indefinitely for a detection (blocking call)
             if detection is None or img_path is None:
                 continue    # Skip
@@ -168,7 +165,7 @@ def geomatics_worker(detection_queue : Queue, stop_event : Event) -> None:
 
 # Image watcher thread
 # Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
-def image_watcher(image_queue : Queue, stop_event : Event) -> None:
+def image_watcher() -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
     if not os.path.exists(IMAGE_FOLDER):
         print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
@@ -193,9 +190,9 @@ def image_watcher(image_queue : Queue, stop_event : Event) -> None:
 #========================= Endpoint Utilities =========================
 def start_threads() -> None:
     threads = [
-        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event), daemon=True, name="InferenceWorker"),
-        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
+        Thread(target=image_watcher, daemon=True, name="ImageWatcher"),
+        Thread(target=inference_worker, daemon=True, name="InferenceWorker"),
+        Thread(target=geomatics_worker, daemon=True, name="GeomaticsWorker"),
     ]
     # Start worker threads
     for thread in threads:
