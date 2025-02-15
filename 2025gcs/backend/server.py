@@ -19,7 +19,7 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "192.168.1.67"
+ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -70,16 +70,15 @@ so this method should be called every like
 the display based on that data.
 '''
 
-RASPBERRY_PI_URI = "http://127.0.0.1:5000/heartbeat-validate"
-
-
-@app.route('/getHeartbeat', methods=['GET'])
+@app.route('/get_heartbeat', methods=['GET'])
 def get_heartbeat():
     try:
-        # max timeout of 10 here btw
-        response = requests.get(RASPBERRY_PI_URI, timeout=10)
-        response.raise_for_status()
-        vehicle_data = response.json()
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        print("sending api request")
+        response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
+        print("sent request")
+        heartbeat_data = response.json()
+        vehicle_data.update(heartbeat_data)
 
         '''
             so this is gonna return something like:
@@ -95,18 +94,22 @@ def get_heartbeat():
                 "dlat": 0,
                 "dlon": 0,
                 "dalt": 0,
-                "heading": 0
+                "heading": 0,
+                "num_statellites": 0,
+                "position_uncertainty": 0,
+                "alt_uncertainty": 0,
+                "speed_uncertainty": 0,
+                "heading_uncertainty": 0
             }
         '''
-
-        return jsonify({'success': True, 'vehicle_data': vehicle_data})
+        
+        return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
-
+        print("Heartbeat failure - RocketM5 disconnect")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
-
 
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
@@ -130,8 +133,6 @@ def complete_target():
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
 # return current target
-
-
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
     # Get the index from the query parameters
@@ -222,9 +223,6 @@ def add_coords():
 #     except FileNotFoundError:
 #         return jsonify({"error": "File not found"}), 404
 
-
-# Location Computation
-
 # change all absolute paths to local paths and test
 @app.route('/getImageCount', methods=['GET'])
 def get_image_count():
@@ -288,31 +286,27 @@ def clear_all_images():
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
-
-@app.route('/heartbeat', methods=['GET'])
-def heartbeat():
-    try:
-        response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
-        heartbeat_data = response.json()
-        vehicle_data.update(heartbeat_data)
-        print("Heartbeat success!")
-        return jsonify({'success': True}), 200
-    except requests.exceptions.Timeout:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}),
-    except requests.exceptions.RequestException as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}), 500
     
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    data = { "is_camera_on": CAMERA_STATE }
+    
+    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
+    try:
+        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        print(f"Camera on: {CAMERA_STATE}")
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # AI Processing.
 # Workflow starts when the AI endpoint is called through the frontend.
@@ -338,13 +332,14 @@ def shutdown_workers():
 @app.route('/Clear-Detections-Cache', methods=['POST'])
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
-    try:
-        save_json(os.path.join(DATA_DIR, 'TargetInformation.json'), {})
-        return jsonify({"message": "TargetInformation cache cleared"}), 200
-    except Exception as e:
-        return jsonify({"message": f"Error clearing cache: {e}"}), 500
+    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    save_json(target_info_path, {})
+    return jsonify({"message": "TargetInformation cache cleared"}), 200
 
 
 if __name__ == '__main__':
+    '''
+    May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
+    '''
     app.run(debug=False, host='0.0.0.0', port=80)
 

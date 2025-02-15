@@ -110,9 +110,9 @@ const PhotoPanel = () => {
       const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
-      });
+          "Content-Type": "application/json"
+        }
+      })
 
       const data = await response.json();
 
@@ -158,19 +158,19 @@ const PhotoPanel = () => {
 
 
   return (
+    <div className="flex flex-col w-full h-full rounded-xl shadow-lg overflow-hidden bg-white">
     <div className="flex flex-col w-full h-full">
       <div className="flex flex-grow w-full">
         <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
-          <button
-            onClick={handleToggleCamera}
-            className={`px-3 py-2 rounded ${
-              isCameraOn
-                ? "bg-green-500 hover:bg-green-600"
-                : "bg-red-500 hover:bg-red-600"
-            } text-white flex items-center justify-between`}
-          >
-            📸 {isCameraOn ? "Camera On" : "Camera Off"}
-          </button>
+        <button
+          onClick={handleToggleCamera}
+          className={`px-3 py-2 rounded flex items-center justify-center w-full ${
+            isCameraOn ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+          } text-white`}
+        >
+          📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
+        </button>
+
           <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">
             Save/Send
           </button>
@@ -209,7 +209,7 @@ const PhotoPanel = () => {
           </button>
 
 
-          <div className="flex justify-around flex-grow mx-2 gap-2 overflow-x-auto">
+          <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2  h-20">
             {visiblePhotos.map((photo, index) => (
               <div
                 key={photo}
@@ -247,6 +247,7 @@ const PhotoPanel = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
