@@ -289,6 +289,26 @@ def delete_image():
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
+
+@app.route('/payload', methods=['POST'])
+def payload():
+    data = request.get_json()
+    print(data)
+    # return jsonify({'status': 'success'})
+    # data = json.dumps({"is_camera_on": CAMERA_STATE})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+
+    try:
+        print("Sending payload request for request.")
+        response = requests.post(VEHICLE_API_URL + 'payload_control', data=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
    
 @app.route('/clearAllImages', methods=['POST'])
 def clear_all_images():
