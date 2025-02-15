@@ -209,7 +209,7 @@ const PhotoPanel = () => {
           </button>
 
 
-          <div className="flex justify-around flex-grow mx-2 gap-2 overflow-x-auto">
+          <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2  h-20">
             {visiblePhotos.map((photo, index) => (
               <div
                 key={photo}
