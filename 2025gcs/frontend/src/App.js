@@ -15,8 +15,9 @@ function App() {
 
    useEffect(() => {
     const checkHeartbeat = async () => {
+      console.log("Checking heartbeat");
       try {
-        const response = await fetch("http://127.0.0.1:5000/getHeartbeat");
+        const response = await fetch("http://127.0.0.1:80/get_heartbeat");
         const data = await response.json();
         setBgColor(data.success ? "#90EE90" : "#FF7F7F");
       } catch (error) {
