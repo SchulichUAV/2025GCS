@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sys
 from queue import Queue
+import cv2
 from inference_sdk import InferenceHTTPClient
 from threading import Thread, Event, enumerate
 from detection import image_watcher, inference_worker, geomatics_worker
@@ -12,7 +13,7 @@ sys.path.append(r'') # add the path here
 
 import requests
 import sys
-import requests
+import json
 
 sys.path.append(r'')  # add the path here
 
@@ -35,7 +36,7 @@ image_queue = Queue()
 detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop on program exit
 
-ENDPOINT_IP = "192.168.1.67"
+ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -87,16 +88,15 @@ so this method should be called every like
 the display based on that data.
 '''
 
-RASPBERRY_PI_URI = "http://127.0.0.1:5000/heartbeat-validate"
-
-
-@app.route('/getHeartbeat', methods=['GET'])
+@app.route('/get_heartbeat', methods=['GET'])
 def get_heartbeat():
     try:
-        # max timeout of 10 here btw
-        response = requests.get(RASPBERRY_PI_URI, timeout=10)
-        response.raise_for_status()
-        vehicle_data = response.json()
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        print("sending api request")
+        response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
+        print("sent request")
+        heartbeat_data = response.json()
+        vehicle_data.update(heartbeat_data)
 
         '''
             so this is gonna return something like:
@@ -112,18 +112,22 @@ def get_heartbeat():
                 "dlat": 0,
                 "dlon": 0,
                 "dalt": 0,
-                "heading": 0
+                "heading": 0,
+                "num_statellites": 0,
+                "position_uncertainty": 0,
+                "alt_uncertainty": 0,
+                "speed_uncertainty": 0,
+                "heading_uncertainty": 0
             }
         '''
-
-        return jsonify({'success': True, 'vehicle_data': vehicle_data})
+        
+        return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
-
+        print("Heartbeat failure - RocketM5 disconnect")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
-
 
 @app.route('/completeTarget', methods=['POST'])
 def complete_target():
@@ -302,31 +306,27 @@ def clear_all_images():
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
     return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
-
-@app.route('/heartbeat', methods=['GET'])
-def heartbeat():
-    try:
-        response = requests.get(VEHICLE_API_URL + 'heartbeat', timeout=5)
-        heartbeat_data = response.json()
-        vehicle_data.update(heartbeat_data)
-        print("Heartbeat success!")
-        return jsonify({'success': True}), 200
-    except requests.exceptions.Timeout:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}),
-    except requests.exceptions.RequestException as e:
-        print("Heartbeat failure... RocketM5 disconnect?")
-        return jsonify({'success': False, 'error': str(e)}), 500
     
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    data = { "is_camera_on": CAMERA_STATE }
+    
+    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
+    try:
+        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        print(f"Camera on: {CAMERA_STATE}")
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # AI Processing.
 # Workflow starts when the AI endpoint is called through the frontend.
@@ -372,17 +372,17 @@ def ClearCache():
     save_json(target_info_path, {})
     return jsonify({"message": "TargetInformation cache cleared"}), 200
 
-    try:
-        response = requests.post(VEHICLE_API_URL + 'toggle_camera_state', json=data, timeout=5)
-        print(f"Camera on: {CAMERA_STATE}")
-        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-    except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+# POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
+@app.post('/submit/')
+def submit_data():
+    file = request.files["file"]
+    file.save('./images/' + file.filename) 
+    print('Saved file', file.filename)
+    return 'ok'
 
 if __name__ == '__main__':
+    '''
+    May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
+    '''
     app.run(debug=False, host='0.0.0.0', port=80)
 
