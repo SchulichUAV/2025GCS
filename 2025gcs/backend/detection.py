@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import json
 import queue
+from threading import Thread, Event, enumerate
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
@@ -15,6 +16,10 @@ IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
 
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
+
+image_queue = queue.Queue()
+detection_queue = queue.Queue()
+stop_event = Event()  # Used to signal threads to stop on program exit
 
 load_dotenv()
 
@@ -71,26 +76,32 @@ def detect_batch_(
     """Detects objects in a batch of images."""
     if base64_images:
         results = run_inference_batch_(base64_images, client)
-        if results:
-            for img_path, result in zip(batch, results):
-                for detection in result[0]['consensus_predictions']['predictions']:
-                    detection_queue.put((img_path, detection))
+        if not results:
+            print("No detections found...")
+            return
+        for img_path, result in zip(batch, results):
+            for detection in result[0]['consensus_predictions']['predictions']:
+                detection_queue.put((img_path, detection))
 
 
 def process_data_and_locate_target_(detection : dict, path : str) -> None:
+    """Processes detection data and performs geomatics calculations."""
     json_file_name = os.path.basename(path).replace('.jpg', '.json')  # Get corresponding JSON file
     json_file_path = os.path.join(IMAGE_DATA_FOLDER, json_file_name)
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             json_data = json.load(json_file)
+        # Perform geomatics calculations
         locate_target(detection, convert_to_txt_(detection['x'], detection['y'], json_data))
+    else:
+        print(f"JSON file not found for {path} - Skipping detection.")
 
 
-def convert_to_txt_(x : int, y : int, json_data : dict) -> str:
-    """Converts JSON data to text with field names."""
-    fields = [
-        'lat', 'lon', 'alt', 'roll', 'pitch', 'yaw', 'heading',
-        'position_uncertainty', 'alt_uncertainty', 'speed_uncertainty', 'heading_uncertainty'
+def convert_to_txt_(x: int, y: int, json_data: dict) -> str:
+    """Converts JSON data to text with ordered field values."""
+    ordered_fields = [
+        'lat', 'lon', 'alt', 'yaw', 'pitch', 'roll',
+        'position_uncertainty', 'alt_uncertainty'
     ]
     # Normalize center bounding box x and y coordinates between [0,1]
     # [0.5, 0.5] is the center of the image
@@ -98,9 +109,9 @@ def convert_to_txt_(x : int, y : int, json_data : dict) -> str:
     normalized_y = y / 640
 
     # Extract the required fields from the JSON data
-    json_values = [f"{field}: {json_data[field]}" for field in fields]
-    detection_values = [f"x: {normalized_x}", f"y: {normalized_y}"]
-    return '\n'.join(detection_values + json_values)
+    json_values = [str(json_data[field]) for field in ordered_fields]
+    detection_values = [str(normalized_x), str(normalized_y)]
+    return ','.join(detection_values + json_values)
 
 
 # ======================================== Worker Threads ========================================
@@ -130,7 +141,7 @@ def inference_worker(image_queue : queue.Queue, detection_queue : queue.Queue, s
             try:
                 img_path = image_queue.get_nowait()  # Fetch without waiting
                 if img_path is None:
-                    break
+                    continue    # Skip
                 batch.append(img_path)
             except queue.Empty:
                 break  # No more images to process
@@ -178,3 +189,25 @@ def image_watcher(image_queue : queue.Queue, stop_event) -> None:
         except FileNotFoundError as e:
             print(f"Error accessing directory: {e}")
             break
+
+#========================= Endpoint Utilities =========================
+def start_threads() -> None:
+    threads = [
+        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
+        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event), daemon=True, name="InferenceWorker"),
+        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
+    ]
+    # Start worker threads
+    for thread in threads:
+        thread.start()
+
+def stop_threads() -> None:
+    """Sets the stop event to stop all threads."""
+    stop_event.set()     # Signal threads to stop
+    # Clean up queues
+    image_queue.put(None)
+    detection_queue.put(None)
+    for thread in enumerate():
+        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+            thread.join()
+    stop_event.clear()
