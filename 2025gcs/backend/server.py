@@ -88,6 +88,21 @@ so this method should be called every like
 the display based on that data.
 '''
 
+<<<<<<< Updated upstream
+=======
+'''
+This function will return the number images under backend\images
+'''
+def get_image_count():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    IMAGES_DIR = os.path.join(current_dir, "images")
+    if not os.path.exists(IMAGES_DIR):
+        print(f"Warning: Directory '{IMAGES_DIR}' does not exist. Exiting function.")
+    else:
+        image_count = len([image for image in os.listdir(IMAGES_DIR) if image.endswith('.jpg')])
+        return image_count
+
+>>>>>>> Stashed changes
 @app.route('/get_heartbeat', methods=['GET'])
 def get_heartbeat():
     try:
@@ -326,8 +341,8 @@ def clear_all_images():
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    
-    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    image_count = get_image_count()
+    data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
@@ -335,7 +350,8 @@ def toggle_camera_state():
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
         print(f"Camera on: {CAMERA_STATE}")
-        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
+        print(f"Number of images: {image_count}")
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE, 'imageCount': image_count}), 200
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
     except requests.exceptions.HTTPError as e:
@@ -400,4 +416,3 @@ if __name__ == '__main__':
     May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
     '''
     app.run(debug=False, host='0.0.0.0', port=80)
-
