@@ -162,16 +162,15 @@ const PhotoPanel = () => {
     <div className="flex flex-col w-full h-full">
       <div className="flex flex-grow w-full">
         <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
-          <button
-            onClick={handleToggleCamera}
-            className={`px-3 py-2 rounded ${
-              isCameraOn
-                ? "bg-green-500 hover:bg-green-600"
-                : "bg-red-500 hover:bg-red-600"
-            } text-white flex items-center justify-between`}
-          >
-            📸 {isCameraOn ? "Camera On" : "Camera Off"}
-          </button>
+        <button
+          onClick={handleToggleCamera}
+          className={`px-3 py-2 rounded flex items-center justify-center w-full ${
+            isCameraOn ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+          } text-white`}
+        >
+          📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
+        </button>
+
           <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">
             Save/Send
           </button>
