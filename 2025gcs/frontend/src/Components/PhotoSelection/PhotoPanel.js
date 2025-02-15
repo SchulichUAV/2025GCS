@@ -158,6 +158,7 @@ const PhotoPanel = () => {
 
 
   return (
+    <div className="flex flex-col w-full h-full rounded-xl shadow-lg overflow-hidden bg-white">
     <div className="flex flex-col w-full h-full">
       <div className="flex flex-grow w-full">
         <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
@@ -247,6 +248,7 @@ const PhotoPanel = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
