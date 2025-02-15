@@ -326,7 +326,6 @@ def start_AI_workers():
     except Exception as e:
         return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
-
 @app.route('/AI-Shutdown', methods=['POST'])
 def shutdown_workers():
     """Stops all running worker threads."""
@@ -335,7 +334,6 @@ def shutdown_workers():
         return jsonify({"message": "AI processing stopped"}), 200
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
-
 
 @app.route('/Clear-Detections-Cache', methods=['POST'])
 def ClearCache():
