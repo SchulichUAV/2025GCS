@@ -1,7 +1,7 @@
 import os
 import json
 import re
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
 import sys
 from detection import stop_threads, start_threads
@@ -224,31 +224,30 @@ def add_coords():
 #         return jsonify({"error": "File not found"}), 404
 
 # change all absolute paths to local paths and test
-@app.route('/getImageCount', methods=['GET'])
-def get_image_count():
-    """Endpoint to count the number of images in the images folder."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
+@app.route('/getImages', methods=['GET'])
+def get_images():
+    """Endpoint to get the list of images in the images folder."""
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
-    image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
-    return jsonify({'success': True, 'imageCount': len(image_files)})
+    image_files = sorted([f for f in os.listdir(IMAGES_DIR) if f.endswith('.jpg') and os.path.isfile(os.path.join(IMAGES_DIR, f))])
+    return jsonify({'success': True, 'images': image_files})
+
+@app.route('/images/<filename>', methods=['GET'])
+def serve_image(filename):
+    """Endpoint to serve an image file."""
+    return send_from_directory(IMAGES_DIR, filename)
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
     """Delete an image from the server if it matches 'captureX.jpg' format."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
     data = request.get_json()
     image_name = data.get("imageName")
-
     # Validate image name format: "captureX.jpg"
     if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
     image_path = os.path.join(IMAGES_DIR, image_name)
-
     if os.path.exists(image_path):
         os.remove(image_path)
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
