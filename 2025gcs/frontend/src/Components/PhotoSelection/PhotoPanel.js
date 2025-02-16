@@ -9,6 +9,7 @@ const PhotoPanel = () => {
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState(null);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -34,6 +35,20 @@ const PhotoPanel = () => {
     const intervalId = setInterval(fetchImages, 8000); // Fetch images every 8 seconds
     return () => clearInterval(intervalId);
   }, [mainPhoto]);
+
+  useEffect(() => {
+    // Reset selected point when main photo changes
+    setSelectedPoint(null);
+  }, [mainPhoto]);
+
+  const HandleManualSelectionSend = async () => {
+    console.log("Selected Point:", selectedPoint);
+    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`, {
+      selected_x: selectedPoint.x,
+      selected_y: selectedPoint.y,
+      file_name: mainPhoto
+    });
+  }
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
@@ -122,7 +137,9 @@ const PhotoPanel = () => {
           { method: "POST" }
         );
         const data = await response.json();
+
         if (data.success) {
+          alert("All images have been cleared successfully.");
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
@@ -134,6 +151,13 @@ const PhotoPanel = () => {
         alert("Failed to clear images.");
       }
     }
+  };
+
+  const handleImageClick = (event) => {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    setSelectedPoint({ x, y });
   };
 
   return (
@@ -150,7 +174,7 @@ const PhotoPanel = () => {
               📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
             </button>
 
-            <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">
+            <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400" onClick={HandleManualSelectionSend}>
               Save/Send
             </button>
             <button
@@ -160,13 +184,30 @@ const PhotoPanel = () => {
               Clear
             </button>
           </div>
-          <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px]">
+          <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px] relative">
             {mainPhoto ? (
-              <img
-                src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
-                alt={mainPhoto}
-                className="w-full h-full object-cover"
-              />
+              <>
+                <img
+                  src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
+                  alt={mainPhoto}
+                  className="w-full h-full object-cover"
+                  onClick={handleImageClick}
+                />
+                {selectedPoint && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: selectedPoint.y,
+                      left: selectedPoint.x,
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "red",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                )}
+              </>
             ) : (
               <p className="text-gray-500">No Photo</p>
             )}
@@ -181,19 +222,21 @@ const PhotoPanel = () => {
             >
               &lt;
             </button>
-            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2  h-20">
+            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2 h-20">
               {visiblePhotos.map((photo, index) => (
                 <div
                   key={photo}
                   onClick={() => setMainPhoto(photo)}
-                  className="relative w-16 h-16 border border-gray-300 rounded bg-white flex flex-col items-center justify-center cursor-pointer"
+                  className={`relative w-16 h-16 rounded bg-white flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-shadow ${
+                    mainPhoto === photo ? "border-2 border-blue-500" : ""
+                  }`}
                 >
                   <img
                     src={`http://${ENDPOINT_IP}/images/${photo}`}
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
-                  <div className="text-xs absolute bottom-1 ">
+                  <div className="text-xs mt-1">
                     {photo.replace(/[^\d]/g, "")}
                   </div>
                   <button

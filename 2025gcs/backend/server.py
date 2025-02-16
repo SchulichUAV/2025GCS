@@ -1,15 +1,13 @@
 import os
 import json
-import re
-from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import sys
+import requests
 from detection import stop_threads, start_threads
+from helper import convert_to_txt
+from geo import locate_target
 sys.path.append(r'') # add the path here 
-
-import requests
-import sys
-import requests
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -290,6 +288,20 @@ def toggle_camera_state():
     except requests.exceptions.HTTPError as e:
         return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/manualSelection-geo-calc', methods=['POST'])
+def manual_selection_geo_calc():
+    """Perform geomatics calculations for a manually selected target."""
+    try:
+        data = request.get_json()
+        json_file_name = data['file_name'].replace('.jpg', '.json')
+        convert_to_txt(data['selected_x'], data['selected_y'], load_json(os.path.join(DATA_DIR, 'imageData', json_file_name)))
+        latitude, longitude = locate_target()
+        # send to the vehicle
+        # ...
+        return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # AI Processing.
