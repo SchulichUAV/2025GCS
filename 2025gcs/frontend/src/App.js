@@ -7,6 +7,7 @@ import AIPanel from './Components/AI/AIPanel';
 import FlightModePanel from './Components/FlightMode/FlightModePanel';
 import AltitudePanel from './Components/AltitudePanel/AltitudePanel';
 import data from "./data/TargetInformation.json";
+import { ENDPOINT_IP } from "./config";
 
 function App() {
 
@@ -17,7 +18,7 @@ function App() {
     const checkHeartbeat = async () => {
       console.log("Checking heartbeat");
       try {
-        const response = await fetch("http://127.0.0.1:80/get_heartbeat");
+        const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = await response.json();
         setBgColor(data.success ? "#90EE90" : "#FF7F7F");
       } catch (error) {

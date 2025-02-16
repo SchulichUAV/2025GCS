@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-let BACKEND_IP = '127.0.0.1:80/';
+import { ENDPOINT_IP } from "../../config";
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
@@ -11,7 +10,6 @@ const PhotoPanel = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
 
-  const ENDPOINT_IP = "127.0.0.1";
   useEffect(() => {
     const fetchImages = async () => {
       try {
@@ -95,7 +93,7 @@ const PhotoPanel = () => {
 
   const handleToggleCamera = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
+      const response = await fetch(`http://${ENDPOINT_IP}/toggle_camera_state`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -120,7 +118,7 @@ const PhotoPanel = () => {
     if (userConfirmed) {
       try {
         const response = await fetch(
-          "http://127.0.0.1:5000/clearAllImages",
+          `http://${ENDPOINT_IP}/clearAllImages`,
           { method: "POST" }
         );
         const data = await response.json();
