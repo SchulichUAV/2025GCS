@@ -4,18 +4,12 @@ import re
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sys
-from queue import Queue
-import cv2
-from inference_sdk import InferenceHTTPClient
-from threading import Thread, Event, enumerate
-from detection import image_watcher, inference_worker, geomatics_worker
+from detection import stop_threads, start_threads
 sys.path.append(r'') # add the path here 
 
 import requests
 import sys
-import json
-
-sys.path.append(r'')  # add the path here
+import requests
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -25,25 +19,13 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-
-# Inference client
-client = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com", # Inference API URL
-    api_key="7dEiP3o3XQGNET8f4jlC"  # API key
-)
-
-image_queue = Queue()
-detection_queue = Queue()
-stop_event = Event()  # Used to signal threads to stop on program exit
-
 ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
-
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 
 # Dictionary to maintain vehicle state
 vehicle_data = {
@@ -151,8 +133,6 @@ def complete_target():
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
 # return current target
-
-
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
     # Get the index from the query parameters
@@ -333,37 +313,21 @@ def toggle_camera_state():
 # The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
 @app.route('/AI', methods=['POST'])
 def start_AI_workers():
-    threads = [
-        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
-        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
-    ]
-
-    # Start worker threads
-    for thread in threads:
-        thread.start()
-    
-    return jsonify({"message": "AI processing started"}), 200
-
+    """Starts the worker threads."""
+    try:
+        start_threads()
+        return jsonify({"message": "AI processing started"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
 @app.route('/AI-Shutdown', methods=['POST'])
 def shutdown_workers():
-    """Stops all running AI worker threads."""
-    # Signal threads to stop
-    stop_event.set()
-    # Clean up queues
-    image_queue.put(None)
-    detection_queue.put(None)
-
-    # Wait for all threads to finish
-    for thread in enumerate():
-        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
-            thread.join()
-
-    # Reset stop event for future use
-    stop_event.clear()
-    return jsonify({"message": "AI processing stopped"}), 200
-
+    """Stops all running worker threads."""
+    try:
+        stop_threads()
+        return jsonify({"message": "AI processing stopped"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
 @app.route('/Clear-Detections-Cache', methods=['POST'])
 def ClearCache():
@@ -372,13 +336,6 @@ def ClearCache():
     save_json(target_info_path, {})
     return jsonify({"message": "TargetInformation cache cleared"}), 200
 
-# POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
-@app.post('/submit/')
-def submit_data():
-    file = request.files["file"]
-    file.save('./images/' + file.filename) 
-    print('Saved file', file.filename)
-    return 'ok'
 
 if __name__ == '__main__':
     '''
