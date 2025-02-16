@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import ReactSlider from 'react-slider';
 
 const FlightControl = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -51,25 +51,36 @@ const FlightControl = () => {
     );
   };
 
-  const handleSliderChange = (e) => {
-    setSliderValue(e.target.value);
-    if (e.target.value === '100') unlockSlider();
+  const handleSliderChange = (value) => {
+    setSliderValue(value);
+  };
+
+  const handleSliderAfterChange = (value) => {
+    if (value >= 75) {
+      setSliderValue(100);
+      unlockSlider();
+    } else {
+      setSliderValue(0);
+      relockSlider();
+    }
   };
 
   return (
     <div className="flight-control-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg">
       <div className="flex items-center space-x-4">
-        <img src={lockIcon} alt="Lock Icon" className="w-8 h-8" />
-        <input
-          type="range"
-          min="0"
-          max="100"
+        <img src={lockIcon} alt="Lock Icon" className="w-8 h-8" draggable="false"/>
+        <ReactSlider
+          className="w-full h-2 bg-gray-300 rounded-lg cursor-pointer"
+          thumbClassName="transform -translate-y-1 w-4 h-4 bg-blue-500 rounded-full cursor-pointer focus:outline-none"
+          trackClassName="h-2 rounded-lg"
+          min={0}
+          max={100}
           value={sliderValue}
           onChange={handleSliderChange}
-          className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer focus:outline-none"
+          onAfterChange={handleSliderAfterChange}
         />
-        <span className="text-gray-500">
-          {sliderValue === '100' ? 'Unlocked!' : 'Slide to unlock'}
+        <span className="text-gray-500 select-none">
+          {sliderValue === 100 ? 'Unlocked!' : 'Slide to unlock'}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
