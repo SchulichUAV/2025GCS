@@ -21,7 +21,9 @@ const PhotoPanel = () => {
           console.log("Loaded photos:", loadedPhotos);
           setPhotos(loadedPhotos);
           setVisiblePhotos(loadedPhotos.slice(0, visibleImagesCount));
-          setMainPhoto(loadedPhotos[0]);
+          if (!mainPhoto) {
+            setMainPhoto(loadedPhotos[0]);
+          }
         } else {
           console.error("Error fetching images:", response.data.error);
         }
@@ -33,7 +35,7 @@ const PhotoPanel = () => {
     fetchImages();
     const intervalId = setInterval(fetchImages, 8000); // Fetch images every 8 seconds
     return () => clearInterval(intervalId);
-  }, []);
+  }, [mainPhoto]);
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
