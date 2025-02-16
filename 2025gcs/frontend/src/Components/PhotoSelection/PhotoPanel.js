@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-let BACKEND_IP = '127.0.0.1:80/';
+import { ENDPOINT_IP } from "../../config";
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
@@ -15,7 +14,7 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:80/getImageCount");
+        const response = await axios.get(`http://${ENDPOINT_IP}/getImageCount`);
         if (response.data.success) {
           const imageCount = response.data.imageCount;
           const loadedPhotos = Array.from(
@@ -48,7 +47,7 @@ const PhotoPanel = () => {
 
 
     try {
-      const response = await axios.post("http://localhost:5000/deleteImage", {
+      const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`, {
         imageName: photoToDelete,
       });
 
@@ -107,7 +106,7 @@ const PhotoPanel = () => {
 
   const handleToggleCamera = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
+      const response = await fetch(`http://${ENDPOINT_IP}/toggle_camera_state`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -135,7 +134,7 @@ const PhotoPanel = () => {
     if (userConfirmed) {
       try {
         const response = await fetch(
-          "http://127.0.0.1:5000/clearAllImages",
+          `http://${ENDPOINT_IP}/clearAllImages`,
           { method: "POST" }
         );
         const data = await response.json();

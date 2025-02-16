@@ -1,0 +1,1 @@
+export const ENDPOINT_IP = process.env.REACT_APP_FLASK_IP || "FAILED LOAD";
