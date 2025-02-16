@@ -41,14 +41,22 @@ const PhotoPanel = () => {
     setSelectedPoint(null);
   }, [mainPhoto]);
 
-  const HandleManualSelectionSend = async () => {
+  const handleManualSelectionSend = async () => {
     console.log("Selected Point:", selectedPoint);
-    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`, {
-      selected_x: selectedPoint.x,
-      selected_y: selectedPoint.y,
-      file_name: mainPhoto
-    });
-  }
+    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+  };
+
+  const handleManualCoordSave = async () => {
+    if (mainPhoto && selectedPoint) {
+      await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
+        selected_x: selectedPoint.x,
+        selected_y: selectedPoint.y,
+        file_name: mainPhoto
+      });
+
+      setSelectedPoint(null);
+    }
+  };
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
@@ -174,9 +182,20 @@ const PhotoPanel = () => {
               📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
             </button>
 
-            <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400" onClick={HandleManualSelectionSend}>
-              Save/Send
-            </button>
+            <div className="flex gap-2">
+              <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={!selectedPoint}
+              onClick={handleManualCoordSave}
+              >
+                Save
+              </button>
+              <button
+                onClick={handleManualSelectionSend}
+                className={`px-3 py-2 rounded w-1/2 bg-gray-300 hover:bg-gray-400`}
+              >
+                Send
+              </button>
+            </div>
             <button
               onClick={clearImages}
               className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
@@ -228,7 +247,7 @@ const PhotoPanel = () => {
                   key={photo}
                   onClick={() => setMainPhoto(photo)}
                   className={`relative w-16 h-16 rounded bg-white flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-shadow ${
-                    mainPhoto === photo ? "border-2 border-blue-500" : ""
+                    mainPhoto === photo ? "border-2 border-blue-500" : "border border-gray-300"
                   }`}
                 >
                   <img

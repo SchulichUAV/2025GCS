@@ -289,17 +289,43 @@ def toggle_camera_state():
         return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-    
+
+@app.route('/manualSelection-save', methods=['POST'])
+def manual_selection_save():
+    data = request.get_json()
+    saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords)
+    file_name = data['file_name']
+    if file_name not in coords_data:
+        coords_data[file_name] = []
+
+    coords_data[file_name].append({
+        'x': data['selected_x'],
+        'y': data['selected_y']
+    })
+    save_json(saved_coords, coords_data)
+    return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
+
 @app.route('/manualSelection-geo-calc', methods=['POST'])
 def manual_selection_geo_calc():
     """Perform geomatics calculations for a manually selected target."""
     try:
-        data = request.get_json()
-        json_file_name = data['file_name'].replace('.jpg', '.json')
-        convert_to_txt(data['selected_x'], data['selected_y'], load_json(os.path.join(DATA_DIR, 'imageData', json_file_name)))
+        saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+        with open(saved_coords, "r") as file:
+            data = json.load(file)
+
+        txt_lines = []
+        # Iterate over each image entry
+        for image_name, coordinates in data.items():
+            for coord in coordinates:
+                x, y = coord["x"], coord["y"]
+                txt_lines.append(f"{image_name},{x},{y}")
+        print(txt_lines)
         latitude, longitude = locate_target()
-        # send to the vehicle
-        # ...
+
+        # send to the vehicle ...
+        
+        save_json(saved_coords, {}) # Clear the saved coordinates
         return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
