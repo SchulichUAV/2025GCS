@@ -255,35 +255,21 @@ def delete_image():
    
 @app.route('/clearAllImages', methods=['POST'])
 def clear_all_images():
-    """Delete all images from the images directory in both frontend and backend."""
-    # IMAGE_DIRS = [
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images",
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//backend//images"
-    # ]
-
-    IMAGE_DIRS = [
-        "../frontend//public//images",
-        "./images"
-    ]
-
-    deleted_files = []
+    """Delete all images from the images directory."""
     errors = []
-
-    for img_dir in IMAGE_DIRS:
-        if os.path.exists(img_dir):
-            for filename in os.listdir(img_dir):
-                file_path = os.path.join(img_dir, filename)
-                if os.path.isfile(file_path) and re.match(r"^capture\d+\.jpg$", filename):
-                    try:
-                        os.remove(file_path)
-                        deleted_files.append(filename)
-                    except Exception as e:
-                        errors.append(str(e))
+    if os.path.exists(IMAGES_DIR):
+        for filename in os.listdir(IMAGES_DIR):
+            file_path = os.path.join(IMAGES_DIR, filename)
+            if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    errors.append(str(e))
 
     if errors:
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
-    return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
+    return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
     
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():

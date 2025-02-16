@@ -123,7 +123,6 @@ const PhotoPanel = () => {
         );
         const data = await response.json();
         if (data.success) {
-          alert("All images have been cleared successfully.");
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
