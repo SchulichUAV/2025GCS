@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { DRONE_IP } from '../../config';
 
 const FlightControl = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -7,13 +8,12 @@ const FlightControl = () => {
   const [lockIcon, setLockIcon] = useState(
     'https://as1.ftcdn.net/v2/jpg/09/71/35/30/1000_F_971353035_aVx5TB2fKRp9pd6EKtuGFN6CalQekcQ3.jpg'
   );
-  const ENDPOINT_IP = '192.168.1.67';
 
   const handleSetFlightMode = async (mode_id) => {
     if (!isUnlocked) return;
     relockSlider();
     const data = { mode_id };
-    await fetch(`http://${ENDPOINT_IP}:5000/set_flight_mode`, {
+    await fetch(`http://${DRONE_IP}:5000/set_flight_mode`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ const FlightControl = () => {
     if (!isUnlocked) return;
     relockSlider();
     const data = { altitude };
-    await fetch(`http://${ENDPOINT_IP}:5000/takeoff`, {
+    await fetch(`http://${DRONE_IP}:5000/takeoff`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
