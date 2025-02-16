@@ -223,7 +223,7 @@ def add_coords():
 #     except FileNotFoundError:
 #         return jsonify({"error": "File not found"}), 404
 
-# change all absolute paths to local paths and test
+
 @app.route('/getImages', methods=['GET'])
 def get_images():
     """Endpoint to get the list of images in the images folder."""
@@ -240,11 +240,10 @@ def serve_image(filename):
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
-    """Delete an image from the server if it matches 'captureX.jpg' format."""
+    """Delete an image from the server"""
     data = request.get_json()
     image_name = data.get("imageName")
-    # Validate image name format: "captureX.jpg"
-    if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
+    if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
     image_path = os.path.join(IMAGES_DIR, image_name)
