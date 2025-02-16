@@ -11,14 +11,11 @@ const PhotoPanel = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
 
+  const ENDPOINT_IP = "127.0.0.1";
   useEffect(() => {
     const fetchImages = async () => {
       try {
-<<<<<<< Updated upstream
-        const response = await axios.get("http://127.0.0.1:80/getImageCount");
-=======
         const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
->>>>>>> Stashed changes
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           console.log("Loaded photos:", loadedPhotos);
@@ -34,6 +31,8 @@ const PhotoPanel = () => {
     };
 
     fetchImages();
+    const intervalId = setInterval(fetchImages, 8000); // Fetch images every 8 seconds
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleDeletePhoto = async (indexToDelete) => {
