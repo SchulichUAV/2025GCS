@@ -24,7 +24,7 @@ stop_event = Event()  # Used to signal threads to stop
 
 load_dotenv()
 
-def serialize_(class_name : str, conf : int, lat : int, lon : int) -> None:
+def serialize_(class_name : str, conf : float, lat : float, lon : float) -> None:
     """Caches detections to JSON."""
     try:
         if os.path.exists(TARGETS_CACHE):
@@ -122,7 +122,7 @@ def process_data_and_locate_target_(detection : dict, path : str) -> None:
         print(f"JSON file not found for {path} - Skipping detection.")
 
 
-def convert_to_txt_(x: int, y: int, json_data: dict) -> None:
+def convert_to_txt_(x: float, y: float, json_data: dict) -> None:
     """Converts JSON data to text with ordered field values."""
     ordered_fields = [
         'lat', 'lon', 'alt', 'yaw', 'pitch', 'roll',
