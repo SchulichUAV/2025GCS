@@ -84,7 +84,7 @@ class Targets:
         Get the list of active targets.
         """
 
-        target_info_path = os.path.join(DATA_DIR, 'targets.json')
+        target_info_path = os.path.join(DATA_DIRECTORY, 'targets.json')
         data = load_json(target_info_path)
         return [Target.from_dict(target_data) for target_data in data.get('active', [])]
     
@@ -93,7 +93,7 @@ class Targets:
         Get the list of completed targets.
         """
 
-        target_info_path = os.path.join(DATA_DIR, 'targets.json')
+        target_info_path = os.path.join(DATA_DIRECTORY, 'targets.json')
         data = load_json(target_info_path)
         return [Target.from_dict(target_data) for target_data in data.get('completed', [])]
     
@@ -108,7 +108,7 @@ class Targets:
         if completed is None:
             completed = Targets.get_completed_targets()
 
-        target_info_path = os.path.join(DATA_DIR, 'targets.json')
+        target_info_path = os.path.join(DATA_DIRECTORY, 'targets.json')
         data = {
             'active': [target.to_dict() for target in active],
             'completed': [target.to_dict() for target in completed]
