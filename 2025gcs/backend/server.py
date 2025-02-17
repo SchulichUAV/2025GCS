@@ -91,7 +91,7 @@ the display based on that data.
 '''
 This function will return the number images under backend\images
 '''
-def get_image_count():
+def get_existing_image_count():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     IMAGES_DIR = os.path.join(current_dir, "images")
     if not os.path.exists(IMAGES_DIR):
@@ -338,7 +338,7 @@ def clear_all_images():
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    image_count = get_image_count()
+    image_count = get_existing_image_count()
     data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
@@ -348,7 +348,7 @@ def toggle_camera_state():
         response.raise_for_status()  # Raise an exception for HTTP errors
         print(f"Camera on: {CAMERA_STATE}")
         print(f"Number of images: {image_count}")
-        return jsonify({'success': True, 'cameraState': CAMERA_STATE, 'imageCount': image_count}), 200
+        return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
     except requests.exceptions.HTTPError as e:
