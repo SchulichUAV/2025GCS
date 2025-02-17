@@ -32,7 +32,7 @@ const PhotoPanel = () => {
     };
 
     fetchImages();
-    const intervalId = setInterval(fetchImages, 8000); // Fetch images every 8 seconds
+    const intervalId = setInterval(fetchImages, 10000); // Fetch images every 10 seconds
     return () => clearInterval(intervalId);
   }, [mainPhoto]);
 
@@ -48,13 +48,23 @@ const PhotoPanel = () => {
 
   const handleManualCoordSave = async () => {
     if (mainPhoto && selectedPoint) {
-      await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
-        selected_x: selectedPoint.x,
-        selected_y: selectedPoint.y,
-        file_name: mainPhoto
-      });
-
-      setSelectedPoint(null);
+      const imgElement = document.querySelector(`img[alt="${mainPhoto}"]`);
+      if (imgElement) {
+        // Normalize selected point to 640x640 image size
+        //(necessary for accuracy on geo calculations as our images are considered 640x640)
+        const rect = imgElement.getBoundingClientRect();
+        const relativeX = selectedPoint.x / rect.width;
+        const relativeY = selectedPoint.y / rect.height;
+        const normalizedX = relativeX * 640;
+        const normalizedY = relativeY * 640;
+  
+        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
+          selected_x: normalizedX,
+          selected_y: normalizedY,
+          file_name: mainPhoto
+        });
+        setSelectedPoint(null);
+      }
     }
   };
 
@@ -145,7 +155,6 @@ const PhotoPanel = () => {
           { method: "POST" }
         );
         const data = await response.json();
-
         if (data.success) {
           alert("All images have been cleared successfully.");
           setPhotos([]);
