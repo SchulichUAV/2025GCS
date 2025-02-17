@@ -43,7 +43,7 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     console.log("Selected Point:", selectedPoint);
-    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+    await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
   };
 
   const handleManualCoordSave = async () => {

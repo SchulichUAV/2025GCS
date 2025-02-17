@@ -5,7 +5,6 @@ from flask_cors import CORS
 import sys
 import requests
 from detection import stop_threads, start_threads
-from helper import convert_to_txt
 from geo import locate_target
 sys.path.append(r'') # add the path here 
 
@@ -324,7 +323,7 @@ def manual_selection_geo_calc():
         latitude, longitude = locate_target()
 
         # send to the vehicle ...
-        
+
         save_json(saved_coords, {}) # Clear the saved coordinates
         return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
     except Exception as e:
