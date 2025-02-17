@@ -47,7 +47,7 @@ const PhotoPanel = () => {
     console.log("Selected Point:", selectedPoint);
     await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
     setMessage(`All selected points sent`);
-    setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
+    setTimeout(() => setMessage(""), 3000);
   };
 
   const handleManualCoordSave = async () => {
@@ -69,7 +69,7 @@ const PhotoPanel = () => {
         });
         setSelectedPoint(null);
         setMessage("Selecion saved");
-        setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
+        setTimeout(() => setMessage(""), 3000);
       }
     }
   };
@@ -105,9 +105,11 @@ const PhotoPanel = () => {
         setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
       } else {
         setError("Error deleting image");
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
       setError("Error deleting image");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -145,9 +147,11 @@ const PhotoPanel = () => {
         setIsCameraOn(data.cameraState);
       } else {
         setError("Error toggling camera");
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
       setError("Request failed");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -168,10 +172,11 @@ const PhotoPanel = () => {
           setMainPhoto(null);
         } else {
           setError("Error clearing images");
+          setTimeout(() => setError(""), 3000);
         }
       } catch (error) {
-        console.error("Error clearing images:", error);
         setError("Error clearing images");
+        setTimeout(() => setError(""), 3000);
       }
     }
   };
