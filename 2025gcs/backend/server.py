@@ -212,7 +212,7 @@ def targets(id):
 @app.route('/coordinates', methods=['GET', 'POST', 'DELETE'])
 def coordinates():
     if request.method == 'GET':
-        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        coords_data_path = os.path.join(DATA_DIRECTORY, 'SavedCoord.json')
         coords_data = load_json(coords_data_path)
         return jsonify({'coordinates': coords_data.get('coordinates', [])})
     
@@ -224,7 +224,7 @@ def coordinates():
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'success': False, 'error': 'Coordinates must be provided in JSON data.'}), 400
         
-        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        coords_data_path = os.path.join(DATA_DIRECTORY, 'SavedCoord.json')
         coords_data = load_json(coords_data_path)
         
         latitude = data['latitude']
@@ -247,7 +247,7 @@ def coordinates():
         return jsonify({'success': True})
     
     elif request.method == 'DELETE':
-        coords_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
+        coords_data_path = os.path.join(DATA_DIRECTORY, 'SavedCoord.json')
         save_json(coords_data_path, {'coordinates': []})
         return jsonify({'success': True})
     
