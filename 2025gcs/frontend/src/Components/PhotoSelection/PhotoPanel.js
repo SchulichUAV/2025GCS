@@ -10,6 +10,8 @@ const PhotoPanel = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -44,6 +46,8 @@ const PhotoPanel = () => {
   const handleManualSelectionSend = async () => {
     console.log("Selected Point:", selectedPoint);
     await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+    setMessage(`All selected points sent`);
+    setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
   };
 
   const handleManualCoordSave = async () => {
@@ -64,6 +68,8 @@ const PhotoPanel = () => {
           file_name: mainPhoto
         });
         setSelectedPoint(null);
+        setMessage("Selecion saved");
+        setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
       }
     }
   };
@@ -80,7 +86,6 @@ const PhotoPanel = () => {
       });
 
       if (response.data.success) {
-        console.log(`Deleted: ${photoToDelete}`);
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
         setPhotos(updatedPhotos);
 
@@ -96,11 +101,13 @@ const PhotoPanel = () => {
         if (photoToDelete === mainPhoto) {
           setMainPhoto(updatedPhotos[newStartIndex] || null);
         }
+        setMessage(`${photoToDelete} deleted`);
+        setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
       } else {
-        console.error("Error deleting image:", response.data.error);
+        setError("Error deleting image");
       }
     } catch (error) {
-      console.error("Failed to delete image:", error);
+      setError("Error deleting image");
     }
   };
 
@@ -137,10 +144,10 @@ const PhotoPanel = () => {
       if (response.ok) {
         setIsCameraOn(data.cameraState);
       } else {
-        console.error("Error toggling camera:", data.error);
+        setError("Error toggling camera");
       }
     } catch (error) {
-      console.error("Request failed:", error);
+      setError("Request failed");
     }
   };
 
@@ -160,11 +167,11 @@ const PhotoPanel = () => {
           setVisiblePhotos([]);
           setMainPhoto(null);
         } else {
-          alert("Error: " + data.error);
+          setError("Error clearing images");
         }
       } catch (error) {
         console.error("Error clearing images:", error);
-        alert("Failed to clear images.");
+        setError("Error clearing images");
       }
     }
   };
@@ -210,6 +217,16 @@ const PhotoPanel = () => {
             >
               Clear
             </button>
+            {message && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mt-2">
+                <span className="block sm:inline">{message}</span>
+              </div>
+            )}
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-2">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
           </div>
           <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px] relative">
             {mainPhoto ? (
