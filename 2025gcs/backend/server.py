@@ -45,6 +45,13 @@ CAMERA_STATE = False
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
 
+PAYLOAD_BAY_OPEN = {
+    "servo1": False,
+    "servo2": False,
+    "servo3": False,
+    "servo4": False
+}
+
 # Dictionary to maintain vehicle state
 vehicle_data = {
     "last_time": 0,
@@ -97,29 +104,6 @@ def get_heartbeat():
         print("sent request")
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
-
-        '''
-            so this is gonna return something like:
-            vehicle_data = {
-                "last_time": 0,
-                "lat": 0,
-                "lon": 0,
-                "rel_alt": 0,
-                "alt": 0,
-                "roll": 0,
-                "pitch": 0,
-                "yaw": 0,
-                "dlat": 0,
-                "dlon": 0,
-                "dalt": 0,
-                "heading": 0,
-                "num_statellites": 0,
-                "position_uncertainty": 0,
-                "alt_uncertainty": 0,
-                "speed_uncertainty": 0,
-                "heading_uncertainty": 0
-            }
-        '''
         
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
@@ -290,17 +274,38 @@ def delete_image():
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
 
-@app.route('/payload', methods=['POST'])
-def payload():
+@app.route('/payload_toggle', methods=['POST'])
+def payload_toggle():
     data = request.get_json()
-    print(data)
-    # return jsonify({'status': 'success'})
-    # data = json.dumps({"is_camera_on": CAMERA_STATE})
+    print(f"Received payload_toggle request for: {data.get('payload_id')}")
+    try:
+        payload_id = data["payload_id"]
+        if payload_id == 1:
+            requested_status = not PAYLOAD_BAY_OPEN["servo1"]
+        elif payload_id == 2:
+            requested_status = not PAYLOAD_BAY_OPEN["servo2"]
+        elif payload_id == 3:
+            requested_status = not PAYLOAD_BAY_OPEN["servo3"]
+        elif payload_id == 4:
+            requested_status = not PAYLOAD_BAY_OPEN["servo4"]
+    except KeyError:
+        print(f"Key error when accessing frontend request for payload toggle: {e}")
+    except Exception as e:
+        print(f"Error when toggling payload: {e}")
+
+    outgoing_data = {"payload_id": payload_id, "payload_state": requested_status}
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
-        print("Sending payload request for request.")
-        response = requests.post(VEHICLE_API_URL + 'payload_control', data=data, headers=headers)
+        response = requests.post(VEHICLE_API_URL + 'payload_manual_control', data=outgoing_data, headers=headers)
+        if payload_id == 1 and response.ok:
+            PAYLOAD_BAY_OPEN["servo1"] = requested_status
+        elif payload_id == 2 and response.ok:
+            PAYLOAD_BAY_OPEN["servo2"] = requested_status
+        elif payload_id == 3 and response.ok:
+            PAYLOAD_BAY_OPEN["servo3"] = requested_status
+        elif payload_id == 4 and response.ok:
+            PAYLOAD_BAY_OPEN["servo4"] = requested_status
         response.raise_for_status()  # Raise an exception for HTTP errors
         return jsonify({'success': True}), 200
     except requests.exceptions.Timeout:
@@ -309,6 +314,24 @@ def payload():
         return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/payload_release', methods=['POST'])
+def payload_release():
+    data = request.get_json()
+    print(f"Received payload_release request for: {data.get('payload_id')}")
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_release', data=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
    
 @app.route('/clearAllImages', methods=['POST'])
 def clear_all_images():

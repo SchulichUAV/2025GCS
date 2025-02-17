@@ -66,22 +66,57 @@ const PayloadPanel = () => {
             {droneType === 'Fixed Wing' && (
               <div>
                 <div className="grid grid-cols-2 gap-6">
-                  {['Payload Bay 1', 'Payload Bay 2', 'Payload Bay 3', 'Payload Bay 4'].map((bay, index) => (
-                    <div
-                      key={index}
-                      className="p-4 border border-gray-300 rounded-md flex flex-col items-center"
-                    >
-                      <h3 className="text-lg font-bold mb-2">{bay}</h3>
-                      <div className="flex space-x-4">
-                        <button className="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded-md">
-                          Release
-                        </button>
-                        <button className="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded-md">
-                          Close
-                        </button>
+                  {['Payload Bay 1', 'Payload Bay 2', 'Payload Bay 3', 'Payload Bay 4'].map((bay, index) => {
+                    const payloadId = index + 1;
+                    
+                    const handleRelease = async () => {
+                      try {
+                        const response = await fetch('http://127.0.0.1:80/payload_release', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ payload_id: payloadId }),
+                        });
+                        if (!response.ok) throw new Error('Failed to release payload');
+                        console.log(`Payload ${payloadId} released`);
+                      } catch (error) {
+                        console.error('Error:', error);
+                      }
+                    };
+                    
+                    const handleToggle = async () => {
+                      try {
+                        const response = await fetch('http://127.0.0.1:80/payload_toggle', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ payload_id: payloadId }),
+                        });
+                        if (!response.ok) throw new Error('Failed to toggle payload control');
+                        console.log(`Payload ${payloadId} manual control toggled`);
+                      } catch (error) {
+                        console.error('Error:', error);
+                      }
+                    };
+                    
+                    return (
+                      <div key={index} className="p-4 border border-gray-300 rounded-md flex flex-col items-center">
+                        <h3 className="text-lg font-bold mb-2">{bay}</h3>
+                        <div className="flex space-x-4">
+                          <button 
+                            onClick={handleRelease} 
+                            className="bg-gray-500 hover:bg-gray-400 text-white px-2 py-2 rounded-md"
+                          >
+                            Release
+                          </button>
+                          <button 
+                            onClick={handleToggle} 
+                            className="bg-gray-500 hover:bg-gray-400 text-white px-2 py-2 rounded-md"
+                          >
+                            Toggle
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
