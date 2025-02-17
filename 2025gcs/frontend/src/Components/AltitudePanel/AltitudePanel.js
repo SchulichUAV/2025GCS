@@ -1,5 +1,6 @@
 import React from 'react'
 import axios from 'axios';
+import { ENDPOINT_IP } from "../../config";
 
 const AltitudePanel = () => {
   // Takeoff altitude button handler, sends request to the backend.
@@ -12,7 +13,7 @@ const AltitudePanel = () => {
       return;
     }
 
-    axios.post('http://localhost:5000/takeoff', { // send a POST request to the server
+    axios.post(`${ENDPOINT_IP}/takeoff`, { // send a POST request to the server
       altitude // ES6 shorthand for altitude: altitude
     }).then((response) => {
       if (response.status === 200) {
@@ -35,7 +36,7 @@ const AltitudePanel = () => {
       return;
     }
 
-    axios.post('http://localhost:5000/goto', { // send a POST request to the server, placeholder endpoint
+    axios.post(`${ENDPOINT_IP}/goto`, { // send a POST request to the server, placeholder endpoint
       altitude // ES6 shorthand for altitude: altitude
     }).then((response) => {
       if (response.status === 200) {
