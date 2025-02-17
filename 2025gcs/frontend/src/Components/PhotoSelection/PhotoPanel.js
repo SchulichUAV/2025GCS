@@ -9,6 +9,7 @@ const PhotoPanel = () => {
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState(null);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -31,9 +32,41 @@ const PhotoPanel = () => {
     };
 
     fetchImages();
-    const intervalId = setInterval(fetchImages, 8000); // Fetch images every 8 seconds
+    const intervalId = setInterval(fetchImages, 10000); // Fetch images every 10 seconds
     return () => clearInterval(intervalId);
   }, [mainPhoto]);
+
+  useEffect(() => {
+    // Reset selected point when main photo changes
+    setSelectedPoint(null);
+  }, [mainPhoto]);
+
+  const handleManualSelectionSend = async () => {
+    console.log("Selected Point:", selectedPoint);
+    await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+  };
+
+  const handleManualCoordSave = async () => {
+    if (mainPhoto && selectedPoint) {
+      const imgElement = document.querySelector(`img[alt="${mainPhoto}"]`);
+      if (imgElement) {
+        // Normalize selected point to 640x640 image size
+        //(necessary for accuracy on geo calculations as our images are considered 640x640)
+        const rect = imgElement.getBoundingClientRect();
+        const relativeX = selectedPoint.x / rect.width;
+        const relativeY = selectedPoint.y / rect.height;
+        const normalizedX = relativeX * 640;
+        const normalizedY = relativeY * 640;
+  
+        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
+          selected_x: normalizedX,
+          selected_y: normalizedY,
+          file_name: mainPhoto
+        });
+        setSelectedPoint(null);
+      }
+    }
+  };
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
@@ -136,6 +169,13 @@ const PhotoPanel = () => {
     }
   };
 
+  const handleImageClick = (event) => {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    setSelectedPoint({ x, y });
+  };
+
   return (
     <div className="flex flex-col w-full h-full rounded-xl shadow-lg overflow-hidden bg-white">
       <div className="flex flex-col w-full h-full">
@@ -150,9 +190,20 @@ const PhotoPanel = () => {
               📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
             </button>
 
-            <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">
-              Save/Send
-            </button>
+            <div className="flex gap-2">
+              <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={!selectedPoint}
+              onClick={handleManualCoordSave}
+              >
+                Save
+              </button>
+              <button
+                onClick={handleManualSelectionSend}
+                className={`px-3 py-2 rounded w-1/2 bg-gray-300 hover:bg-gray-400`}
+              >
+                Send
+              </button>
+            </div>
             <button
               onClick={clearImages}
               className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
@@ -160,13 +211,30 @@ const PhotoPanel = () => {
               Clear
             </button>
           </div>
-          <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px]">
+          <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px] relative">
             {mainPhoto ? (
-              <img
-                src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
-                alt={mainPhoto}
-                className="w-full h-full object-cover"
-              />
+              <>
+                <img
+                  src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
+                  alt={mainPhoto}
+                  className="w-full h-full object-cover"
+                  onClick={handleImageClick}
+                />
+                {selectedPoint && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: selectedPoint.y,
+                      left: selectedPoint.x,
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "red",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                )}
+              </>
             ) : (
               <p className="text-gray-500">No Photo</p>
             )}
@@ -181,19 +249,21 @@ const PhotoPanel = () => {
             >
               &lt;
             </button>
-            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2  h-20">
+            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2 h-20">
               {visiblePhotos.map((photo, index) => (
                 <div
                   key={photo}
                   onClick={() => setMainPhoto(photo)}
-                  className="relative w-16 h-16 border border-gray-300 rounded bg-white flex flex-col items-center justify-center cursor-pointer"
+                  className={`relative w-16 h-16 rounded bg-white flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-shadow ${
+                    mainPhoto === photo ? "border-2 border-blue-500" : "border border-gray-300"
+                  }`}
                 >
                   <img
                     src={`http://${ENDPOINT_IP}/images/${photo}`}
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
-                  <div className="text-xs absolute bottom-1 ">
+                  <div className="text-xs mt-1">
                     {photo.replace(/[^\d]/g, "")}
                   </div>
                   <button

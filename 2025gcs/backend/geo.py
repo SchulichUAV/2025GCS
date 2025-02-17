@@ -1,7 +1,4 @@
 import time
-import os
-
-ODM_TAGS = os.path.join(os.path.dirname(__file__), 'data', 'odm_geotags.txt')
 
 def locate_target():
     """Performs geomatics calculations."""

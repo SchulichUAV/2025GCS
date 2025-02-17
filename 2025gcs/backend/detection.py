@@ -9,11 +9,8 @@ from threading import Thread, Event, enumerate
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
-from geo import locate_target, ODM_TAGS
-
-TARGETS_CACHE = os.path.join(os.path.dirname(__file__), 'data', 'TargetInformation.json')
-IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'images')
-IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
+from geo import locate_target
+from helper import convert_to_txt, serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
 
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
@@ -23,31 +20,6 @@ detection_queue = Queue()
 stop_event = Event()  # Used to signal threads to stop
 
 load_dotenv()
-
-def serialize_(class_name : str, conf : float, lat : float, lon : float) -> None:
-    """Caches detections to JSON."""
-    try:
-        if os.path.exists(TARGETS_CACHE):
-            with open(TARGETS_CACHE, 'r') as file:
-                data = json.load(file)
-        else:
-            data = {}
-
-        # Update data with new detections
-        if class_name not in data:
-            data[class_name] = []
-        data[class_name].append({
-            'lat': lat,
-            'lon': lon,
-            'confidence': conf
-        })
-
-        with open(TARGETS_CACHE, 'w') as file:
-            json.dump(data, file, indent=4)
-        print("Detection cached.")
-    except Exception as e:
-        print(f"Error appending to cache: {e}")
-
 
 def run_inference_batch_(base64_images : list[str], client : InferenceHTTPClient) -> list:
     """Runs inference on a batch of images using the detection workflow."""
@@ -115,25 +87,11 @@ def process_data_and_locate_target_(detection : dict, path : str) -> None:
         with open(json_file_path, 'r') as json_file:
             json_data = json.load(json_file)
         # Perform geomatics calculations and cache the detection
-        convert_to_txt_(detection['x'], detection['y'], json_data)
-        [lat,lon] = locate_target()
-        serialize_(detection['class'], detection['confidence'], lat, lon)
+        convert_to_txt(detection['x'], detection['y'], json_data)
+        lat, lon = locate_target()
+        serialize(detection['class'], detection['confidence'], lat, lon)
     else:
         print(f"JSON file not found for {path} - Skipping detection.")
-
-
-def convert_to_txt_(x: float, y: float, json_data: dict) -> None:
-    """Converts JSON data to text with ordered field values."""
-    ordered_fields = [
-        'lat', 'lon', 'alt', 'yaw', 'pitch', 'roll',
-        'position_uncertainty', 'alt_uncertainty'
-    ]
-    # Extract the required fields from the JSON data
-    json_values = [str(json_data[field]) for field in ordered_fields]
-    detection_values = [str(x), str(y)]
-    with open(ODM_TAGS, 'a') as file:
-        file.write(','.join(detection_values + json_values) + '\n')
-
 
 # ======================================== Worker Threads ========================================
 # Inference worker thread
