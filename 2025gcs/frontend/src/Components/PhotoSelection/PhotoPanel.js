@@ -20,7 +20,7 @@ const PhotoPanel = () => {
           const imageCount = response.data.imageCount;
           const loadedPhotos = Array.from(
             { length: imageCount },
-            (_, i) => `capture${i}.jpg`
+            (_, i) => i.toString().padStart(5, '0') + '.jpg',
           );
           setPhotos(loadedPhotos);
           setVisiblePhotos(loadedPhotos.slice(0, visibleImagesCount));
@@ -107,6 +107,7 @@ const PhotoPanel = () => {
 
   const handleToggleCamera = async () => {
     try {
+      setIsCameraOn(!isCameraOn);
       const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
         method: "POST",
         headers: {
@@ -117,7 +118,8 @@ const PhotoPanel = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setIsCameraOn(data.cameraState);
+        // console.log("data.cameraState is: " + data.cameraState);
+        // setIsCameraOn(data.cameraState);
       } else {
         console.error("Error toggling camera:", data.error);
       }

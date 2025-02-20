@@ -93,7 +93,7 @@ This function will return the number images under backend\images
 '''
 def get_existing_image_count():
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    IMAGES_DIR = os.path.join(current_dir, "images")
+    IMAGES_DIR = os.path.join(current_dir, "data/images")
     if not os.path.exists(IMAGES_DIR):
         print(f"Warning: Directory '{IMAGES_DIR}' does not exist. Exiting function.")
     else:
@@ -104,40 +104,15 @@ def get_existing_image_count():
 def get_heartbeat():
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-        print("sending api request")
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
-        print("sent request")
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
-
-        '''
-            so this is gonna return something like:
-            vehicle_data = {
-                "last_time": 0,
-                "lat": 0,
-                "lon": 0,
-                "rel_alt": 0,
-                "alt": 0,
-                "roll": 0,
-                "pitch": 0,
-                "yaw": 0,
-                "dlat": 0,
-                "dlon": 0,
-                "dalt": 0,
-                "heading": 0,
-                "num_statellites": 0,
-                "position_uncertainty": 0,
-                "alt_uncertainty": 0,
-                "speed_uncertainty": 0,
-                "heading_uncertainty": 0
-            }
-        '''
         
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
         print("Heartbeat failure - RocketM5 disconnect")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 200
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
 
@@ -274,13 +249,12 @@ def add_coords():
 @app.route('/getImageCount', methods=['GET'])
 def get_image_count():
     """Endpoint to count the number of images in the images folder."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
+    IMAGES_DIR = "./data/images/"
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
     image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
-    return jsonify({'success': True, 'imageCount': len(image_files)})
+    return jsonify({'success': True, 'imageCount': len(image_files)}), 200
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
@@ -343,10 +317,9 @@ def toggle_camera_state():
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
-        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Camera on: {CAMERA_STATE}")
         print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
@@ -404,7 +377,10 @@ def ClearCache():
 @app.post('/submit/')
 def submit_data():
     file = request.files["file"]
-    file.save('./images/' + file.filename) 
+    if file.mimetype == "application/json":
+        file.save('./data/imageData/' + file.filename)
+    else:
+        file.save('./data/images/' + file.filename) 
     print('Saved file', file.filename)
     return 'ok'
 
