@@ -18,11 +18,6 @@ const PhotoPanel = () => {
       try {
         const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
         if (response.data.success) {
-          // const imageCount = response.data.imageCount;
-          // const loadedPhotos = Array.from(
-          //   { length: imageCount },
-          //   (_, i) => i.toString().padStart(5, '0') + '.jpg',
-          // );
           const loadedPhotos = response.data.images;
           console.log("Loaded photos:", loadedPhotos);
           setPhotos(loadedPhotos);
