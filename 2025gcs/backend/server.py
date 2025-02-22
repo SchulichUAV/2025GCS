@@ -1,21 +1,12 @@
 import os
 import json
-import re
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import sys
-from queue import Queue
-# from inference_sdk import InferenceHTTPClient
-from threading import Thread, Event, enumerate
-from detection import image_watcher, inference_worker, geomatics_worker
+import requests
+# from detection import stop_threads, start_threads
+from geo import locate_target
 sys.path.append(r'') # add the path here 
-
-import requests
-import sys
-import requests
-import json
-
-sys.path.append(r'')  # add the path here
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -25,25 +16,13 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-
-# Inference client
-# client = InferenceHTTPClient(
-#     api_url="https://detect.roboflow.com", # Inference API URL
-#     api_key="7dEiP3o3XQGNET8f4jlC"  # API key
-# )
-
-image_queue = Queue()
-detection_queue = Queue()
-stop_event = Event()  # Used to signal threads to stop on program exit
-
 ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
-
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 
 # Dictionary to maintain vehicle state
 vehicle_data = {
@@ -138,8 +117,6 @@ def complete_target():
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
 # return current target
-
-
 @app.route('/getCurrentTarget', methods=['GET'])
 def get_current_target():
     # Get the index from the query parameters
@@ -231,45 +208,29 @@ def add_coords():
 #         return jsonify({"error": "File not found"}), 404
 
 
-# Location Computation
-# @app.route('/computeLocation', methods=['POST'])
-# def compute_location():
-#     data = request.get_json()
-#     lat, lon = locate.locate(
-#         uav_latitude=float(data['lat']),
-#         uav_longitude=float(data['lon']),
-#         uav_altitude=float(data['rel_alt']),
-#         bearing=float(data['yaw']),
-#         obj_x_px=float(data['x']),
-#         obj_y_px=float(data['y'])
-#     )
-#     return jsonify({'latitude': lat, 'longitude': lon})
-
-# change all absolute paths to local paths and test
-@app.route('/getImageCount', methods=['GET'])
-def get_image_count():
-    """Endpoint to count the number of images in the images folder."""
-    IMAGES_DIR = "./data/images/"
+@app.route('/getImages', methods=['GET'])
+def get_images():
+    """Endpoint to get the list of images in the images folder."""
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
-    image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
-    return jsonify({'success': True, 'imageCount': len(image_files)}), 200
+    image_files = sorted([f for f in os.listdir(IMAGES_DIR) if f.endswith('.jpg') and os.path.isfile(os.path.join(IMAGES_DIR, f))])
+    return jsonify({'success': True, 'images': image_files})
+
+@app.route('/images/<filename>', methods=['GET'])
+def serve_image(filename):
+    """Endpoint to serve an image file."""
+    return send_from_directory(IMAGES_DIR, filename)
 
 @app.route('/deleteImage', methods=['POST'])
 def delete_image():
-    """Delete an image from the server if it matches 'captureX.jpg' format."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
+    """Delete an image from the server"""
     data = request.get_json()
     image_name = data.get("imageName")
-
-    # Validate image name format: "captureX.jpg"
-    if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
+    if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
     image_path = os.path.join(IMAGES_DIR, image_name)
-
     if os.path.exists(image_path):
         os.remove(image_path)
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
@@ -278,35 +239,21 @@ def delete_image():
    
 @app.route('/clearAllImages', methods=['POST'])
 def clear_all_images():
-    """Delete all images from the images directory in both frontend and backend."""
-    # IMAGE_DIRS = [
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images",
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//backend//images"
-    # ]
-
-    IMAGE_DIRS = [
-        "../frontend//public//images",
-        "./images"
-    ]
-
-    deleted_files = []
+    """Delete all images from the images directory."""
     errors = []
-
-    for img_dir in IMAGE_DIRS:
-        if os.path.exists(img_dir):
-            for filename in os.listdir(img_dir):
-                file_path = os.path.join(img_dir, filename)
-                if os.path.isfile(file_path) and re.match(r"^capture\d+\.jpg$", filename):
-                    try:
-                        os.remove(file_path)
-                        deleted_files.append(filename)
-                    except Exception as e:
-                        errors.append(str(e))
+    if os.path.exists(IMAGES_DIR):
+        for filename in os.listdir(IMAGES_DIR):
+            file_path = os.path.join(IMAGES_DIR, filename)
+            if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    errors.append(str(e))
 
     if errors:
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
-    return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
+    return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
     
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
@@ -329,42 +276,66 @@ def toggle_camera_state():
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/manualSelection-save', methods=['POST'])
+def manual_selection_save():
+    data = request.get_json()
+    saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords)
+    file_name = data['file_name']
+    if file_name not in coords_data:
+        coords_data[file_name] = []
+
+    coords_data[file_name].append({
+        'x': data['selected_x'],
+        'y': data['selected_y']
+    })
+    save_json(saved_coords, coords_data)
+    return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
+
+@app.route('/manualSelection-geo-calc', methods=['POST'])
+def manual_selection_geo_calc():
+    """Perform geomatics calculations for a manually selected target."""
+    try:
+        saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+        with open(saved_coords, "r") as file:
+            data = json.load(file)
+
+        txt_lines = []
+        # Iterate over each image entry
+        for image_name, coordinates in data.items():
+            for coord in coordinates:
+                x, y = coord["x"], coord["y"]
+                txt_lines.append(f"{image_name},{x},{y}")
+        print(txt_lines)
+        latitude, longitude = locate_target()
+
+        # send to the vehicle ...
+
+        save_json(saved_coords, {}) # Clear the saved coordinates
+        return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # AI Processing.
 # Workflow starts when the AI endpoint is called through the frontend.
 # The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
 @app.route('/AI', methods=['POST'])
 def start_AI_workers():
-    threads = [
-        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
-        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
-    ]
-
-    # Start worker threads
-    for thread in threads:
-        thread.start()
-    
-    return jsonify({"message": "AI processing started"}), 200
-
+    """Starts the worker threads."""
+    try:
+        start_threads()
+        return jsonify({"message": "AI processing started"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
 @app.route('/AI-Shutdown', methods=['POST'])
 def shutdown_workers():
-    """Stops all running AI worker threads."""
-    # Signal threads to stop
-    stop_event.set()
-    # Clean up queues
-    image_queue.put(None)
-    detection_queue.put(None)
-
-    # Wait for all threads to finish
-    for thread in enumerate():
-        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
-            thread.join()
-
-    # Reset stop event for future use
-    stop_event.clear()
-    return jsonify({"message": "AI processing stopped"}), 200
-
+    """Stops all running worker threads."""
+    try:
+        stop_threads()
+        return jsonify({"message": "AI processing stopped"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
 @app.route('/Clear-Detections-Cache', methods=['POST'])
 def ClearCache():

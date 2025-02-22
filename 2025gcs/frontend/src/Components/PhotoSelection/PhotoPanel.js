@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-let BACKEND_IP = '127.0.0.1:80/';
+import { ENDPOINT_IP } from "../../config";
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
@@ -10,23 +9,29 @@ const PhotoPanel = () => {
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
-
+  const [selectedPoint, setSelectedPoint] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:80/getImageCount");
+        const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
         if (response.data.success) {
-          const imageCount = response.data.imageCount;
-          const loadedPhotos = Array.from(
-            { length: imageCount },
-            (_, i) => i.toString().padStart(5, '0') + '.jpg',
-          );
+          // const imageCount = response.data.imageCount;
+          // const loadedPhotos = Array.from(
+          //   { length: imageCount },
+          //   (_, i) => i.toString().padStart(5, '0') + '.jpg',
+          // );
+          const loadedPhotos = response.data.images;
+          console.log("Loaded photos:", loadedPhotos);
           setPhotos(loadedPhotos);
           setVisiblePhotos(loadedPhotos.slice(0, visibleImagesCount));
-          setMainPhoto(loadedPhotos[0]);
+          if (!mainPhoto) {
+            setMainPhoto(loadedPhotos[0]);
+          }
         } else {
-          console.error("Error fetching image count:", response.data.error);
+          console.error("Error fetching images:", response.data.error);
         }
       } catch (error) {
         console.error("Failed to fetch images:", error);
@@ -34,32 +39,60 @@ const PhotoPanel = () => {
     };
 
     fetchImages();
-  }, []);
+    const intervalId = setInterval(fetchImages, 10000); // Fetch images every 10 seconds
+    return () => clearInterval(intervalId);
+  }, [mainPhoto]);
+
+  useEffect(() => {
+    // Reset selected point when main photo changes
+    setSelectedPoint(null);
+  }, [mainPhoto]);
+
+  const handleManualSelectionSend = async () => {
+    console.log("Selected Point:", selectedPoint);
+    await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+    setMessage(`All selected points sent`);
+    setTimeout(() => setMessage(""), 3000);
+  };
+
+  const handleManualCoordSave = async () => {
+    if (mainPhoto && selectedPoint) {
+      const imgElement = document.querySelector(`img[alt="${mainPhoto}"]`);
+      if (imgElement) {
+        // Normalize selected point to 640x640 image size
+        //(necessary for accuracy on geo calculations as our images are considered 640x640)
+        const rect = imgElement.getBoundingClientRect();
+        const relativeX = selectedPoint.x / rect.width;
+        const relativeY = selectedPoint.y / rect.height;
+        const normalizedX = relativeX * 640;
+        const normalizedY = relativeY * 640;
+  
+        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
+          selected_x: normalizedX,
+          selected_y: normalizedY,
+          file_name: mainPhoto
+        });
+        setSelectedPoint(null);
+        setMessage("Selecion saved");
+        setTimeout(() => setMessage(""), 3000);
+      }
+    }
+  };
 
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
-
-
-    const validFormat = /^capture\d+\.jpg$/.test(photoToDelete);
-    if (!validFormat) {
+    if (!photoToDelete.endsWith('.jpg')) {
       console.error("Invalid file name format:", photoToDelete);
       return;
     }
-
-
     try {
-      const response = await axios.post("http://localhost:5000/deleteImage", {
+      const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`, {
         imageName: photoToDelete,
       });
 
-
       if (response.data.success) {
-        console.log(`Deleted ${photoToDelete} from the server`);
-
-
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
         setPhotos(updatedPhotos);
-
 
         const newStartIndex = Math.min(
           currentStartIndex,
@@ -70,18 +103,20 @@ const PhotoPanel = () => {
           updatedPhotos.slice(newStartIndex, newStartIndex + visibleImagesCount)
         );
 
-
         if (photoToDelete === mainPhoto) {
           setMainPhoto(updatedPhotos[newStartIndex] || null);
         }
+        setMessage(`${photoToDelete} deleted`);
+        setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
       } else {
-        console.error("Error deleting image:", response.data.error);
+        setError("Error deleting image");
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
-      console.error("Failed to delete image:", error);
+      setError("Error deleting image");
+      setTimeout(() => setError(""), 3000);
     }
   };
-
 
   const handleLeftArrow = () => {
     if (currentStartIndex > 0) {
@@ -93,7 +128,6 @@ const PhotoPanel = () => {
     }
   };
 
-
   const handleRightArrow = () => {
     if (currentStartIndex + visibleImagesCount < photos.length) {
       const newStartIndex = currentStartIndex + 1;
@@ -104,11 +138,10 @@ const PhotoPanel = () => {
     }
   };
 
-
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
-      const response = await fetch("http://127.0.0.1:80/toggle_camera_state", {
+      const response = await fetch(`http://${ENDPOINT_IP}/toggle_camera_state`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -116,15 +149,16 @@ const PhotoPanel = () => {
       })
 
       const data = await response.json();
-
       if (response.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
       } else {
-        console.error("Error toggling camera:", data.error);
+        setError("Error toggling camera");
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
-      console.error("Request failed:", error);
+      setError("Request failed");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -132,126 +166,159 @@ const PhotoPanel = () => {
     const userConfirmed = window.confirm(
       "Are you sure you want to clear all images?"
     );
-
-
     if (userConfirmed) {
       try {
         const response = await fetch(
-          "http://127.0.0.1:5000/clearAllImages",
+          `http://${ENDPOINT_IP}/clearAllImages`,
           { method: "POST" }
         );
         const data = await response.json();
-
-
         if (data.success) {
-          alert("All images have been cleared successfully.");
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
         } else {
-          alert("Error: " + data.error);
+          setError("Error clearing images");
+          setTimeout(() => setError(""), 3000);
         }
       } catch (error) {
-        console.error("Error clearing images:", error);
-        alert("Failed to clear images.");
+        setError("Error clearing images");
+        setTimeout(() => setError(""), 3000);
       }
     }
   };
 
+  const handleImageClick = (event) => {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    setSelectedPoint({ x, y });
+  };
 
   return (
-    <div className="flex flex-col w-full h-full">
-      <div className="flex flex-grow w-full">
-        <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
-          <button
-            onClick={handleToggleCamera}
-            className={`px-3 py-2 rounded ${
-              isCameraOn
-                ? "bg-green-500 hover:bg-green-600"
-                : "bg-red-500 hover:bg-red-600"
-            } text-white flex items-center justify-between`}
-          >
-            📸 {isCameraOn ? "Camera On" : "Camera Off"}
-          </button>
-          <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">
-            Save/Send
-          </button>
-          <button
-            onClick={clearImages}
-            className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Clear
-          </button>
-        </div>
+    <div className="flex flex-col w-full h-full rounded-xl shadow-lg overflow-hidden bg-white">
+      <div className="flex flex-col w-full h-full">
+        <div className="flex flex-grow w-full">
+          <div className="flex flex-col gap-4 p-4 w-1/3 bg-white border-r border-gray-300">
+            <button
+              onClick={handleToggleCamera}
+              className={`px-3 py-2 rounded flex items-center justify-center w-full ${
+                isCameraOn ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+              } text-white`}
+            >
+              📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
+            </button>
 
-
-        <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px]">
-          {mainPhoto ? (
-            <img
-              src={`/images/${mainPhoto}`}
-              alt={mainPhoto}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <p className="text-gray-500">No Photo</p>
-          )}
-        </div>
-        </div>
-
-
-
-      <div className="flex flex-col items-center justify-between p-4 bg-white border-t border-gray-300">
-        <div className="flex items-center w-full">
-          <button
-            onClick={handleLeftArrow}
-            disabled={currentStartIndex === 0}
-            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
-          >
-            &lt;
-          </button>
-
-
-          <div className="flex justify-around flex-grow mx-2 gap-2 overflow-x-auto">
-            {visiblePhotos.map((photo, index) => (
-              <div
-                key={photo}
-                onClick={() => setMainPhoto(photo)}
-                className="relative w-16 h-16 border border-gray-300 rounded bg-white flex flex-col items-center justify-center cursor-pointer"
+            <div className="flex gap-2">
+              <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={!selectedPoint}
+              onClick={handleManualCoordSave}
               >
-                <img
-                  src={`/images/${photo}`}
-                  alt={photo}
-                  className="w-16 h-16 object-cover rounded"
-                />
-                <div className="text-xs absolute bottom-1 ">
-                  {photo.replace(/[^\d]/g, "")}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePhoto(index);
-                  }}
-                  className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full hover:bg-red-600"
-                >
-                  X
-                </button>
+                Save
+              </button>
+              <button
+                onClick={handleManualSelectionSend}
+                className={`px-3 py-2 rounded w-1/2 bg-gray-300 hover:bg-gray-400`}
+              >
+                Send
+              </button>
+            </div>
+            <button
+              onClick={clearImages}
+              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Clear
+            </button>
+            {message && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mt-2">
+                <span className="block sm:inline">{message}</span>
               </div>
-            ))}
+            )}
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-2">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
           </div>
-
-
-          <button
-            onClick={handleRightArrow}
-            disabled={currentStartIndex + visibleImagesCount >= photos.length}
-            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
-          >
-            &gt;
-          </button>
+          <div className="flex-[2] border border-gray-00 flex items-center justify-center bg-white w-full h-[300px] relative">
+            {mainPhoto ? (
+              <>
+                <img
+                  src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
+                  alt={mainPhoto}
+                  className="w-full h-full object-cover"
+                  onClick={handleImageClick}
+                />
+                {selectedPoint && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: selectedPoint.y,
+                      left: selectedPoint.x,
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "red",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-gray-500">No Photo</p>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-between p-4 bg-white border-t border-gray-300">
+          <div className="flex items-center w-full">
+            <button
+              onClick={handleLeftArrow}
+              disabled={currentStartIndex === 0}
+              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
+            >
+              &lt;
+            </button>
+            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2 h-20">
+              {visiblePhotos.map((photo, index) => (
+                <div
+                  key={photo}
+                  onClick={() => setMainPhoto(photo)}
+                  className={`relative w-16 h-16 rounded bg-white flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-shadow ${
+                    mainPhoto === photo ? "border-2 border-blue-500" : "border border-gray-300"
+                  }`}
+                >
+                  <img
+                    src={`http://${ENDPOINT_IP}/images/${photo}`}
+                    alt={photo}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div className="text-xs mt-1">
+                    {photo.replace(/[^\d]/g, "")}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePhoto(index);
+                    }}
+                    className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full hover:bg-red-600"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleRightArrow}
+              disabled={currentStartIndex + visibleImagesCount >= photos.length}
+              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-white"
+            >
+              &gt;
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
 
 export default PhotoPanel;

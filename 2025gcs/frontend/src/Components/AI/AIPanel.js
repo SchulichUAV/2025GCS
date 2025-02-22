@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ENDPOINT_IP } from "../../config";
 
 const AIPanel = ({ data }) => {
   const [openClasses, setOpenClasses] = useState({});
@@ -41,7 +42,6 @@ const AIPanel = ({ data }) => {
     }));
   };
 
-  const ENDPOINT_IP = "127.0.0.1";
   const HandleAIWorkflow = async () => {
     let response;
     if (isAIActive) {

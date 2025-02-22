@@ -7,6 +7,7 @@ import AIPanel from './Components/AI/AIPanel';
 import FlightModePanel from './Components/FlightMode/FlightModePanel';
 import AltitudePanel from './Components/AltitudePanel/AltitudePanel';
 import data from "./data/TargetInformation.json";
+import { ENDPOINT_IP } from "./config";
 
 function App() {
 
@@ -16,7 +17,7 @@ function App() {
    useEffect(() => {
     const checkHeartbeat = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:80/get_heartbeat");
+        const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = await response.json();
         if (data.success == true)
         {
@@ -38,9 +39,9 @@ function App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen w-screen" style={{ backgroundColor: bgColor }}>
+    <div className="flex flex-col min-h-screen w-screen" style={{ backgroundColor: bgColor }}>
       <NavBar />
-      <div className="flex flex-grow p-4 mt-20 gap-4">
+      <div className="flex flex-grow p-4 mt-20 gap-4 h-full">
         
         {/* Left Column */}
         <div className="flex flex-col w-[45%] gap-1">
