@@ -3,7 +3,7 @@ import PayloadPanel from './Payload/PayloadPanel';
 import AIPanel from './AI/AIPanel';
 import FlightModePanel from './FlightMode/FlightModePanel';
 import AltitudePanel from './AltitudePanel/AltitudePanel';
-import data from "../data/TargetInformation.json";
+import data from "../../data/TargetInformation.json";
 
 function Home() {
     return (

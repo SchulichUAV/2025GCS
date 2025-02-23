@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ENDPOINT_IP } from "../../config";
+import { ENDPOINT_IP } from "../../../config";
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;

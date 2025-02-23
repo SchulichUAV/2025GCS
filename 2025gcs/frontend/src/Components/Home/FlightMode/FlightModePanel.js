@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DRONE_IP } from '../../config';
+import { DRONE_IP } from '../../../config';
 import ReactSlider from 'react-slider';
 
 const FlightControl = () => {

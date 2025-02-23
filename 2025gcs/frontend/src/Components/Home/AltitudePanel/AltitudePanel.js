@@ -1,6 +1,6 @@
 import React from 'react'
 import axios from 'axios';
-import { ENDPOINT_IP } from "../../config";
+import { ENDPOINT_IP } from "../../../config";
 
 const AltitudePanel = () => {
   // Takeoff altitude button handler, sends request to the backend.

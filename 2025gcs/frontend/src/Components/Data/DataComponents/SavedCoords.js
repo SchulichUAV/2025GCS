@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ENDPOINT_IP } from "../../config";
+import { ENDPOINT_IP } from "../../../config";
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});
