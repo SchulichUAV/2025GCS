@@ -215,7 +215,7 @@ def get_image_data():
     image_data_dir = os.path.join(DATA_DIR, 'imageData')
     image_data = []
 
-    for filename in os.listdir(image_data_dir):
+    for filename in sorted(os.listdir(image_data_dir)):
         if filename.endswith('.json'):
             with open(os.path.join(image_data_dir, filename), 'r') as file:
                 data = json.load(file)

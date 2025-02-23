@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo} from 'react';
 import { ENDPOINT_IP } from "../../../config";
 
 const ImageData = () => {
   const [imageData, setImageData] = useState([]);
+
+  const columns = useMemo(
+    () => [
+      { title: "Image", key: "image" },
+      { title: "Lat", key: "lat" },
+      { title: "Lon", key: "lon" },
+      { title: "Alt", key: "alt" },
+      { title: "Rel Alt", key: "rel_alt" },
+      { title: "Roll", key: "roll" },
+      { title: "Pitch", key: "pitch" },
+      { title: "Yaw", key: "yaw" },
+      { title: "Heading", key: "heading" },
+    ],
+    []
+  );
 
   useEffect(() => {
     const fetchImageData = async () => {
@@ -23,39 +38,31 @@ const ImageData = () => {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Image Data</h2>
-      <div className="overflow-auto max-h-96">
+    <div className="flex flex-col h-full">
+      <div className="flex-grow overflow-auto rounded border shadow-inner">
         {imageData.length === 0 ? (
           <p>No image data available.</p>
         ) : (
-          <table className="min-w-full bg-white">
-            <thead>
+          <table className="min-w-full bg-white text-sm">
+            <thead className="sticky top-0 bg-gray-100">
               <tr>
-                <th className="py-2 px-4 border-b">Image</th>
-                <th className="py-2 px-4 border-b">Latitude</th>
-                <th className="py-2 px-4 border-b">Longitude</th>
-                <th className="py-2 px-4 border-b">Rel Alt</th>
-                <th className="py-2 px-4 border-b">Altitude</th>
-                <th className="py-2 px-4 border-b">Roll</th>
-                <th className="py-2 px-4 border-b">Pitch</th>
-                <th className="py-2 px-4 border-b">Yaw</th>
-                <th className="py-2 px-4 border-b">Heading</th>
+                {columns.map((col) => (
+                  <th key={col.key} className="py-2 px-4 border-b">
+                    {col.title}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {imageData.map((data, index) => (
-                <tr key={index}>
-                  <td className="py-2 px-4 border-b">{data.image}</td>
-                  <td className="py-2 px-4 border-b">{data.lat.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.lon.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.rel_alt.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.alt.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.roll.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.pitch.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.yaw.toFixed(4)}</td>
-                  <td className="py-2 px-4 border-b">{data.heading.toFixed(4)}</td>
-                  
+                <tr className="hover:bg-gray-50" key={index}>
+                  {columns.map((col) => (
+                    <td key={col.key} className="py-2 px-4 border-b">
+                      {typeof data[col.key] === "number"
+                        ? data[col.key].toFixed(4)
+                        : data[col.key]}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
