@@ -68,6 +68,24 @@ def rename_images(input_dir):
 
 if __name__ == "__main__":
     # Specify where your images are located to be renamed and saved
-    input_directory = "/Users/dominicgartner/Downloads/testImg"
+    input_directory = ""
     rename_images(input_directory)
     print("Image renaming and JSON file creation complete.")
+
+
+# def rename_json_files():
+#     # Get a list of all JSON files in the directory
+#     json_files = sorted([f for f in os.listdir(json_directory) if f.startswith('capture') and f.endswith('.json')])
+
+#     # Rename each file to follow the 000x.json pattern
+#     for i, filename in enumerate(json_files):
+#         new_name = f"{i:04d}.json"
+#         src = os.path.join(json_directory, filename)
+#         dst = os.path.join(json_directory, new_name)
+#         os.rename(src, dst)
+#         print(f"Renamed {filename} to {new_name}")
+
+# if __name__ == "__main__":
+#     # Specify the directory containing the JSON files
+#     rename_json_files()
+#     print("JSON file renaming complete.")
