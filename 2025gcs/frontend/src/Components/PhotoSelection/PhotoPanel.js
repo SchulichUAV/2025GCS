@@ -68,7 +68,7 @@ const PhotoPanel = () => {
           file_name: mainPhoto
         });
         setSelectedPoint(null);
-        setMessage("Selecion saved");
+        setMessage("Selection saved");
         setTimeout(() => setMessage(""), 3000);
       }
     }
