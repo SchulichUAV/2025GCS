@@ -140,6 +140,7 @@ const PhotoPanel = () => {
 
   const handleToggleCamera = async () => {
     try {
+      setIsCameraOn(!isCameraOn);
       const response = await fetch(`http://${ENDPOINT_IP}/toggle_camera_state`, {
         method: "POST",
         headers: {
@@ -149,7 +150,8 @@ const PhotoPanel = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setIsCameraOn(data.cameraState);
+        // console.log("data.cameraState is: " + data.cameraState);
+        // setIsCameraOn(data.cameraState);
       } else {
         setError("Error toggling camera");
         setTimeout(() => setError(""), 3000);

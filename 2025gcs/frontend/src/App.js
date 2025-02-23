@@ -12,13 +12,19 @@ function App() {
 
   useEffect(() => {
     const checkHeartbeat = async () => {
-      console.log("Checking heartbeat");
       try {
         const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = await response.json();
-        setBgColor(data.success ? "#90EE90" : "#FF7F7F");
+        if (data.success == true)
+        {
+          setBgColor(data.success ? "#90EE90" : "#FF7F7F");
+        }
+        else
+        {
+          setBgColor("#FF7F7F");
+        }
       } catch (error) {
-        setBgColor("#FF7F7F");
+        console.log("ERROR: " + error);
       }
     };
 
