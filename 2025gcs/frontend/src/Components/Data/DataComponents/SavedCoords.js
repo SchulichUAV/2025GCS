@@ -30,7 +30,7 @@ function SavedCoords() {
       });
       const data = await response.json();
       if (data.success) {
-        fetchCoords(); // Refresh the coordinates after deletion
+        fetchCoords();
       } else {
         console.error("Failed to delete coordinate");
       }
@@ -51,49 +51,47 @@ function SavedCoords() {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Saved Coordinates</h2>
-      <div className="overflow-auto max-h-96">
+    <div className="flex flex-col h-full">
+      <div className="flex-grow overflow-auto rounded border shadow-inner">
         {Object.keys(coords).length === 0 ? (
-          <p>No coordinates saved.</p>
+          <p className="text-center py-4">No coordinates saved.</p>
         ) : (
-          <table className="min-w-full bg-white">
-            <thead>
+          <table className="min-w-full bg-white text-sm">
+            <thead className="sticky top-0 bg-gray-100 shadow-sm">
               <tr>
-                <th className="py-2 px-4 border-b">Image</th>
-                <th className="py-2 px-4 border-b">Coordinates</th>
-                <th className="py-2 px-4 border-b">Actions</th>
+                <th className="w-1/3 py-2 px-4 border-b text-left">Image</th>
+                <th className="w-1/3 py-2 px-4 border-b text-left">Coordinates</th>
+                <th className="w-1/3 py-2 px-4 border-b text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {Object.entries(coords).map(([image, coordinates], index) => (
                 <React.Fragment key={index}>
-                  <tr>
-                    <td className="py-2 px-4 border-b" colSpan="3">
-                      <button
-                        className="text-left w-full"
-                        onClick={() => toggleExpand(image)}
-                      >
-                        {expandedImages[image] ? '▼' : '▶'} {image}
-                      </button>
+                  <tr className="bg-gray-50 hover:bg-gray-100 transition cursor-pointer" onClick={() => toggleExpand(image)}>
+                    <td className="py-2 px-4 border-b font-medium flex items-center gap-2">
+                      <span className="text-lg">{expandedImages[image] ? '▼' : '▶'}</span>
+                      {image}
                     </td>
+                    <td className="py-2 px-4 border-b"></td>
+                    <td className="py-2 px-4 border-b"></td>
                   </tr>
-                  {expandedImages[image] && coordinates.map((coord, i) => (
-                    <tr key={i}>
-                      <td className="py-2 px-4 border-b"></td>
-                      <td className="py-2 px-4 border-b">
-                      <strong>x:</strong> {coord.x}, <strong>y:</strong> {coord.y}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        <button
-                          className="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded"
-                          onClick={() => deleteCoord(image, i)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {expandedImages[image] &&
+                    coordinates.map((coord, i) => (
+                      <tr key={i} className="hover:bg-gray-50 transition">
+                        <td className="py-2 px-4 border-b"></td>
+                        <td className="py-2 px-4 border-b">
+                          <span className="font-semibold">x:</span> {coord.x}, <span className="font-semibold">y:</span> {coord.y}
+                        </td>
+                        <td className="py-2 px-4 border-b">
+                          <button
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow-sm transition"
+                            onClick={() => deleteCoord(image, i)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </React.Fragment>
               ))}
             </tbody>
