@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import SavedCoords from './DataComponents/SavedCoords';
-// import Category2 from './Category2';
-// import Category3 from './Category3';
+import ImageData from './DataComponents/ImageData';
 
 const categories = {
   'Saved Coordinates': SavedCoords,
-  'Category 2': 'replace',
-  'Category 3': 'replace',
+  'Image Data': ImageData
 };
 
 function DataPage() {

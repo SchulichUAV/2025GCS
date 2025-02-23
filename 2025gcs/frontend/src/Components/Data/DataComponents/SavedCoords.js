@@ -82,7 +82,7 @@ function SavedCoords() {
                     <tr key={i}>
                       <td className="py-2 px-4 border-b"></td>
                       <td className="py-2 px-4 border-b">
-                        x: {coord.x}, y: {coord.y}
+                      <strong>x:</strong> {coord.x}, <strong>y:</strong> {coord.y}
                       </td>
                       <td className="py-2 px-4 border-b">
                         <button
