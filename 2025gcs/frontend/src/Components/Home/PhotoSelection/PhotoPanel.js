@@ -46,7 +46,7 @@ const PhotoPanel = () => {
   const handleManualSelectionSend = async () => {
     console.log("Selected Point:", selectedPoint);
     await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
-    setMessage(`All selected points sent`);
+    setMessage(`Selections Processed`);
     setTimeout(() => setMessage(""), 3000);
   };
 
