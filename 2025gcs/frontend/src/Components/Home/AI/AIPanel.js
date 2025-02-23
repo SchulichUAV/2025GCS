@@ -5,6 +5,7 @@ const AIPanel = ({ data }) => {
   const [openClasses, setOpenClasses] = useState({});
   const [isAIActive, setIsAIActive] = useState(false);
   const [newDetections, setNewDetections] = useState({});
+  const [error, setError] = useState(null);
   const [prevData, setPrevData] = useState(() => {
     const storedData = localStorage.getItem("prevData");
     return storedData ? JSON.parse(storedData) : {};
@@ -12,10 +13,10 @@ const AIPanel = ({ data }) => {
 
   useEffect(() => {
     if (!data) return;
-  
+
     setNewDetections((prevDetections) => {
       const updatedDetections = { ...prevDetections };
-  
+
       Object.keys(data).forEach((className) => {
         const prevCount = prevData[className]?.length || 0;
         const newCount = data[className]?.length || 0;
@@ -29,11 +30,14 @@ const AIPanel = ({ data }) => {
       });
       return updatedDetections;
     });
-  
+
     setPrevData(data);
     localStorage.setItem("prevData", JSON.stringify(data));
   }, [data, prevData]);
   
+  
+
+
 
   const toggleClassDropdown = (className) => {
     setOpenClasses((prevState) => ({
@@ -44,53 +48,92 @@ const AIPanel = ({ data }) => {
 
   const HandleAIWorkflow = async () => {
     let response;
-    if (isAIActive) {
-      response = await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-    } else {
-      response = await fetch(`http://${ENDPOINT_IP}:80/AI`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+    try {
+      if (isAIActive) {
+        response = await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      } else {
+        response = await fetch(`http://${ENDPOINT_IP}:80/AI`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+      setIsAIActive(!isAIActive);
+      const responseData = await response.json();
+      console.log(responseData.message);
+    } catch (error) {
+      setError("Request failed");
+      setTimeout(() => setError(null), 3000);
     }
-    setIsAIActive(!isAIActive);
-    const responseData = await response.json();
-    console.log(responseData.message);
   };
 
   const ClearCache = async () => {
-    const response = await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    const responseData = await response.json();
-    console.log(responseData.message);
-  }
+    try {
+      const response = await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const responseData = await response.json();
+      console.log(responseData.message);
+    } catch (error) {
+      setError("Request failed");
+      setTimeout(() => setError(null), 3000); 
+    }
+  };
 
   return (
     <div className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
-      <div className="top-0 z-10 flex">
-        <button
-          onClick={HandleAIWorkflow}
-          className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            isAIActive
-              ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
-              : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
-          }`}
-        >
-          {isAIActive ? "STOP DETECTING" : "START DETECTING"}
-        </button>
-        <button onClick={ClearCache} className="px-4 py-2 font-semibold text-sm rounded-lg shadow-md bg-red-300 hover:bg-red-400">
-          CLEAR CACHE
-        </button>
+      <div className="top-0 z-10 flex items-center justify-between">
+        <div className="flex">
+          <button
+            onClick={HandleAIWorkflow}
+            className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              isAIActive
+                ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
+                : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
+            }`}
+          >
+            {isAIActive ? "STOP DETECTING" : "START DETECTING"}
+          </button>
+          <button
+            onClick={ClearCache}
+            className="px-4 py-2 font-semibold text-sm rounded-lg shadow-md bg-red-300 hover:bg-red-400"
+          >
+            CLEAR CACHE
+          </button>
+        </div>
+        {error && (
+          <div
+            className="text-sm text-white bg-red-600 rounded-lg px-4 py-2 ml-4 flex items-center"
+            style={{ minWidth: "200px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)" }}
+          >
+            <span className="mr-2">
+              <svg
+                className="w-4 h-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </span>
+            <span>{error}</span>
+          </div>
+        )}
       </div>
       <div className="overflow-auto h-56">
         {data && Object.keys(data).length > 0 ? (

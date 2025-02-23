@@ -44,10 +44,15 @@ const PhotoPanel = () => {
   }, [mainPhoto]);
 
   const handleManualSelectionSend = async () => {
+    try{
     console.log("Selected Point:", selectedPoint);
     await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
     setMessage(`Selections Processed`);
     setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setError("Request failed");
+      setTimeout(() => setError(""), 3000);
+    }
   };
 
   const handleManualCoordSave = async () => {

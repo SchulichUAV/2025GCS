@@ -18,7 +18,9 @@ function DataPage() {
 
   const renderContent = () => {
     const ActiveComponent = categories[activeTab];
-    return <ActiveComponent />;
+    if (ActiveComponent) {
+      return <ActiveComponent />;
+    }
   };
 
   return (
