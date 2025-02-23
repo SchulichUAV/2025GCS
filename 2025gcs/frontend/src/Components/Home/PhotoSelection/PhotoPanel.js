@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ENDPOINT_IP } from "../../config";
+import { ENDPOINT_IP } from "../../../config";
 
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
@@ -68,7 +68,7 @@ const PhotoPanel = () => {
           file_name: mainPhoto
         });
         setSelectedPoint(null);
-        setMessage("Selecion saved");
+        setMessage("Selection saved");
         setTimeout(() => setMessage(""), 3000);
       }
     }

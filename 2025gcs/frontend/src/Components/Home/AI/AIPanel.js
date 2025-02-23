@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ENDPOINT_IP } from "../../config";
+import { ENDPOINT_IP } from "../../../config";
 
 const AIPanel = ({ data }) => {
   const [openClasses, setOpenClasses] = useState({});

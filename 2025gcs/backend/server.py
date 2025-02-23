@@ -184,11 +184,45 @@ def add_coords():
     save_json(coord_data_path, coords_data)
     return jsonify({'status': 'success'})
 
-# @app.route('/deleteCoords', methods=['POST'])
-# def delete_coords():
-#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     save_json(coord_data_path, {'coordinates': []})
-#     return jsonify({'status': 'success'})
+@app.route('/get_saved_coords', methods=['GET'])
+def get_saved_coords():
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    return jsonify({'success': True, 'coordinates': coords_data})
+
+@app.route('/delete_coord', methods=['POST'])
+def delete_coord():
+    data = request.get_json()
+    image = data.get('image')
+    index = data.get('index')
+
+    if image is None or index is None:
+        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
+
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    if image in coords_data and 0 <= index < len(coords_data[image]):
+        del coords_data[image][index]
+        if not coords_data[image]:  # If the list is empty, remove the key
+            del coords_data[image]
+        save_json(saved_coords_path, coords_data)
+        return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
+    else:
+        return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
+
+@app.route('/getImageData', methods=['GET'])
+def get_image_data():
+    image_data_dir = os.path.join(DATA_DIR, 'imageData')
+    image_data = []
+
+    for filename in os.listdir(image_data_dir):
+        if filename.endswith('.json'):
+            with open(os.path.join(image_data_dir, filename), 'r') as file:
+                data = json.load(file)
+                data['image'] = filename.replace('.json', '.jpg')
+                image_data.append(data)
+
+    return jsonify({'success': True, 'imageData': image_data})
 
 # # Target Coordinates
 # @app.route('/addTargetCoordInfo', methods=['POST'])
