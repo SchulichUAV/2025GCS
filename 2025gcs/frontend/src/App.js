@@ -15,7 +15,7 @@ function App() {
       try {
         const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = await response.json();
-        if (data.success == true)
+        if (data.success === true)
         {
           setBgColor(data.success ? "#90EE90" : "#FF7F7F");
         }
@@ -23,15 +23,10 @@ function App() {
         {
           setBgColor("#FF7F7F");
         }
-      } catch (error) {
-        console.log("ERROR: " + error);
-      }
+      } catch (error) { }
     };
-
     // Check heartbeat every 5 seconds
-    const interval = setInterval(checkHeartbeat, 5000);
-
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(setInterval(checkHeartbeat, 5000)); // Cleanup on unmount
   }, []);
 
   return (

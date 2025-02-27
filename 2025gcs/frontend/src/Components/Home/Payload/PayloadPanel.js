@@ -30,13 +30,10 @@ const PayloadPanel = () => {
       }, {
         headers: { "Content-Type": "application/json" }
       });
-      console.log(response);
       if (response.status === 200) {
         handleDisableButton(index, 'close'); // Disable only the Close button
       }
-    } catch (error) {
-      console.error("Error closing payload bay:", error);
-    }
+    } catch (error) {}
   };
 
   const HandleRelease = async (index) => {
@@ -46,13 +43,10 @@ const PayloadPanel = () => {
       }, {
         headers: { "Content-Type": "application/json" }
       });
-      console.log(response);
       if (response.status === 200) {
         handleDisableButton(index, 'release'); // Disable only the Release button
       }
-    } catch (error) {
-      console.error("Error releasing payload bay:", error);
-    }
+    } catch (error) {}
   };
 
   return (

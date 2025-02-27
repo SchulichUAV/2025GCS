@@ -20,16 +20,12 @@ const PhotoPanel = () => {
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           setPhotos(loadedPhotos);
-          setVisiblePhotos(loadedPhotos.slice(0, visibleImagesCount));
+          setVisiblePhotos(loadedPhotos.slice(currentStartIndex, currentStartIndex + visibleImagesCount)); // Preserve current start index
           if (!mainPhoto) {
             setMainPhoto(loadedPhotos[0]);
           }
-        } else {
-          console.error("Error fetching images:", response.data.error);
         }
-      } catch (error) {
-        console.error("Failed to fetch images:", error);
-      }
+      } catch (error) {}
     };
 
     fetchImages();
@@ -44,14 +40,13 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-    console.log("Selected Point:", selectedPoint);
-    await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
-    setMessage(`Selections Processed`);
-    setTimeout(() => setMessage(""), 3000);
+      await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+      setMessage(`Selections Processed`);
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setError("Request failed");
-      setTimeout(() => setError(""), 3000);
-    }
+        setError("Request failed");
+        setTimeout(() => setError(""), 3000);
+      }
   };
 
   const handleManualCoordSave = async () => {
@@ -81,7 +76,6 @@ const PhotoPanel = () => {
   const handleDeletePhoto = async (indexToDelete) => {
     const photoToDelete = visiblePhotos[indexToDelete];
     if (!photoToDelete.endsWith('.jpg')) {
-      console.error("Invalid file name format:", photoToDelete);
       return;
     }
     try {
@@ -106,7 +100,7 @@ const PhotoPanel = () => {
           setMainPhoto(updatedPhotos[newStartIndex] || null);
         }
         setMessage(`${photoToDelete} deleted`);
-        setTimeout(() => setMessage(""), 3000); // Clear message after 3 seconds
+        setTimeout(() => setMessage(""), 3000);
       } else {
         setError("Error deleting image");
         setTimeout(() => setError(""), 3000);
@@ -119,23 +113,20 @@ const PhotoPanel = () => {
 
   const handleLeftArrow = () => {
     if (currentStartIndex > 0) {
-      const newStartIndex = currentStartIndex - 1;
+      const newStartIndex = Math.max(0, currentStartIndex - visibleImagesCount);
       setCurrentStartIndex(newStartIndex);
-      setVisiblePhotos(
-        photos.slice(newStartIndex, newStartIndex + visibleImagesCount)
-      );
+      setVisiblePhotos(photos.slice(newStartIndex, newStartIndex + visibleImagesCount));
     }
   };
-
+  
   const handleRightArrow = () => {
     if (currentStartIndex + visibleImagesCount < photos.length) {
-      const newStartIndex = currentStartIndex + 1;
+      const newStartIndex = Math.min(photos.length, currentStartIndex + visibleImagesCount);
       setCurrentStartIndex(newStartIndex);
-      setVisiblePhotos(
-        photos.slice(newStartIndex, newStartIndex + visibleImagesCount)
-      );
+      setVisiblePhotos(photos.slice(newStartIndex, newStartIndex + visibleImagesCount));
     }
   };
+  
 
   const handleToggleCamera = async () => {
     try {
@@ -147,7 +138,7 @@ const PhotoPanel = () => {
         }
       })
 
-      const data = await response.json();
+      await response.json();
       if (response.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
@@ -278,7 +269,7 @@ const PhotoPanel = () => {
             >
               &lt;
             </button>
-            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto pb-2 h-20">
+            <div className="flex justify-around flex-grow mx-2 gap-1 overflow-x-auto">
               {visiblePhotos.map((photo, index) => (
                 <div
                   key={photo}
@@ -292,7 +283,7 @@ const PhotoPanel = () => {
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
-                  <div className="text-xs mt-1">
+                  <div className="text-xs">
                     {photo.replace(/[^\d]/g, "")}
                   </div>
                   <button

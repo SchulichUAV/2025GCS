@@ -47,17 +47,16 @@ const AIPanel = ({ data }) => {
   };
 
   const HandleAIWorkflow = async () => {
-    let response;
     try {
       if (isAIActive) {
-        response = await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
+        await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
         });
       } else {
-        response = await fetch(`http://${ENDPOINT_IP}:80/AI`, {
+        await fetch(`http://${ENDPOINT_IP}:80/AI`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -65,8 +64,6 @@ const AIPanel = ({ data }) => {
         });
       }
       setIsAIActive(!isAIActive);
-      const responseData = await response.json();
-      console.log(responseData.message);
     } catch (error) {
       setError("Request failed");
       setTimeout(() => setError(null), 3000);
@@ -75,14 +72,12 @@ const AIPanel = ({ data }) => {
 
   const ClearCache = async () => {
     try {
-      const response = await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
+      await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      const responseData = await response.json();
-      console.log(responseData.message);
     } catch (error) {
       setError("Request failed");
       setTimeout(() => setError(null), 3000); 
