@@ -1,7 +1,7 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import NavBar from './Components/Home/NavBar/NavBar';
+import NavBar from './Components/NavBar/NavBar';
 import Home from './Components/Home/Home';
 import DataPage from './Components/Data/DataPage';
 import { ENDPOINT_IP } from "./config";

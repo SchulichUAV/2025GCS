@@ -17,7 +17,7 @@ const NavBar = () => {
   return (
     <nav className="z-10 w-full flex items-center justify-between px-3 py-4 bg-gray-950 text-white fixed top-0">
       <div className="space-x-5 flex items-center">
-        <img src="/SUAVIcon.png" alt="Logo" className="h-10 w-10" />
+        <img src="/SUAVIcon.png" alt="Logo" className="h-10 w-10" draggable="false"/>
         <label className="font-bold text-xl">Ground Control Station</label>
       </div>
       <div className="space-x-8 mr-6">
