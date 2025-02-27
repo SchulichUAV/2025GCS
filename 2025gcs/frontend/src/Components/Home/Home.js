@@ -10,27 +10,23 @@ function Home() {
   return (
     <div className="flex flex-col min-h-screen w-screen p-4">
       <div className="flex flex-col lg:flex-row flex-grow gap-4 mt-20">
-        
+
         {/* Left Column */}
         <div className="flex flex-col lg:w-1/2 gap-6">
           <div className="flex justify-center items-center flex-grow rounded-xl shadow-lg h-1/2">
             <PhotoPanel />
           </div>
-          <div className="flex justify-center items-center flex-grow rounded-xl shadow-lg h-[400px] sm:h-[400px] md:h-[400px] lg:h-1/2">
+          <div className="flex-grow flex justify-center items-center h-[400px] w-full overflow-hidden">
             <Mapping />
           </div>
-
         </div>
 
         {/* Right Column */}
         <div className="flex flex-col lg:w-1/2 gap-6">
           <div className="flex flex-col gap-4 flex-grow">
-            {/* PayloadPanel takes more vertical space */}
             <div className="flex justify-center items-center flex-[2] rounded-xl shadow-lg">
               <PayloadPanel />
             </div>
-
-            {/* Shorter AI and Altitude Panels */}
             <div className="flex flex-row gap-4 flex-[1]">
               <div className="flex justify-center items-center flex-[1.5] rounded-xl shadow-lg">
                 <AIPanel data={data} />
@@ -39,8 +35,6 @@ function Home() {
                 <AltitudePanel />
               </div>
             </div>
-
-            {/* FlightModePanel remains the same */}
             <div className="flex justify-center items-center flex-[1] rounded-xl shadow-lg">
               <FlightModePanel />
             </div>

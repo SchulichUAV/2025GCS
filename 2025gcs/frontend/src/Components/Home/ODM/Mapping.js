@@ -44,9 +44,9 @@ function Mapping() {
       <div className="flex-grow flex justify-center items-center">
         {imageUrl ? (
           <img
-            // src={imageUrl}
+            src={imageUrl}
             alt="Mapping Result"
-            className="w-full h-full object-cover"
+            className="object-fit w-full h-full"
             draggable="false"
           />
         ) : (
