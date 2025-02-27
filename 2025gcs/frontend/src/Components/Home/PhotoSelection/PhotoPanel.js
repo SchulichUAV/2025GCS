@@ -31,7 +31,7 @@ const PhotoPanel = () => {
     fetchImages();
     const intervalId = setInterval(fetchImages, 10000); // Fetch images every 10 seconds
     return () => clearInterval(intervalId);
-  }, [mainPhoto]);
+  }, [mainPhoto, currentStartIndex]);
 
   useEffect(() => {
     // Reset selected point when main photo changes
