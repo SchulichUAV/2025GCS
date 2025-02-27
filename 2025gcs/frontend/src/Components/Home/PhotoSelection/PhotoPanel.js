@@ -19,7 +19,6 @@ const PhotoPanel = () => {
         const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
         if (response.data.success) {
           const loadedPhotos = response.data.images;
-          console.log("Loaded photos:", loadedPhotos);
           setPhotos(loadedPhotos);
           setVisiblePhotos(loadedPhotos.slice(0, visibleImagesCount));
           if (!mainPhoto) {
@@ -248,6 +247,7 @@ const PhotoPanel = () => {
                   alt={mainPhoto}
                   className="w-full h-full object-cover"
                   onClick={handleImageClick}
+                  draggable="false"
                 />
                 {selectedPoint && (
                   <div
