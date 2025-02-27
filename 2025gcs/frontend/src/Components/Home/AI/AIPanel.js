@@ -90,7 +90,7 @@ const AIPanel = ({ data }) => {
   };
 
   return (
-    <div className="ai-panel py-6 px-10 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
+    <div className="flex flex-col justify-center items-center py-4 px-5 w-full h-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
       <div className="top-0 z-10 flex items-center justify-between">
         <div className="flex">
           <button
@@ -135,7 +135,7 @@ const AIPanel = ({ data }) => {
           </div>
         )}
       </div>
-      <div className="overflow-auto h-56">
+      <div className="overflow-auto h-52">
         {data && Object.keys(data).length > 0 ? (
           Object.entries(data).map(([className, predictions]) => (
             <div

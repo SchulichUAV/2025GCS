@@ -1,76 +1,88 @@
-import React from 'react'
+import React, { useState } from 'react';
 import axios from 'axios';
 import { ENDPOINT_IP } from "../../../config";
 
 const AltitudePanel = () => {
-  // Takeoff altitude button handler, sends request to the backend.
-  const handleTakeoffAltitude = (event) => {
-    event.preventDefault(); // prevents default event behavior
+  const [takeoffAltitude, setTakeoffAltitude] = useState("");
+  const [gotoAltitude, setGotoAltitude] = useState("");
+  const [takeoffBorderColor, setTakeoffBorderColor] = useState("border-gray-300");
+  const [gotoBorderColor, setGotoBorderColor] = useState("border-gray-300");
 
-    const altitude = document.getElementsByName("takeoffAltitude")[0].value;
-    if (altitude === "") { // only allow non-empty values
-      console.log("Takeoff altitude value is empty.");
-      return;
-    }
+  const handleAltitudeRequest = async (type, altitude, setAltitude, setBorderColor) => {
+    const handleError = () => {
+      setBorderColor("border-red-500");
+      setTimeout(() => setBorderColor("border-gray-300"), 3800);
+    };
 
-    axios.post(`http://${ENDPOINT_IP}/takeoff`, { // send a POST request to the server
-      altitude // ES6 shorthand for altitude: altitude
-    }).then((response) => {
-      if (response.status === 200) {
-        console.log("Takeoff altitude set to " + altitude + " ft.");
-      } else {
-        console.log("Failed to set takeoff altitude.");
+    const handleSuccess = () => {
+      setBorderColor("border-green-500");
+      setTimeout(() => setBorderColor("border-gray-300"), 3800);
+      setAltitude("");
+    };
+
+    if (!altitude) {
+      handleError();
+    } 
+    else {
+      try {
+        const response = await axios.post(`http://${ENDPOINT_IP}/set-altitude-${type}`, { altitude });
+        if (response.status === 200) {
+          handleSuccess();
+        } else {
+          handleError();
+        }
+      } catch (error) {
+        handleError();
       }
-    }).catch((error) => {
-      console.log(error);
-    });
-  }
-
-  // Go-to altitude button handler, sends request to the backend.
-  const handleGotoAltitude = (event) => {
-    event.preventDefault(); // prevents default event behavior
-
-    const altitude = document.getElementsByName("gotoAltitude")[0].value;
-    if (altitude === "") { // only allow non-empty values
-      console.log("Go-to altitude value is empty.");
-      return;
     }
-
-    axios.post(`http://${ENDPOINT_IP}/goto`, { // send a POST request to the server, placeholder endpoint
-      altitude // ES6 shorthand for altitude: altitude
-    }).then((response) => {
-      if (response.status === 200) {
-        console.log("Go-to altitude set to " + altitude + " ft.");
-      } else {
-        console.log("Failed to set go-to altitude.");
-      }
-    }).catch((error) => {
-      console.log(error);
-    });
-  }
+  };
 
   return (
-    <div className="altitude-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-2 bg-white rounded-xl shadow-lg">
-      <div className="p-2 mb-2">
-        <div className="flex items-center">
+    <div className="flex flex-col justify-center items-center py-8 w-full h-full bg-white rounded-2xl shadow-2xl p-6 space-y-6">
+      <h2 className="text-3xl font-bold text-gray-700 text-center">Altitude Control</h2>
+      <div className="w-full space-y-4">
+        <div className="flex items-center space-x-4 w-full">
           <div className="relative flex-grow">
-            <input name="takeoffAltitude" type="number" placeholder="Takeoff Altitude" className="w-full border border-gray-300 rounded-md p-2 pr-8" style={{ background: "white" }} />
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500">ft</span>
+            <input
+              name="takeoffAltitude"
+              type="number"
+              placeholder="Takeoff Altitude"
+              value={takeoffAltitude}
+              onChange={(e) => setTakeoffAltitude(e.target.value)}
+              className={`w-full border-2 ${takeoffBorderColor} rounded-lg p-3 pr-6 shadow-sm focus:outline-none`}
+            />
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">ft</span>
           </div>
-          <button className="ml-2 bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded-md" onClick={handleTakeoffAltitude}>Set</button>
+          <button
+            onClick={() => handleAltitudeRequest("takeoff", takeoffAltitude, setTakeoffAltitude, setTakeoffBorderColor)}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 disabled:opacity-50"
+          >
+            Set
+          </button>
         </div>
-      </div>
-      <div className="p-2">
-        <div className="flex items-center">
+
+        <div className="flex items-center space-x-4 w-full">
           <div className="relative flex-grow">
-            <input name="gotoAltitude" type="number" placeholder="Go-to Altitude" className="w-full border border-gray-300 rounded-md p-2 pr-8" style={{ background: "white" }} />
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500">ft</span>
+            <input
+              name="gotoAltitude"
+              type="number"
+              placeholder="Go-to Altitude"
+              value={gotoAltitude}
+              onChange={(e) => setGotoAltitude(e.target.value)}
+              className={`w-full border-2 ${gotoBorderColor} rounded-lg p-3 pr-6 shadow-sm focus:outline-none`}
+            />
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">ft</span>
           </div>
-          <button className="ml-2 bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded-md" onClick={handleGotoAltitude}>Set</button>
+          <button
+            onClick={() => handleAltitudeRequest("goto", gotoAltitude, setGotoAltitude, setGotoBorderColor)}
+            className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 disabled:opacity-50"
+          >
+            Set
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default AltitudePanel
+export default AltitudePanel;

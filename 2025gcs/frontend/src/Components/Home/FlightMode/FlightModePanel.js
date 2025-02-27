@@ -66,7 +66,7 @@ const FlightControl = () => {
   };
 
   return (
-    <div className="flight-control-panel py-6 px-20 max-w-3xl w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg">
+    <div className="py-6 px-20 w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg">
       <div className="flex items-center space-x-4">
         <img src={lockIcon} alt="Lock Icon" className="w-8 h-8" draggable="false"/>
         <ReactSlider
@@ -80,7 +80,7 @@ const FlightControl = () => {
           onAfterChange={handleSliderAfterChange}
         />
         <span className="text-gray-500 select-none">
-          {sliderValue === 100 ? 'Unlocked!' : 'Slide to unlock'}
+          {sliderValue === 100 ? 'Unlocked!' : 'Locked'}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
