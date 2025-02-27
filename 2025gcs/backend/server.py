@@ -331,7 +331,7 @@ def shutdown_workers():
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
-@app.route('/Clear-Detections-Cache', methods=['POST'])
+@app.post('/Clear-Detections-Cache')
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
@@ -371,9 +371,21 @@ def set_altitude_takeoff():
 def set_altitude_goto():
     return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
 
-@app.route('/process-mapping', methods=['POST', 'GET'])
+@app.route('/process-mapping', methods=['GET'])
 def process_mapping():
-    return jsonify({'success': True, 'message': 'Mapping process started'}), 200
+    try:
+        # Simulate processing and replacing the image
+        odm_dir = os.path.join(DATA_DIR, 'ODM')
+        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
+        print(f"Processing mapping image: {odm_image_path}")
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/data/ODM/<filename>')
+def serve_odm_image(filename):
+    odm_dir = os.path.join(DATA_DIR, 'ODM')
+    return send_from_directory(odm_dir, filename)
 
 if __name__ == '__main__':
     '''

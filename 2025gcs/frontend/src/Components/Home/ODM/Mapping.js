@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ENDPOINT_IP } from "../../../config";
 
@@ -11,21 +11,28 @@ function Mapping() {
     try {
       const response = await axios.post(`http://${ENDPOINT_IP}/process-mapping`);
       if (response.status === 200) {
-        setImageUrl(response.data.imageUrl);
-      } else {
-        console.error("Failed to process mapping.");
+        setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
       }
-    } catch (error) {
-      console.error("Error processing mapping:", error);
-    } finally {
+    } catch (error) {} 
+    finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const fetchInitialImage = async () => {
+      try {
+          setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
+      } catch (error) {}
+    };
+
+    fetchInitialImage();
+  }, []);
+
   return (
-    <div className="flex h-full w-full bg-white">
+    <div className="flex h-full w-full bg-white rounded-xl overflow-hidden">
       <button
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold w-20 flex justify-center items-center text-2xl"
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold w-20 flex justify-center items-center text-2xl rounded-l-xl"
         onClick={handleProcessMapping}
         disabled={loading}
       >
@@ -33,11 +40,17 @@ function Mapping() {
           {loading ? "Processing..." : "Process"}
         </span>
       </button>
+
       <div className="flex-grow flex justify-center items-center">
         {imageUrl ? (
-          <img src={imageUrl} alt="Mapping Result" className="max-w-full h-auto rounded shadow-lg" />
+          <img
+            // src={imageUrl}
+            alt="Mapping Result"
+            className="w-full h-full object-cover"
+            draggable="false"
+          />
         ) : (
-          <p>No Processed Image...</p>
+          <p className="text-gray-600">{loading ? "Processing Image..." : "No Processed Image..."}</p>
         )}
       </div>
     </div>

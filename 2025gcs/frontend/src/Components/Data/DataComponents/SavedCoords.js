@@ -14,12 +14,8 @@ function SavedCoords() {
       if (data.success) {
         setCoords(data.coordinates);
         setSortedCoords(Object.entries(data.coordinates));
-      } else {
-        console.error("Failed to fetch coordinates");
       }
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) {}
   };
 
   const deleteCoord = async (image, index) => {
@@ -34,12 +30,8 @@ function SavedCoords() {
       const data = await response.json();
       if (data.success) {
         fetchCoords();
-      } else {
-        console.error("Failed to delete coordinate");
       }
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) {}
   };
 
   const toggleExpand = (image) => {

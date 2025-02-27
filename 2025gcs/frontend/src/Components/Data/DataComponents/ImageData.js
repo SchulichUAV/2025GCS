@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
 import { ENDPOINT_IP } from "../../../config";
 
@@ -31,12 +31,8 @@ const ImageData = () => {
       if (data.success) {
         setImageData(data.imageData);
         setSortedData(data.imageData);
-      } else {
-        console.error("Failed to fetch image data");
       }
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
@@ -67,7 +63,7 @@ const ImageData = () => {
 
   const getSortIndicator = (key) => (sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ▲' : sortConfig.direction === 'desc' ? ' ▼' : '') : '');
 
-  const handleSearch = (query, column) => {
+  const handleSearch = useCallback((query, column) => {
     setSearchQuery(query);
     if (column) {
       const filtered = imageData.filter((data) =>
@@ -83,14 +79,15 @@ const ImageData = () => {
       );
       setSortedData(filtered);
     }
-  };
-
-  // Effect to trigger search when the column changes
+  }, [imageData]);
+  
+  
   useEffect(() => {
     if (searchQuery !== "") {
       handleSearch(searchQuery, searchColumn);
     }
-  }, [searchColumn]); // Re-run search when column changes
+  }, [searchColumn, searchQuery, handleSearch]);
+
 
   const exportToCSV = () => {
     const headers = columns.map((col) => col.title).join(",");
