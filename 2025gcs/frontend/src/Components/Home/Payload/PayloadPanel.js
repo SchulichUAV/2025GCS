@@ -24,6 +24,18 @@ const PayloadPanel = () => {
   const [disabledClose, setDisabledClose] = useState(Array(4).fill(false));     // Track disabled state for Close buttons
 
   const handleStepper = async (stepper) => {
+    const handleError = () => {
+      setBorderColors((prev) => ({ ...prev, [stepper]: "border-red-500" }));
+      setTimeout(() => setBorderColors((prev) => ({ ...prev, [stepper]: "border-gray-300" })), 2000);
+    }
+
+    const distanceKey = `${stepper}Distance`;
+    const speedKey = `${stepper}Speed`;
+    if (!inputValues[distanceKey] || inputValues[distanceKey] < 0 || !inputValues[speedKey] || inputValues[speedKey] < 0) {
+      handleError();
+      return;
+    }
+
     try {
       // API HERE
       setBorderColors((prev) => ({ ...prev, [stepper]: "border-green-500" }));
@@ -34,8 +46,7 @@ const PayloadPanel = () => {
         [`${stepper}Speed`]: "",
       }));
     } catch (error) {
-      setBorderColors((prev) => ({ ...prev, [stepper]: "border-red-500" }));
-      setTimeout(() => setBorderColors((prev) => ({ ...prev, [stepper]: "border-gray-300" })), 2000);
+      handleError();
     }
   };
 
