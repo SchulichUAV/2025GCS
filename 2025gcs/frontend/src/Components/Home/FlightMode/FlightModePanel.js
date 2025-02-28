@@ -66,7 +66,7 @@ const FlightControl = () => {
   };
 
   return (
-    <div className="py-6 px-20 w-full mx-auto space-y-4 bg-white rounded-xl shadow-lg">
+    <div className="py-4 px-20 w-full mx-auto space-y-2 bg-white rounded-xl shadow-lg">
       <div className="flex items-center space-x-4">
         <img src={lockIcon} alt="Lock Icon" className="w-8 h-8" draggable="false"/>
         <ReactSlider
@@ -83,7 +83,7 @@ const FlightControl = () => {
           {sliderValue === 100 ? 'Unlocked!' : 'Locked'}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {[
           { label: 'Loiter', id: 5 },
           { label: 'Stabilize', id: 0 },

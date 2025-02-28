@@ -178,6 +178,19 @@ const PhotoPanel = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.key === 'Delete' || event.key === 'Backspace') 
+        && event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
+        setSelectedPoint(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const handleImageClick = (event) => {
     const rect = event.target.getBoundingClientRect();
     const x = event.clientX - rect.left;

@@ -20,7 +20,7 @@ const AltitudePanel = () => {
       setAltitude("");
     };
 
-    if (!altitude) {
+    if (!altitude || altitude < 0) {
       handleError();
     } 
     else {
@@ -48,6 +48,7 @@ const AltitudePanel = () => {
               type="number"
               placeholder="Takeoff Altitude"
               value={takeoffAltitude}
+              min={0}
               onChange={(e) => setTakeoffAltitude(e.target.value)}
               className={`w-full border-2 ${takeoffBorderColor} rounded-lg p-3 pr-6 shadow-sm focus:outline-none`}
             />
@@ -68,6 +69,7 @@ const AltitudePanel = () => {
               type="number"
               placeholder="Go-to Altitude"
               value={gotoAltitude}
+              min={0}
               onChange={(e) => setGotoAltitude(e.target.value)}
               className={`w-full border-2 ${gotoBorderColor} rounded-lg p-3 pr-6 shadow-sm focus:outline-none`}
             />
