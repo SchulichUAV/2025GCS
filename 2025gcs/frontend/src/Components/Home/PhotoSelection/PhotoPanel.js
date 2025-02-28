@@ -236,7 +236,7 @@ const PhotoPanel = () => {
                 <img
                   src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
                   alt={mainPhoto}
-                  className="w-full h-full object-cover"
+                  className="object-fit w-full h-full"
                   onClick={handleImageClick}
                   draggable="false"
                 />
