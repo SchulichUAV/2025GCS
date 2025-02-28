@@ -9,11 +9,11 @@ import data from "../../data/TargetInformation.json";
 
 function Home() {
   return (
-    <div className="flex flex-col min-h-screen w-screen p-4">
+    <div className="flex flex-col min-h-screen w-screen p-3">
       <div className="flex flex-col lg:flex-row flex-grow gap-2 mt-20">
 
         {/* Left Column */}
-        <div className="flex flex-col lg:w-1/2 gap-4">
+        <div className="flex flex-col lg:w-1/2 gap-2">
           <div className="flex justify-center items-center flex-grow rounded-xl shadow-lg h-1/2">
             <PhotoPanel />
           </div>

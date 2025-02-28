@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ENDPOINT_IP } from "../../../config";
+import axios from "axios";
 
 const AIPanel = ({ data }) => {
   const [openClasses, setOpenClasses] = useState({});
@@ -35,9 +36,6 @@ const AIPanel = ({ data }) => {
     localStorage.setItem("prevData", JSON.stringify(data));
   }, [data, prevData]);
   
-  
-
-
 
   const toggleClassDropdown = (className) => {
     setOpenClasses((prevState) => ({
@@ -49,14 +47,14 @@ const AIPanel = ({ data }) => {
   const HandleAIWorkflow = async () => {
     try {
       if (isAIActive) {
-        await fetch(`http://${ENDPOINT_IP}:80/AI-Shutdown`, {
+        await axios.post(`http://${ENDPOINT_IP}/AI-Shutdown`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
         });
       } else {
-        await fetch(`http://${ENDPOINT_IP}:80/AI`, {
+        await axios.post(`http://${ENDPOINT_IP}/AI`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -72,7 +70,7 @@ const AIPanel = ({ data }) => {
 
   const ClearCache = async () => {
     try {
-      await fetch(`http://${ENDPOINT_IP}:80/Clear-Detections-Cache`, {
+      await axios.post(`http://${ENDPOINT_IP}/Clear-Detections-Cache`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,12 +128,12 @@ const AIPanel = ({ data }) => {
           </div>
         )}
       </div>
-      <div className="overflow-auto h-52">
+      <div className="overflow-auto h-52 w-full">
         {data && Object.keys(data).length > 0 ? (
           Object.entries(data).map(([className, predictions]) => (
             <div
               key={className}
-              className="prediction-panel bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300 relative"
+              className="bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300 relative"
             >
               {/* Class Header */}
               <div
@@ -163,13 +161,13 @@ const AIPanel = ({ data }) => {
                       className="bg-white mt-1 p-2 mr-2 rounded-lg shadow-md border border-gray-200 flex-shrink-0"
                     >
                       <p className="text-xs">
-                        <strong className="underline">Lat:</strong> {prediction.lat.toFixed(2)}
+                        <strong>Lat:</strong> {prediction.lat.toFixed(2)}
                       </p>
                       <p className="text-xs">
-                        <strong className="underline">Lon:</strong> {prediction.lon.toFixed(2)}
+                        <strong>Lon:</strong> {prediction.lon.toFixed(2)}
                       </p>
                       <p className="text-xs">
-                        <strong className="underline">Conf:</strong> {Math.round(prediction.confidence * 100)}%
+                        <strong>Conf:</strong> {Math.round(prediction.confidence * 100)}%
                       </p>
                     </div>
                   ))}
