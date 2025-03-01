@@ -1,9 +1,31 @@
 #!/bin/bash
 
-# Echo the initial path
-npm ci
+kill_port() {
+  PORT=$1
+  PID=$(lsof -t -i:$PORT)
+  if [ -n "$PID" ]; then
+    echo "Killing process on port $PORT (PID: $PID)"
+    kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
+  fi
+}
 
-echo "Initial path: $(pwd)"
+# Check and kill processes on ports 80 and 3000
+kill_port 80
+kill_port 3000
+
+# Function to run when Ctrl+C is detected
+on_ctrl_c() {
+  echo "Caught interrupt signal (Ctrl+C)"
+  # Add your command logic here
+  echo "Running the command..."
+  # Example: kill the backend server process
+  kill_port 80
+  kill_port 3000
+  exit 0
+}
+
+# Set up trap for SIGINT
+trap on_ctrl_c SIGINT
 
 # Navigate to the backend directory
 cd "$(dirname "$0")/../../backend"
@@ -20,9 +42,6 @@ fi
 # Activate the virtual environment
 source venv/bin/activate || { echo "Failed to activate the virtual environment."; exit 1; }
 
-# Echo the path after activating the virtual environment
-echo "Path after activating virtual environment: $(pwd)"
-
 # Install the requirements
 echo "Installing dependencies..."
 pip install --upgrade pip
@@ -31,7 +50,6 @@ pip install -r requirements.txt || { echo "Failed to install the requirements.";
 # Start the backend server in the background
 echo "Starting backend server..."
 python server.py &
-
 
 # Navigate back to the frontend directory
 cd ../frontend
