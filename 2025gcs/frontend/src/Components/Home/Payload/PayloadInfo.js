@@ -27,7 +27,7 @@ const PayloadInfo = () => {
       {/* Status Indicator */}
       <div className="flex items-center justify-center gap-2 my-2">
         <div className={`w-4 h-4 rounded-full ${statusColors[payloadStatus]}`} />
-        <span className="font-medium text-md">{payloadStatus}</span>
+        <span className="font-semibold text-md">{payloadStatus}</span>
       </div>
 
       {/* Data Display */}

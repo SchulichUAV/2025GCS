@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ENDPOINT_IP } from '../../../config';
 import axios from 'axios';
 
 const PayloadPanel = () => {
-  const [droneType, setDroneType] = useState(null);
+  const [droneType, setDroneType] = useState(() => {
+    const storedDroneType = localStorage.getItem("droneType");
+    return storedDroneType !== "null" && storedDroneType ? storedDroneType : null;
+  });
+  
   const [borderColors, setBorderColors] = useState({
     stepper1Up: "border-gray-300",
     stepper1Down: "border-gray-300",
@@ -22,6 +26,15 @@ const PayloadPanel = () => {
   });
   const [disabledRelease, setDisabledRelease] = useState(Array(4).fill(false)); // Track disabled state for Release buttons
   const [disabledClose, setDisabledClose] = useState(Array(4).fill(false));     // Track disabled state for Close buttons
+
+  useEffect(() => {
+    if (droneType === '') {
+      localStorage.removeItem('droneType'); // Ensure null values don’t get stored as "null" (string)
+    } else {
+      localStorage.setItem('droneType', droneType);
+    }
+  }, [droneType]);
+  
 
   const handleStepper = async (stepper) => {
     const handleError = () => {
@@ -100,6 +113,7 @@ const PayloadPanel = () => {
   return (
     <div className="flex flex-col justify-center items-center py-4 px-6 h-full w-full mx-auto space-y-2 bg-white rounded-xl shadow-lg relative">
       {droneType !== null && (
+        <div>
         <button
           className="absolute top-4 left-4 text-gray-700 hover:text-gray-900 font-bold flex items-center"
           onClick={() => setDroneType(null)}
@@ -109,6 +123,8 @@ const PayloadPanel = () => {
           </svg>
           Back
         </button>
+        <h2 className='font-bold text-gray-800'>{droneType}</h2>
+        </div>
       )}
       <div className="pb-2 pt-2">
         <div className="flex items-center flex-col">
@@ -126,15 +142,13 @@ const PayloadPanel = () => {
           <div className="w-full flex">
           {droneType === 'Quadcopter' && (
               <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold justify-center">Stepper 1</h3>
+                <div className="grid grid-cols-4 gap-4 w-full">
+                  <div className="col-span-2 text-center">
+                    <h3 className="text-lg font-bold">Stepper 1</h3>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold justify-center">Stepper 2</h3>
+                  <div className="col-span-2 text-center">
+                    <h3 className="text-lg font-bold">Stepper 2</h3>
                   </div>
-                </div>
-                <div className="grid grid-cols-4 gap-4">
                   <div>
                     <input
                       type="number"
@@ -144,7 +158,6 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 ${borderColors.stepper1Up} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <input
                       type="number"
@@ -154,10 +167,9 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 mt-1 ${borderColors.stepper1Up} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <button
-                      className="ml-2 mt-1 text-sm bg-blue-400 hover:bg-blue-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
+                      className="mt-1 w-full text-sm bg-blue-400 hover:bg-blue-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
                       onClick={() => handleStepper('stepper1Up')}
                     >
                       Submit
@@ -172,7 +184,6 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 ${borderColors.stepper1Down} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <input
                       type="number"
@@ -182,10 +193,9 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 mt-1 ${borderColors.stepper1Down} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <button
-                      className="ml-2 mt-1 text-sm bg-blue-400 hover:bg-blue-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
+                      className="mt-1 w-full text-sm bg-blue-400 hover:bg-blue-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
                       onClick={() => handleStepper('stepper1Down')}
                     >
                       Submit
@@ -200,7 +210,6 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 ${borderColors.stepper2Up} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <input
                       type="number"
@@ -210,10 +219,9 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 mt-1 ${borderColors.stepper2Up} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <button
-                      className="ml-2 mt-1 text-sm bg-orange-400 hover:bg-orange-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
+                      className="mt-1 w-full text-sm bg-orange-400 hover:bg-orange-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
                       onClick={() => handleStepper('stepper2Up')}
                     >
                       Submit
@@ -228,7 +236,6 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 ${borderColors.stepper2Down} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <input
                       type="number"
@@ -238,10 +245,9 @@ const PayloadPanel = () => {
                       min={0}
                       onChange={handleInputChange}
                       className={`w-full text-sm border-2 mt-1 ${borderColors.stepper2Down} rounded-md p-2`}
-                      style={{ background: "white" }}
                     />
                     <button
-                      className="ml-2 mt-1 text-sm bg-orange-400 hover:bg-orange-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
+                      className="mt-1 w-full text-sm bg-orange-400 hover:bg-orange-500 transition-all duration-200 text-white px-4 py-2 rounded-md"
                       onClick={() => handleStepper('stepper2Down')}
                     >
                       Submit
