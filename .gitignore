@@ -24,5 +24,6 @@ yarn-debug.log*
 yarn-error.log*
 
 **/.vscode
-
+**/myenv
+**/venv
 2025gcs/backend/.env
