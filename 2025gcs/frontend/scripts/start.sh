@@ -8,30 +8,18 @@ kill_port() {
     kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
   fi
 }
-
-# Check and kill processes on ports 80 and 3000
-kill_port 80
-kill_port 3000
-
 # Function to run when Ctrl+C is detected
 on_ctrl_c() {
   echo "Caught interrupt signal (Ctrl+C)"
-  # Add your command logic here
-  echo "Running the command..."
-  # Example: kill the backend server process
+  # kill running ports from this project (backend and frontend)
   kill_port 80
   kill_port 3000
   exit 0
 }
-
 # Set up trap for SIGINT
 trap on_ctrl_c SIGINT
 
-# Navigate to the backend directory
 cd "$(dirname "$0")/../../backend"
-
-# Echo the path after navigating to the backend directory
-echo "Path after navigating to backend: $(pwd)"
 
 # Check if the virtual environment folder exists
 if [ ! -d "venv" ]; then
@@ -51,12 +39,12 @@ pip install -r requirements.txt || { echo "Failed to install the requirements.";
 echo "Starting backend server..."
 python server.py &
 
-# Navigate back to the frontend directory
 cd ../frontend
+# Install node dependencies
+npm ci
 
-# Start the frontend (frontend should be aware of the venv environment)
 echo "Starting frontend..."
 npm start
 
-# Keep the script running to ensure the backend remains active (if needed)
+# Keep the script running to ensure the backend remains active
 wait

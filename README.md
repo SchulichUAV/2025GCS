@@ -16,15 +16,21 @@ npm run start:full
 ```
 
 This command will:
-1. Install node required node packages
-2. Create and activate a virtual environment (if it doesn't exist).
-3. Install the required Python dependencies.
-4. Start the backend server.
+1. Create and activate a virtual environment (if it doesn't exist).
+2. Install the required Python dependencies.
+3. Start the backend server.
+4. Install the required node packages
 5. Start the frontend.
 
 ### 2. Run the Frontend Only
-To run the frontend only, use the following command:
+To run the frontend only:
+1. Navigate to the frontend directory
 ```sh
+cd frontend
+```
+2. Install node dependencies and start the server
+```sh
+npm ci
 npm run start
 ```
 
@@ -40,6 +46,10 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 3. Install the required Python dependencies:
+```sh
+pip install -r requirements.txt
+```
+4. Run the server:
 ```sh
 python server.py
 ```
