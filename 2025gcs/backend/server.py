@@ -1,49 +1,37 @@
 import os
+import logging
 import json
-import re
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import sys
-from queue import Queue
-# from inference_sdk import InferenceHTTPClient
-from threading import Thread, Event, enumerate
-from detection import image_watcher, inference_worker, geomatics_worker
-sys.path.append(r'') # add the path here 
-
 import requests
-import sys
-import requests
-import json
-
-sys.path.append(r'')  # add the path here
+from detection import stop_threads, start_threads
+from geo import locate_target
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+class FilterSpecificLogs(logging.Filter):
+    def filter(self, record):
+        # Suppress logs for specific endpoints
+        return not any(endpoint in record.getMessage() for endpoint in [
+            '/getImages', '/images/', '/get_heartbeat'
+        ])
+
+log = logging.getLogger('werkzeug')
+log.addFilter(FilterSpecificLogs())
 
 # Data storage
 targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-
-# Inference client
-# client = InferenceHTTPClient(
-#     api_url="https://detect.roboflow.com", # Inference API URL
-#     api_key="7dEiP3o3XQGNET8f4jlC"  # API key
-# )
-
-image_queue = Queue()
-detection_queue = Queue()
-stop_event = Event()  # Used to signal threads to stop on program exit
-
 ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
-
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '.', 'images')
+IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 
 PAYLOAD_BAY_OPEN = {
     "servo1": False,
@@ -73,7 +61,6 @@ vehicle_data = {
     "heading_uncertainty": 0
 }
 
-
 def load_json(file_path):
     """Utility to load JSON data from a file."""
     try:
@@ -81,7 +68,6 @@ def load_json(file_path):
             return json.load(file)
     except FileNotFoundError:
         return {}
-
 
 def save_json(file_path, data):
     """Utility to save JSON data to a file."""
@@ -95,33 +81,39 @@ so this method should be called every like
 the display based on that data.
 '''
 
-@app.route('/get_heartbeat', methods=['GET'])
+'''
+This function will return the number images under backend\images
+'''
+def get_existing_image_count():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    IMAGES_DIR = os.path.join(current_dir, "data/images")
+    if not os.path.exists(IMAGES_DIR):
+        print(f"Warning: Directory '{IMAGES_DIR}' does not exist. Exiting function.")
+    else:
+        image_count = len([image for image in os.listdir(IMAGES_DIR) if image.endswith('.jpg')])
+        return image_count
+
+@app.get('/get_heartbeat')
 def get_heartbeat():
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-        print("sending api request")
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
-        print("sent request")
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
-        
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
-        print("Heartbeat failure - RocketM5 disconnect")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 200
+
+# vvv CURRENTLY NOT USED vvv
 
 # indiated target completion - not sure if we will keep this for SUAS 2025
-
-@app.route('/completeTarget', methods=['POST'])
+@app.post('/completeTarget')
 def complete_target():
     global current_target
-
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-
     items = data.get('ITEM', [])
-
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -131,25 +123,19 @@ def complete_target():
     data.setdefault('completedTargets', []).append(completed)
     current_target = items[0] if items else None
     save_json(target_info_path, data)
-
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
 
 # return current target
-
-
-@app.route('/getCurrentTarget', methods=['GET'])
+@app.get('/getCurrentTarget')
 def get_current_target():
     # Get the index from the query parameters
     index = request.args.get('index', type=int)
-
     if index is None:
         return jsonify({'success': False, 'error': 'Index parameter is required'}), 400
 
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-
     items = data.get('ITEM', [])
-
     if not items:
         return jsonify({'success': False, 'error': 'No targets available'})
 
@@ -160,26 +146,23 @@ def get_current_target():
     # Return the target at the specified index
     return jsonify({'success': True, 'currentTarget': items[index]})
 
-
-@app.route('/getTargets', methods=['GET'])
+@app.get('/getTargets')
 def get_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     items = data.get('ITEM', [])
-
     return jsonify({'success': True, 'targets': items})
 
-
-@app.route('/getCompletedTargets', methods=['GET'])
+@app.get('/getCompletedTargets')
 def get_completed_targets():
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
     completed_targets = data.get('completedTargets', [])
-
     return jsonify({'success': True, 'completed_targets': completed_targets})
 
+# ^^^ CURRENTLY NOT USED ^^^
 
-@app.route('/addCoords', methods=['POST'])
+@app.post('/addCoords')
 def add_coords():
     data = request.get_json()
     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
@@ -191,83 +174,69 @@ def add_coords():
     save_json(coord_data_path, coords_data)
     return jsonify({'status': 'success'})
 
-# @app.route('/deleteCoords', methods=['POST'])
-# def delete_coords():
-#     coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     save_json(coord_data_path, {'coordinates': []})
-#     return jsonify({'status': 'success'})
+@app.get('/get_saved_coords')
+def get_saved_coords():
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    return jsonify({'success': True, 'coordinates': coords_data})
 
-# # Target Coordinates
-# @app.route('/addTargetCoordInfo', methods=['POST'])
-# def add_target_coord_info():
-#     data = request.get_json()
-#     target_data_path = os.path.join(DATA_DIR, 'SavedTargets.json')
-#     targets_data = load_json(target_data_path)
-#     targets_data.setdefault(data['activeTarget'], []).append({
-#         'longitude': data['longitude'],
-#         'latitude': data['latitude']
-#     })
-#     save_json(target_data_path, targets_data)
-#     return jsonify({'status': 'success'})
+@app.post('/delete_coord')
+def delete_coord():
+    data = request.get_json()
+    image = data.get('image')
+    index = data.get('index')
 
-# # File Management
-# @app.route('/retrieveData', methods=['GET'])
-# def retrieve_data():i
-#     file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
+    if image is None or index is None:
+        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
 
-# @app.route('/retrieveImageJson/<image_number>', methods=['GET'])
-# def retrieve_image_json(image_number):
-#     file_path = os.path.join(IMAGES_DIR, f'{image_number}.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    if image in coords_data and 0 <= index < len(coords_data[image]):
+        del coords_data[image][index]
+        if not coords_data[image]:  # If the list is empty, remove the key
+            del coords_data[image]
+        save_json(saved_coords_path, coords_data)
+        return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
+    else:
+        return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
 
+@app.get('/getImageData')
+def get_image_data():
+    image_data_dir = os.path.join(DATA_DIR, 'imageData')
+    image_data = []
 
-# Location Computation
-# @app.route('/computeLocation', methods=['POST'])
-# def compute_location():
-#     data = request.get_json()
-#     lat, lon = locate.locate(
-#         uav_latitude=float(data['lat']),
-#         uav_longitude=float(data['lon']),
-#         uav_altitude=float(data['rel_alt']),
-#         bearing=float(data['yaw']),
-#         obj_x_px=float(data['x']),
-#         obj_y_px=float(data['y'])
-#     )
-#     return jsonify({'latitude': lat, 'longitude': lon})
+    for filename in sorted(os.listdir(image_data_dir)):
+        if filename.endswith('.json'):
+            with open(os.path.join(image_data_dir, filename), 'r') as file:
+                data = json.load(file)
+                data['image'] = filename.replace('.json', '.jpg')
+                image_data.append(data)
 
-# change all absolute paths to local paths and test
-@app.route('/getImageCount', methods=['GET'])
-def get_image_count():
-    """Endpoint to count the number of images in the images folder."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
+    return jsonify({'success': True, 'imageData': image_data})
+
+@app.get('/getImages')
+def get_images():
+    """Endpoint to get the list of images in the images folder."""
     if not os.path.exists(IMAGES_DIR):
         return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
 
-    image_files = [f for f in os.listdir(IMAGES_DIR) if os.path.isfile(os.path.join(IMAGES_DIR, f))]
-    return jsonify({'success': True, 'imageCount': len(image_files)})
+    image_files = sorted([f for f in os.listdir(IMAGES_DIR) if f.endswith('.jpg') and os.path.isfile(os.path.join(IMAGES_DIR, f))])
+    return jsonify({'success': True, 'images': image_files})
 
-@app.route('/deleteImage', methods=['POST'])
+@app.get('/images/<filename>')
+def serve_image(filename):
+    """Endpoint to serve an image file."""
+    return send_from_directory(IMAGES_DIR, filename)
+
+@app.post('/deleteImage')
 def delete_image():
-    """Delete an image from the server if it matches 'captureX.jpg' format."""
-    # IMAGES_DIR = "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images"
-    IMAGES_DIR = "../frontend//public//images"
+    """Delete an image from the server"""
     data = request.get_json()
     image_name = data.get("imageName")
-
-    # Validate image name format: "captureX.jpg"
-    if not image_name or not re.match(r"^capture\d+\.jpg$", image_name):
+    if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
     image_path = os.path.join(IMAGES_DIR, image_name)
-
     if os.path.exists(image_path):
         os.remove(image_path)
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
@@ -333,51 +302,35 @@ def payload_release():
         return jsonify({'success': False, 'error': str(e)}), 500
 
    
-@app.route('/clearAllImages', methods=['POST'])
+@app.post('/clearAllImages')
 def clear_all_images():
-    """Delete all images from the images directory in both frontend and backend."""
-    # IMAGE_DIRS = [
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//frontend//public//images",
-    #     "C://Users//nehap//Desktop//2025GCS//2025gcs//backend//images"
-    # ]
-
-    IMAGE_DIRS = [
-        "../frontend//public//images",
-        "./images"
-    ]
-
-    deleted_files = []
+    """Delete all images from the images directory."""
     errors = []
-
-    for img_dir in IMAGE_DIRS:
-        if os.path.exists(img_dir):
-            for filename in os.listdir(img_dir):
-                file_path = os.path.join(img_dir, filename)
-                if os.path.isfile(file_path) and re.match(r"^capture\d+\.jpg$", filename):
-                    try:
-                        os.remove(file_path)
-                        deleted_files.append(filename)
-                    except Exception as e:
-                        errors.append(str(e))
-
+    if os.path.exists(IMAGES_DIR):
+        for filename in os.listdir(IMAGES_DIR):
+            file_path = os.path.join(IMAGES_DIR, filename)
+            if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    errors.append(str(e))
     if errors:
         return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
 
-    return jsonify({'success': True, 'message': 'All images deleted successfully', 'deletedFiles': deleted_files})
+    return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
     
-@app.route('/toggle_camera_state', methods=['POST'])
+@app.post('/toggle_camera_state')
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    
-    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    image_count = get_existing_image_count()
+    data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-
     try:
-        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Camera on: {CAMERA_STATE}")
+        print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
@@ -386,44 +339,65 @@ def toggle_camera_state():
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# AI Processing.
-# Workflow starts when the AI endpoint is called through the frontend.
-# The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
-@app.route('/AI', methods=['POST'])
+@app.post('/manualSelection-save')
+def manual_selection_save():
+    data = request.get_json()
+    saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords)
+    file_name = data['file_name']
+    if file_name not in coords_data:
+        coords_data[file_name] = []
+
+    coords_data[file_name].append({
+        'x': data['selected_x'],
+        'y': data['selected_y']
+    })
+    save_json(saved_coords, coords_data)
+    return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
+
+@app.post('/manualSelection-geo-calc')
+def manual_selection_geo_calc():
+    """Perform geomatics calculations for a manually selected target."""
+    try:
+        saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
+        with open(saved_coords, "r") as file:
+            data = json.load(file)
+
+        txt_lines = []
+        # Iterate over each image entry
+        for image_name, coordinates in data.items():
+            for coord in coordinates:
+                x, y = coord["x"], coord["y"]
+                txt_lines.append(f"{image_name},{x},{y}")
+        print(txt_lines)
+        latitude, longitude = locate_target()
+
+        # send to the vehicle ...
+
+        save_json(saved_coords, {}) # Clear the saved coordinates
+        return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.post('/AI')
 def start_AI_workers():
-    threads = [
-        Thread(target=image_watcher, args=(image_queue, stop_event,), daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, args=(image_queue, detection_queue, stop_event, client), daemon=True, name="InferenceWorker"),
-        Thread(target=geomatics_worker, args=(detection_queue, stop_event,), daemon=True, name="GeomaticsWorker"),
-    ]
+    """Starts the worker threads, which run infinitely until shutdown."""
+    try:
+        start_threads()
+        return jsonify({"message": "AI processing started"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
-    # Start worker threads
-    for thread in threads:
-        thread.start()
-    
-    return jsonify({"message": "AI processing started"}), 200
-
-
-@app.route('/AI-Shutdown', methods=['POST'])
+@app.post('/AI-Shutdown')
 def shutdown_workers():
-    """Stops all running AI worker threads."""
-    # Signal threads to stop
-    stop_event.set()
-    # Clean up queues
-    image_queue.put(None)
-    detection_queue.put(None)
+    """Stops all running worker threads."""
+    try:
+        stop_threads()
+        return jsonify({"message": "AI processing stopped"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
-    # Wait for all threads to finish
-    for thread in enumerate():
-        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
-            thread.join()
-
-    # Reset stop event for future use
-    stop_event.clear()
-    return jsonify({"message": "AI processing stopped"}), 200
-
-
-@app.route('/Clear-Detections-Cache', methods=['POST'])
+@app.post('/Clear-Detections-Cache')
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
@@ -434,13 +408,53 @@ def ClearCache():
 @app.post('/submit/')
 def submit_data():
     file = request.files["file"]
-    file.save('./images/' + file.filename) 
+    if file.mimetype == "application/json":
+        file.save('./data/imageData/' + file.filename)
+    else:
+        file.save('./data/images/' + file.filename) 
     print('Saved file', file.filename)
     return 'ok'
+
+@app.post('/payload-bay-close')
+def payload_bay_close():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
+
+@app.post('/payload-release')
+def payload_release():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload released'}), 200
+
+@app.post('/set-altitude-takeoff')
+def set_altitude_takeoff():
+    return jsonify({'success': True, 'message': 'Altitude set for takeoff'}), 200
+
+@app.post('/set-altitude-goto')
+def set_altitude_goto():
+    return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
+
+@app.route('/process-mapping', methods=['GET'])
+def process_mapping():
+    try:
+        # Simulate processing and replacing the image
+        odm_dir = os.path.join(DATA_DIR, 'ODM')
+        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
+        print(f"Processing mapping image: {odm_image_path}")
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/data/ODM/<filename>')
+def serve_odm_image(filename):
+    odm_dir = os.path.join(DATA_DIR, 'ODM')
+    return send_from_directory(odm_dir, filename)
 
 if __name__ == '__main__':
     '''
     May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
     '''
     app.run(debug=False, host='0.0.0.0', port=80)
-

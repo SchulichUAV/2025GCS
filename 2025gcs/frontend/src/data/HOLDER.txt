@@ -3,3 +3,6 @@ The symlink points to the TargetInformation.json file in the backend data direct
 
 To ensure the symlink is created properly, after pulling the repository, please run:
     `npm ci` to install the necessary dependencies and create the symlink.
+
+Windows users: Ensure you are running with administrative privileges.
+Mac users: Ensure you are running with admin privileges (run Flask server with sudo permissions)
