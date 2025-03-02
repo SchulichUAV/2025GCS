@@ -1,12 +1,27 @@
 #!/bin/bash
+set -e 
 
 kill_port() {
   PORT=$1
-  PID=$(lsof -t -i:$PORT)
-  if [ -n "$PID" ]; then
-    echo "Killing process on port $PORT (PID: $PID)"
-    kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
-  fi
+  OS="$(uname -s)"
+
+  case "$OS" in
+    Linux*|Darwin*)
+      PID=$(lsof -t -i:$PORT)
+      if [ -n "$PID" ]; then
+        echo "Killing process on port $PORT (PID: $PID)"
+        kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
+      fi
+      ;;
+    CYGWIN*|MINGW*|MSYS*|Windows_NT)
+      echo "Killing process on port $PORT (Windows)..."
+      powershell -Command "& { Get-Process -Id (Get-NetTCPConnection -LocalPort $PORT).OwningProcess | Stop-Process -Force }" 2>/dev/null
+      ;;
+    *)
+      echo "Unsupported OS: $OS"
+      exit 1
+      ;;
+  esac
 }
 
 # Function to run when Ctrl+C is detected
@@ -22,14 +37,32 @@ trap on_ctrl_c SIGINT
 
 cd "$(dirname "$0")/../../backend"
 
+PYTHON_CMD=""
+
+if command -v python3.11 >/dev/null 2>&1; then
+    PYTHON_CMD="python3.11"
+elif command -v python >/dev/null 2>&1 && python --version 2>&1 | grep -q "Python 3.11"; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python 3.11 is required but not found."
+    exit 1
+fi
+
 # Check if the virtual environment exists
 if [ ! -d "suav_venv_gcs" ]; then
   echo "Virtual environment not found. Creating virtual environment..."
-  python3.11 -m venv suav_venv_gcs || { echo "Failed to create virtual environment."; exit 1; }
+  $PYTHON_CMD -m venv suav_venv_gcs || { echo "Failed to create virtual environment."; exit 1; }
 fi
 
-# Activate the virtual environment
-source suav_venv_gcs/bin/activate || { echo "Failed to activate the virtual environment."; exit 1; }
+
+# Detect OS and activate virtual environment
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows (Git Bash / PowerShell)
+    source suav_venv_gcs/Scripts/activate || { echo "Failed to activate the virtual environment."; exit 1; }
+else
+    # Linux/macOS
+    source suav_venv_gcs/bin/activate || { echo "Failed to activate the virtual environment."; exit 1; }
+fi
 
 # Function to check if Python dependencies need updating
 check_python_deps() {
@@ -41,7 +74,6 @@ check_python_deps() {
   # Compare installed packages with requirements.txt
   if ! pip freeze | grep -Fxqf requirements.txt; then
     echo "Updating Python dependencies..."
-    pip install --upgrade pip
     pip install -r requirements.txt || { echo "Failed to install the requirements."; exit 1; }
   else
     echo "Python dependencies are already installed."
@@ -51,8 +83,31 @@ check_python_deps() {
 check_python_deps
 
 # Start the backend server in the background
-echo "Starting backend server..."
-python server.py &
+# Detect the operating system
+OS="$(uname -s)"
+case "$OS" in
+  Linux*|Darwin*)
+    echo "Checking sudo access..."
+    
+    # Prompt for sudo access upfront
+    if ! sudo -v; then
+      echo "Failed to gain sudo privileges. Exiting."
+      exit 1
+    fi
+
+    echo "Starting backend server with sudo permissions..."
+    sudo python server.py &  # Run with sudo
+    ;;
+  CYGWIN*|MINGW*|MSYS*|Windows_NT)
+    # Start the backend server without sudo on Windows
+    echo "Starting backend server on Windows..."
+    python server.py &
+    ;;
+  *)
+    echo "Unsupported OS: $OS"
+    exit 1
+    ;;
+esac
 
 cd ../frontend
 

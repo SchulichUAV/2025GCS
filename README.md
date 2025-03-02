@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Node.js and npm installed
-- Python 3 installed
+- Python 3.11 installed
 
 ## Running the Project
 
@@ -20,6 +20,14 @@ This will:
 3. Start the backend server (server.py).
 4. Install the required node packages
 5. Start the frontend.
+
+### Things to Note About the OS You Are Running On
+
+#### Unix Based (linux, mac)
+If you are on a mac you will need to first grant the `start:full` script executable permissions, this can be done by navigating to the `frontend` directory and executing `chmod a+x ./scripts/start.sh`
+
+#### Windows
+If you are on windows open a `git bash` terminal and run `npm run start:full` in the frontend directory
 
 ### 2. Run the Frontend Only
 To run the frontend only:

@@ -32,7 +32,7 @@
     "build": "webpack --config webpack.config.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start:full": "chmod a+x ./scripts/start.sh && ./scripts/start.sh"
+    "start:full": "bash ./scripts/start.sh"
   },
   "eslintConfig": {
     "extends": [
