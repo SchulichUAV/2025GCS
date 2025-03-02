@@ -5,12 +5,12 @@ kill_port() {
   PORT=$1
   OS="$(uname -s)"
 
-  case "$OS" in
-    Linux*|Darwin*)
-      PID=$(lsof -t -i:$PORT)
+  case "$OS" in Linux*|Darwin*)
+      PID=$(sudo lsof -t -i:$PORT)
       if [ -n "$PID" ]; then
         echo "Killing process on port $PORT (PID: $PID)"
-        kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
+        sudo kill -9 $PID || { echo "Failed to kill process on port $PORT"; exit 1; }
+        echo "Process killed successfully"
       fi
       ;;
     CYGWIN*|MINGW*|MSYS*|Windows_NT)
