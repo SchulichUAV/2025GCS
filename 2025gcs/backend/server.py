@@ -284,14 +284,14 @@ def payload_toggle():
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
     
-@app.route('/payload_release', methods=['POST'])
+@app.route('/payload-release', methods=['POST'])
 def payload_release():
     data = request.get_json()
-    print(f"Received payload_release request for: {data.get('payload_id')}")
+    send_data = json.dumps({"bay": data.get("bay")})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
-        response = requests.post(VEHICLE_API_URL + 'payload_release', data=data, headers=headers)
+        response = requests.post(VEHICLE_API_URL + 'payload_release', data=send_data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
         return jsonify({'success': True}), 200
     except requests.exceptions.Timeout:
@@ -421,13 +421,6 @@ def payload_bay_close():
     # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
     # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
     return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
-
-@app.post('/payload-release')
-def payload_release():
-    data = request.get_json()
-    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-    # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
-    return jsonify({'success': True, 'message': 'Payload released'}), 200
 
 @app.post('/set-altitude-takeoff')
 def set_altitude_takeoff():

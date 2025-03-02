@@ -100,7 +100,7 @@ const PayloadPanel = () => {
         headers: { "Content-Type": "application/json" }
       });
       if (response.status === 200) {
-        handleDisableButton(index, 'release'); // Disable only the Release button
+        // handleDisableButton(index, 'release'); // Disable only the Release button
       }
     } catch (error) {}
   };
