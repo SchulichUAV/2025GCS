@@ -1,7 +1,7 @@
 import os
 import json
 
-ODM_TAGS = os.path.join(os.path.dirname(__file__), 'data', 'ODM', 'odm_geotags.txt')
+ODM_TAGS = os.path.join(os.path.dirname(__file__), 'data', 'odm_geotags.txt')
 TARGETS_CACHE = os.path.join(os.path.dirname(__file__), 'data', 'TargetInformation.json')
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'images')
 IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
