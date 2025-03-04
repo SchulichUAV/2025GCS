@@ -70,8 +70,7 @@ class Target:
     """
 
     def __init__(self, id: str, object_type: Object, image_data: list = [], coordinates: list = []):
-        "Warning: If you remove ID, please update all related methods in this class and the Targets class, as well as the API routes."
-        self.id = id # Unique identifier for the target. This may be removed.
+        self.id = id # This ID could be the detection ID, not sure how AI team will handle this.
         self.object_type = object_type # Object type from the Object enum.
         self.image_data = image_data # Not sure how this will work, but depends on how the AI team will provide the image data. I think similar to prediction data.
         self.coordinates = coordinates # List of dictionaries containing latitude and longitude.
@@ -105,9 +104,6 @@ class Targets:
     def get_active_targets() -> list:
         """
         Get the list of active targets.
-
-        Returns:
-            list: A list of Target objects.
         """
 
         target_info_path = os.path.join(DATA_DIR, 'targets.json')
@@ -117,9 +113,6 @@ class Targets:
     def get_completed_targets() -> list:
         """
         Get the list of completed targets.
-
-        Returns:
-            list: A list of Target objects.
         """
 
         target_info_path = os.path.join(DATA_DIR, 'targets.json')
@@ -129,11 +122,6 @@ class Targets:
     def save_targets(active, completed) -> None:
         """
         Save the target objects to the data file.
-        You can pass None for either parameter to get the current values from the data file to avoid overwriting them.
-
-        Parameters:
-            active (list): A list of active Target objects.
-            completed (list): A list of completed Target objects.
         """
 
         # If the active or completed lists are None, get the current values from the data file.
@@ -152,9 +140,6 @@ class Targets:
     def add_target(target: Target) -> None:
         """
         Add a target object to the active targets list.
-
-        Parameters:
-            target (Target): The target object to add.
         """
 
         active, _ = Targets.get_all_targets()
@@ -164,12 +149,6 @@ class Targets:
     def complete_target(id: str) -> bool:
         """
         Mark a target as completed.
-
-        Parameters:
-            id (str): The ID of the target to mark as completed.
-
-        Returns:
-            bool: True if the target was successfully marked as completed, False otherwise.
         """
 
         active = Targets.get_active_targets()
@@ -185,26 +164,14 @@ class Targets:
 
 # FUNCTIONS
 
-def load_json(file_path) -> dict:
-    """
-    Utility to load JSON data from a file.
-
-    Parameters:
-        file_path (str): The path to the JSON file.
-
-    Returns:
-        dict: The JSON data loaded from the file.
-    """
-
+def load_json(file_path):
+    """Utility to load JSON data from a file."""
     try:
         with open(file_path, 'r') as file:
             return json.load(file)
     except FileNotFoundError:
         return {}
 
-
-def save_json(file_path, data):
-    """Utility to save JSON data to a file."""
 
 def save_json(file_path, data) -> None:
     """
@@ -267,11 +234,11 @@ def get_heartbeat():
 # ROUTES
 
 @app.route('/targets', methods=['GET', 'POST'], strict_slashes=False)
-@app.route('/targets/<id>', methods=['GET', 'POST', 'PATCH', 'DELETE'], strict_slashes=False)
-def targets(id=None):
+@app.route('/targets/<id>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
+def targets(id):
     if request.method == 'GET':
         # Check if the ID parameter is used for filtering by status.
-        if id == 'active' or id == None:
+        if id == 'active':
             return jsonify({'targets': [target.to_dict() for target in Targets.get_active_targets()]})
         elif id == 'completed':
             return jsonify({'targets': [target.to_dict() for target in Targets.get_completed_targets()]})
@@ -317,36 +284,117 @@ def targets(id=None):
 
     else:
         return jsonify({'error': 'Invalid request method.'}), 405
+    
+@app.route('/coordinates', methods=['GET', 'DELETE'], strict_slashes=False)
+@app.route('/coordinates/<image>', methods=['GET', 'POST', 'DELETE'], strict_slashes=False)
+def coordinates(image=None):
+    # Split into two sections, general image coordinate management and individual image coordinate management.
+    # Determined by the presence of an image parameter.
+    if image:
+        # Check if the image parameter is a valid image file.
+        if not image.endswith('.jpg'):
+            return jsonify({'success': False, 'error': 'Invalid image file name format.'}), 400
+        
+        # Check if the image file exists.
+        image_path = os.path.join(IMAGES_DIR, image)
+        if not os.path.exists(image_path):
+            return jsonify({'success': False, 'error': 'Corresponding image file doesn\'t exist.'}), 404
+        
+        # Check if the savedCoords.json file exists.
+        coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
+        if not os.path.exists(coords_data_path):
+            return jsonify({'success': False, 'error': 'Coordinates data file not found.'}), 404
+        
+        # Finally, handle the request based on the method.
+        # The above checks ensure that the file exists and is a valid image file.
+        
+        # Get the list of coordinates for the image.
+        if request.method == 'GET':
+            data = load_json(coords_data_path)
+            return data.get(image, [])
+        
+        # Save the coordinates for the image.
+        elif request.method == 'POST':
+            data = request.get_json()
+            if data is None:
+                return jsonify({'success': False, 'error': 'Request must be JSON data.'}), 415
+            
+            if 'x' not in data or 'y' not in data:
+                return jsonify({'success': False, 'error': 'Coordinates must be provided in JSON data as x and y.'}), 400
+            
+            if not isinstance(data['x'], float) or not isinstance(data['y'], float):
+                return jsonify({'success': False, 'error': 'Coordinates must be numerical values.'}), 400
+            
+            coords_data = load_json(coords_data_path)
+            coords_data.setdefault(image, []).append({
+                'x': float(data['x']),
+                'y': float(data['y'])
+            })
+            save_json(coords_data_path, coords_data)
+            return jsonify({'success': True})
+        
+        # Clear the coordinates for the image.
+        elif request.method == 'DELETE':
+            coords_data = load_json(coords_data_path)
+            coords_data[image] = []
+            save_json(coords_data_path, coords_data)
+            return jsonify({'success': True})
+        
+        else:
+            return jsonify({'success': False, 'error': 'Invalid request method.'}), 405
+    
+    else:
+        # If no image parameter is provided, these functions are for general image coordinate management.
+        
+        # Get the list of all images with saved coordinates.
+        # This returns a list of image file names, not the actual coordinates.
+        # The coordinates for each image can be retrieved individually using the image parameter.
+        if request.method == 'GET':
+            coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
+            coords_data = load_json(coords_data_path)
+            return jsonify({'images': list(coords_data.keys())})
+        
+        # Clear all saved coordinates.
+        elif request.method == 'DELETE':
+            coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
+            save_json(coords_data_path, {})
+            return jsonify({'success': True})
+        
+        else:
+            return jsonify({'success': False, 'error': 'Invalid request method'}), 405
 
 
-@app.route('/addCoords', methods=['POST'])
-def add_coords():
+@app.get('/get_saved_coords')
+def get_saved_coords():
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    return jsonify({'success': True, 'coordinates': coords_data})
+
+@app.post('/delete_coord')
+def delete_coord():
     data = request.get_json()
-    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    coords_data = load_json(coord_data_path)
-    coords_data.setdefault('coordinates', []).append({
-        'longitude': data['longitude'],
-        'latitude': data['latitude']
-    })
-    save_json(coord_data_path, coords_data)
-    return jsonify({'status': 'success'})
+    image = data.get('image')
+    index = data.get('index')
 
-# # File Management
-# @app.route('/retrieveData', methods=['GET'])
-# def retrieve_data():
-#     file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
+    if image is None or index is None:
+        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
 
-# @app.route('/retrieveImageJson/<image_number>', methods=['GET'])
-# def retrieve_image_json(image_number):
-#     file_path = os.path.join(IMAGES_DIR, f'{image_number}.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    if image in coords_data and 0 <= index < len(coords_data[image]):
+        del coords_data[image][index]
+        if not coords_data[image]:  # If the list is empty, remove the key
+            del coords_data[image]
+        save_json(saved_coords_path, coords_data)
+        return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
+    else:
+        return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
+
+@app.delete('/clear_all_coords')
+def clear_all_coords():
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    save_json(saved_coords_path, {})
+    return jsonify({'success': True, 'message': 'All coordinates deleted successfully'})
 
 @app.route('/images', methods=['GET', 'DELETE'])
 @app.route('/images/<filename>', methods=['GET', 'DELETE'])
@@ -420,6 +468,7 @@ def images(filename=None):
                 return jsonify({'success': True, 'files': files})
             else:
                 return jsonify({'success': False, 'files': files}), 500
+
 
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
