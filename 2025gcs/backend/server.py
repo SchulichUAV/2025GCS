@@ -1,17 +1,26 @@
 # IMPORTS
 import os
+import logging
 import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import sys
 from enum import Enum
 import requests
 from detection import stop_threads, start_threads
 from geo import locate_target
-sys.path.append(r'') # add the path here 
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+class FilterSpecificLogs(logging.Filter):
+    def filter(self, record):
+        # Suppress logs for specific endpoints
+        return not any(endpoint in record.getMessage() for endpoint in [
+            '/getImages', '/images/', '/get_heartbeat'
+        ])
+
+log = logging.getLogger('werkzeug')
+log.addFilter(FilterSpecificLogs())
 
 # Constants
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
@@ -172,7 +181,6 @@ def load_json(file_path):
     except FileNotFoundError:
         return {}
 
-
 def save_json(file_path, data):
     """Utility to save JSON data to a file."""
     with open(file_path, 'w') as file:
@@ -185,47 +193,33 @@ so this method should be called every like
 the display based on that data.
 '''
 
-@app.route('/get_heartbeat', methods=['GET'])
+'''
+This function will return the number images under backend\images
+'''
+def get_existing_image_count():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    IMAGES_DIR = os.path.join(current_dir, "data/images")
+    if not os.path.exists(IMAGES_DIR):
+        print(f"Warning: Directory '{IMAGES_DIR}' does not exist. Exiting function.")
+    else:
+        image_count = len([image for image in os.listdir(IMAGES_DIR) if image.endswith('.jpg')])
+        return image_count
+
+@app.get('/get_heartbeat')
 def get_heartbeat():
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-        print("sending api request")
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
-        print("sent request")
         heartbeat_data = response.json()
         vehicle_data.update(heartbeat_data)
-
-        '''
-            so this is gonna return something like:
-            vehicle_data = {
-                "last_time": 0,
-                "lat": 0,
-                "lon": 0,
-                "rel_alt": 0,
-                "alt": 0,
-                "roll": 0,
-                "pitch": 0,
-                "yaw": 0,
-                "dlat": 0,
-                "dlon": 0,
-                "dalt": 0,
-                "heading": 0,
-                "num_statellites": 0,
-                "position_uncertainty": 0,
-                "alt_uncertainty": 0,
-                "speed_uncertainty": 0,
-                "heading_uncertainty": 0
-            }
-        '''
-        
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 
     except requests.exceptions.RequestException as e:
-        print("Heartbeat failure - RocketM5 disconnect")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 200
 
 # ROUTES
 
+@app.route('/targets', methods=['GET', 'POST'], strict_slashes=False)
 @app.route('/targets/<id>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
 def targets(id):
     if request.method == 'GET':
@@ -277,22 +271,6 @@ def targets(id):
     else:
         return jsonify({'error': 'Invalid request method.'}), 405
 
-@app.route('/getTargets', methods=['GET'])
-def get_targets():
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
-    items = data.get('ITEM', [])
-    
-    return jsonify({'success': True, 'targets': items})
-
-
-@app.route('/getCompletedTargets', methods=['GET'])
-def get_completed_targets():
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
-    completed_targets = data.get('completedTargets', [])
-    
-    return jsonify({'success': True, 'completed_targets': completed_targets})
 
 @app.route('/addCoords', methods=['POST'])
 def add_coords():
@@ -306,83 +284,118 @@ def add_coords():
     save_json(coord_data_path, coords_data)
     return jsonify({'status': 'success'})
 
-# # File Management
-# @app.route('/retrieveData', methods=['GET'])
-# def retrieve_data():
-#     file_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
+@app.get('/get_saved_coords')
+def get_saved_coords():
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    return jsonify({'success': True, 'coordinates': coords_data})
 
-# @app.route('/retrieveImageJson/<image_number>', methods=['GET'])
-# def retrieve_image_json(image_number):
-#     file_path = os.path.join(IMAGES_DIR, f'{image_number}.json')
-#     try:
-#         return send_file(file_path, mimetype='application/json')
-#     except FileNotFoundError:
-#         return jsonify({"error": "File not found"}), 404
-
-@app.route('/getImages', methods=['GET'])
-def get_images():
-    """Endpoint to get the list of images in the images folder."""
-    if not os.path.exists(IMAGES_DIR):
-        return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
-
-    image_files = sorted([f for f in os.listdir(IMAGES_DIR) if f.endswith('.jpg') and os.path.isfile(os.path.join(IMAGES_DIR, f))])
-    return jsonify({'success': True, 'images': image_files})
-
-@app.route('/images/<filename>', methods=['GET'])
-def serve_image(filename):
-    """Endpoint to serve an image file."""
-    return send_from_directory(IMAGES_DIR, filename)
-
-@app.route('/deleteImage', methods=['POST'])
-def delete_image():
-    """Delete an image from the server"""
+@app.post('/delete_coord')
+def delete_coord():
     data = request.get_json()
-    image_name = data.get("imageName")
-    if not image_name.endswith('.jpg'):
-        return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
+    image = data.get('image')
+    index = data.get('index')
 
-    image_path = os.path.join(IMAGES_DIR, image_name)
-    if os.path.exists(image_path):
-        os.remove(image_path)
-        return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
+    if image is None or index is None:
+        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
+
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    coords_data = load_json(saved_coords_path)
+    if image in coords_data and 0 <= index < len(coords_data[image]):
+        del coords_data[image][index]
+        if not coords_data[image]:  # If the list is empty, remove the key
+            del coords_data[image]
+        save_json(saved_coords_path, coords_data)
+        return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
     else:
-        return jsonify({'success': False, 'error': 'File not found'}), 404
-   
-@app.route('/clearAllImages', methods=['POST'])
-def clear_all_images():
-    """Delete all images from the images directory."""
-    errors = []
-    if os.path.exists(IMAGES_DIR):
-        for filename in os.listdir(IMAGES_DIR):
-            file_path = os.path.join(IMAGES_DIR, filename)
-            if os.path.isfile(file_path) and filename.endswith('.jpg'):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    errors.append(str(e))
-    if errors:
-        return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
+        return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
 
-    return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
+@app.route('/images', methods=['GET', 'DELETE'])
+@app.route('/images/<filename>', methods=['GET', 'DELETE'])
+def images(filename=None):
+    # Check if the images directory exists.
+    if not os.path.exists(IMAGES_DIR):
+        return jsonify({'success': False, 'error': 'Images directory does not exist.'}), 404
+
+    # Split into two sections, general image management and individual image management.
+    # Determined by the presence of a filename parameter.
+    if filename:
+        # Check if the filename is a valid image file.
+        if not filename.endswith('.jpg'):
+            return jsonify({'success': False, 'error': 'Invalid file name format.'}), 400
+        
+        # Check if the image file exists.
+        image_path = os.path.join(IMAGES_DIR, filename)
+        if not os.path.exists(image_path):
+            return jsonify({'success': False, 'error': 'File not found.'}), 404
+
+        # Finally, handle the request based on the method.
+        # The above checks ensure that the file exists and is a valid image file.
+        # Both checks are required for both methods, so they are done first to avoid redundancy.
+
+        # Serve the image file.
+        if request.method == 'GET':
+            return send_from_directory(IMAGES_DIR, filename)
+        
+        # Delete the image file.
+        elif request.method == 'DELETE':
+            os.remove(image_path)
+
+            # Clear the saved coordinates for the image.    
+            coords_data_path = os.path.join(IMAGES_DIR, 'savedCoords.json')
+            if os.path.exists(coords_data_path):
+                coords_data = load_json(coords_data_path)
+                if filename in coords_data:
+                    del coords_data[filename]
+                    save_json(coords_data_path, coords_data)
+
+            return jsonify({'success': True, 'message': f'{filename} deleted successfully.'})
+
+    else:
+        # If no filename is provided, these functions are for general image management.
+
+        # Get the list of image files in the images directory.
+        if request.method == 'GET':
+            image_files = sorted([f for f in os.listdir(IMAGES_DIR) if f.endswith('.jpg') and os.path.isfile(os.path.join(IMAGES_DIR, f))])
+            return jsonify({'success': True, 'images': image_files})
+        
+        # Clear all images from the images directory.
+        elif request.method == 'DELETE':
+            files = {}
+            success = True
+
+            for filename in os.listdir(IMAGES_DIR):
+                file_path = os.path.join(IMAGES_DIR, filename)
+                if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                    try:
+                        os.remove(file_path)
+                        files[filename] = 'deleted'
+                    except Exception as e:
+                        files[filename] = str(e)
+                        success = False
+
+            # Clearing all images will also clear the saved coordinates.
+            coords_data_path = os.path.join(IMAGES_DIR, 'savedCoords.json')
+            if os.path.exists(coords_data_path):
+                save_json(coords_data_path, {})
+            if success:
+                return jsonify({'success': True, 'files': files})
+            else:
+                return jsonify({'success': False, 'files': files}), 500
 
 
 @app.route('/toggle_camera_state', methods=['POST'])
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    
-    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    image_count = get_existing_image_count()
+    data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-
     try:
-        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Camera on: {CAMERA_STATE}")
+        print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
@@ -391,7 +404,7 @@ def toggle_camera_state():
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/manualSelection-save', methods=['POST'])
+@app.post('/manualSelection-save')
 def manual_selection_save():
     data = request.get_json()
     saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
@@ -407,7 +420,7 @@ def manual_selection_save():
     save_json(saved_coords, coords_data)
     return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
 
-@app.route('/manualSelection-geo-calc', methods=['POST'])
+@app.post('/manualSelection-calculate')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for a manually selected target."""
     try:
@@ -431,19 +444,16 @@ def manual_selection_geo_calc():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# AI Processing.
-# Workflow starts when the AI endpoint is called through the frontend.
-# The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
-@app.route('/AI', methods=['POST'])
+@app.post('/AI')
 def start_AI_workers():
-    """Starts the worker threads."""
+    """Starts the worker threads, which run infinitely until shutdown."""
     try:
         start_threads()
         return jsonify({"message": "AI processing started"}), 200
     except Exception as e:
         return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
-@app.route('/AI-Shutdown', methods=['POST'])
+@app.post('/AI-Shutdown')
 def shutdown_workers():
     """Stops all running worker threads."""
     try:
@@ -452,13 +462,61 @@ def shutdown_workers():
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
-@app.route('/Clear-Detections-Cache', methods=['POST'])
+@app.post('/Clear-Detections-Cache')
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     save_json(target_info_path, {})
     return jsonify({"message": "TargetInformation cache cleared"}), 200
 
+# POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
+@app.post('/submit/')
+def submit_data():
+    file = request.files["file"]
+    if file.mimetype == "application/json":
+        file.save('./data/imageData/' + file.filename)
+    else:
+        file.save('./data/images/' + file.filename) 
+    print('Saved file', file.filename)
+    return 'ok'
+
+@app.post('/payload-bay-close')
+def payload_bay_close():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
+
+@app.post('/payload-release')
+def payload_release():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload released'}), 200
+
+@app.post('/set-altitude-takeoff')
+def set_altitude_takeoff():
+    return jsonify({'success': True, 'message': 'Altitude set for takeoff'}), 200
+
+@app.post('/set-altitude-goto')
+def set_altitude_goto():
+    return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
+
+@app.route('/process-mapping', methods=['GET'])
+def process_mapping():
+    try:
+        # Simulate processing and replacing the image
+        odm_dir = os.path.join(DATA_DIR, 'ODM')
+        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
+        print(f"Processing mapping image: {odm_image_path}")
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/data/ODM/<filename>')
+def serve_odm_image(filename):
+    odm_dir = os.path.join(DATA_DIR, 'ODM')
+    return send_from_directory(odm_dir, filename)
 
 if __name__ == '__main__':
     '''

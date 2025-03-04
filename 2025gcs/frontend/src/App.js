@@ -1,72 +1,44 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import NavBar from './Components/NavBar/NavBar';
-import PhotoPanel from './Components/PhotoSelection/PhotoPanel';
-import PayloadPanel from './Components/Payload/PayloadPanel';
-import AIPanel from './Components/AI/AIPanel';
-import FlightModePanel from './Components/FlightMode/FlightModePanel';
-import AltitudePanel from './Components/AltitudePanel/AltitudePanel';
-import data from "./data/TargetInformation.json";
+import Home from './Components/Home/Home';
+import DataPage from './Components/Data/DataPage';
 import { ENDPOINT_IP } from "./config";
 
 function App() {
+  // State for background color
+  const [bgColor, setBgColor] = useState("#FF7F7F");
 
-   // State for background color
-   const [bgColor, setBgColor] = useState("#FF7F7F");
-
-   useEffect(() => {
+  useEffect(() => {
     const checkHeartbeat = async () => {
-      console.log("Checking heartbeat");
       try {
         const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = await response.json();
-        setBgColor(data.success ? "#90EE90" : "#FF7F7F");
-      } catch (error) {
-        setBgColor("#FF7F7F");
-      }
+        if (data.success === true)
+        {
+          setBgColor(data.success ? "#90EE90" : "#FF7F7F");
+        }
+        else
+        {
+          setBgColor("#FF7F7F");
+        }
+      } catch (error) { }
     };
-
     // Check heartbeat every 5 seconds
-    const interval = setInterval(checkHeartbeat, 5000);
-
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(setInterval(checkHeartbeat, 5000)); // Cleanup on unmount
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen w-screen" style={{ backgroundColor: bgColor }}>
-      <NavBar />
-      <div className="flex flex-grow p-4 mt-20 gap-4 h-full">
-        
-        {/* Left Column */}
-        <div className="flex flex-col w-[45%] gap-1">
-          <div className="flex justify-center items-center p-4 flex-grow">
-            <PhotoPanel />
-          </div>
-          <div className="flex justify-center items-center p-4 flex-grow">
-            <FlightModePanel />
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="flex flex-col w-[55%] h-[40%] gap-6">
-          {/* Top Right Panels */}
-          <div className="flex flex-col gap-4 flex-grow">
-            <div className="flex justify-center items-center p-4 flex-grow">
-              <PayloadPanel />
-            </div>
-            <div className="flex justify-center items-center p-4 flex-grow">
-              <AIPanel data={data} />
-            </div>
-          </div>
-
-          {/* Bottom Right Panel */}
-          <div className="flex justify-center items-center p-4 flex-grow">
-            <AltitudePanel />
-          </div>
-        </div>
-
+    <Router>
+      <div className="flex flex-col min-h-screen w-screen" style={{ backgroundColor: bgColor }}>
+        <NavBar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/data" element={<DataPage />} />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
 
