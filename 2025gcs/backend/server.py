@@ -470,19 +470,18 @@ def images(filename=None):
                 return jsonify({'success': False, 'files': files}), 500
 
 
-@app.route('/toggle_camera_state', methods=['POST'])
+@app.post('/toggle_camera_state')
 def toggle_camera_state():
     global CAMERA_STATE
     CAMERA_STATE = not CAMERA_STATE
-    
-    data = json.dumps({"is_camera_on": CAMERA_STATE})
+    image_count = get_existing_image_count()
+    data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-
     try:
-        print("Sending API request with `is_camera_on`: " + str(CAMERA_STATE))
+        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Camera on: {CAMERA_STATE}")
+        print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
@@ -559,6 +558,54 @@ def ClearCache():
     save_json(target_info_path, {})
     return jsonify({"message": "TargetInformation cache cleared"}), 200
 
+# POST request to accept an image or json upload - no arguments are taken, image is presumed to contain all data
+@app.post('/submit/')
+def submit_data():
+    file = request.files["file"]
+    if file.mimetype == "application/json":
+        file.save('./data/imageData/' + file.filename)
+    else:
+        file.save('./data/images/' + file.filename) 
+    print('Saved file', file.filename)
+    return 'ok'
+
+@app.post('/payload-bay-close')
+def payload_bay_close():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
+
+@app.post('/payload-release')
+def payload_release():
+    data = request.get_json()
+    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
+    return jsonify({'success': True, 'message': 'Payload released'}), 200
+
+@app.post('/set-altitude-takeoff')
+def set_altitude_takeoff():
+    return jsonify({'success': True, 'message': 'Altitude set for takeoff'}), 200
+
+@app.post('/set-altitude-goto')
+def set_altitude_goto():
+    return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
+
+@app.route('/process-mapping', methods=['GET'])
+def process_mapping():
+    try:
+        # Simulate processing and replacing the image
+        odm_dir = os.path.join(DATA_DIR, 'ODM')
+        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
+        print(f"Processing mapping image: {odm_image_path}")
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/data/ODM/<filename>')
+def serve_odm_image(filename):
+    odm_dir = os.path.join(DATA_DIR, 'ODM')
+    return send_from_directory(odm_dir, filename)
 
 if __name__ == '__main__':
     '''
