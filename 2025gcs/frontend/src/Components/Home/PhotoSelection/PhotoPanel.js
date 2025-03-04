@@ -16,7 +16,7 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
+        const response = await axios.get(`${ENDPOINT_IP}/getImages`);
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           setPhotos(loadedPhotos);
@@ -40,7 +40,7 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-      await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+      await axios.post(`${ENDPOINT_IP}/manualSelection-calculate`);
       setMessage(`Selections Processed`);
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -61,7 +61,7 @@ const PhotoPanel = () => {
         const normalizedX = relativeX * 640;
         const normalizedY = relativeY * 640;
   
-        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
+        await axios.post(`${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
           selected_y: normalizedY,
           file_name: mainPhoto
@@ -79,7 +79,7 @@ const PhotoPanel = () => {
       return;
     }
     try {
-      const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`, {
+      const response = await axios.post(`${ENDPOINT_IP}/deleteImage`, {
         imageName: photoToDelete,
       });
 
@@ -131,12 +131,7 @@ const PhotoPanel = () => {
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
-      const response = await fetch(`http://${ENDPOINT_IP}/toggle_camera_state`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
+      const response = await axios.post(`${ENDPOINT_IP}/toggle_camera_state`);
 
       await response.json();
       if (response.ok) {
@@ -158,10 +153,7 @@ const PhotoPanel = () => {
     );
     if (userConfirmed) {
       try {
-        const response = await fetch(
-          `http://${ENDPOINT_IP}/clearAllImages`,
-          { method: "POST" }
-        );
+        const response = await axios.delete(`${ENDPOINT_IP}/clearAllImages`);
         const data = await response.json();
         if (data.success) {
           setPhotos([]);

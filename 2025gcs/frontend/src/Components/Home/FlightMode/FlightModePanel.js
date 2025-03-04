@@ -13,7 +13,7 @@ const FlightControl = () => {
     if (!isUnlocked) return;
     relockSlider();
     const data = { mode_id };
-    await fetch(`http://${DRONE_IP}:5000/set_flight_mode`, {
+    await fetch(`${DRONE_IP}:5000/set_flight_mode`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ const FlightControl = () => {
     if (!isUnlocked) return;
     relockSlider();
     const data = { altitude };
-    await fetch(`http://${DRONE_IP}:5000/takeoff`, {
+    await fetch(`${DRONE_IP}:5000/takeoff`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
