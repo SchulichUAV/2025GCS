@@ -74,17 +74,10 @@ def save_json(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
-# heartbeat route
-'''
-so this method should be called every like
-5 seconds from the frontend and update 
-the display based on that data.
-'''
-
-'''
-This function will return the number images under backend\images
-'''
 def get_existing_image_count():
+    '''
+    This function will return the number images under backend\images
+    '''
     current_dir = os.path.dirname(os.path.abspath(__file__))
     IMAGES_DIR = os.path.join(current_dir, "data/images")
     if not os.path.exists(IMAGES_DIR):
@@ -94,7 +87,10 @@ def get_existing_image_count():
         return image_count
 
 @app.get('/get_heartbeat')
-def get_heartbeat():
+def get_heartbeat()
+    '''
+    This function is continuously called by the frontend to check if there's a connection to the drone
+    '''
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
@@ -247,42 +243,47 @@ def delete_image():
 def payload_toggle():
     data = request.get_json()
     print(f"Received payload_toggle request for: {data.get('payload_id')}")
+
     try:
         payload_id = data["payload_id"]
-        if payload_id == 1:
-            requested_status = not PAYLOAD_BAY_OPEN["servo1"]
-        elif payload_id == 2:
-            requested_status = not PAYLOAD_BAY_OPEN["servo2"]
-        elif payload_id == 3:
-            requested_status = not PAYLOAD_BAY_OPEN["servo3"]
-        elif payload_id == 4:
-            requested_status = not PAYLOAD_BAY_OPEN["servo4"]
-    except KeyError:
-        print(f"Key error when accessing frontend request for payload toggle: {e}")
+
+        payload_map = {
+            1: "servo1",
+            2: "servo2",
+            3: "servo3",
+            4: "servo4"
+        }
+
+        if payload_id not in payload_map:
+            raise KeyError(f"Invalid payload_id: {payload_id}")
+
+        servo_key = payload_map[payload_id]
+        requested_status = not PAYLOAD_BAY_OPEN[servo_key]
+        
+    except KeyError as e:
+        print(f"Invalid payload id. Key error: {e}")
+        return jsonify({'success': False, 'error': f"Invalid request: {e}"}), 400
     except Exception as e:
         print(f"Error when toggling payload: {e}")
+        return jsonify({'success': False, 'error': "Internal server error"}), 500
 
     outgoing_data = {"payload_id": payload_id, "payload_state": requested_status}
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
 
     try:
-        response = requests.post(VEHICLE_API_URL + 'payload_manual_control', data=outgoing_data, headers=headers)
-        if payload_id == 1 and response.ok:
-            PAYLOAD_BAY_OPEN["servo1"] = requested_status
-        elif payload_id == 2 and response.ok:
-            PAYLOAD_BAY_OPEN["servo2"] = requested_status
-        elif payload_id == 3 and response.ok:
-            PAYLOAD_BAY_OPEN["servo3"] = requested_status
-        elif payload_id == 4 and response.ok:
-            PAYLOAD_BAY_OPEN["servo4"] = requested_status
+        response = requests.post(VEHICLE_API_URL + 'payload_manual_control', json=outgoing_data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
+
+        if response.ok:
+            PAYLOAD_BAY_OPEN[servo_key] = requested_status
+
         return jsonify({'success': True}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+
     except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
     
 @app.route('/payload-release', methods=['POST'])
 def payload_release():
@@ -294,12 +295,11 @@ def payload_release():
         response = requests.post(VEHICLE_API_URL + 'payload_release', data=send_data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
         return jsonify({'success': True}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
 
    
 @app.post('/clearAllImages')
@@ -326,18 +326,15 @@ def toggle_camera_state():
     image_count = get_existing_image_count()
     data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+
     try:
-        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
 
 @app.post('/manualSelection-save')
 def manual_selection_save():
