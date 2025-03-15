@@ -349,51 +349,6 @@ def coordinates(image=None):
         
         else:
             return jsonify({'success': False, 'error': 'Invalid request method'}), 405
-        
-
-@app.post('/addCoords')
-def add_coords():
-    data = request.get_json()
-    coord_data_path = os.path.join(DATA_DIR, 'SavedCoord.json')
-    coords_data = load_json(coord_data_path)
-    coords_data.setdefault('coordinates', []).append({
-        'longitude': data['longitude'],
-        'latitude': data['latitude']
-    })
-    save_json(coord_data_path, coords_data)
-    return jsonify({'status': 'success'})
-
-@app.get('/get_saved_coords')
-def get_saved_coords():
-    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-    coords_data = load_json(saved_coords_path)
-    return jsonify({'success': True, 'coordinates': coords_data})
-
-@app.post('/delete_coord')
-def delete_coord():
-    data = request.get_json()
-    image = data.get('image')
-    index = data.get('index')
-
-    if image is None or index is None:
-        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
-
-    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-    coords_data = load_json(saved_coords_path)
-    if image in coords_data and 0 <= index < len(coords_data[image]):
-        del coords_data[image][index]
-        if not coords_data[image]:  # If the list is empty, remove the key
-            del coords_data[image]
-        save_json(saved_coords_path, coords_data)
-        return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
-    else:
-        return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
-
-@app.delete('/clear_all_coords')
-def clear_all_coords():
-    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-    save_json(saved_coords_path, {})
-    return jsonify({'success': True, 'message': 'All coordinates deleted successfully'})
 
 
 @app.route('/images', methods=['GET', 'DELETE'])
