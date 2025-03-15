@@ -326,7 +326,7 @@ def coordinates(image=None):
             coords_data = load_json(coords_data_path)
 
             # If an index is provided in the request JSON, delete the coordinate at that index.
-            if request.is_json() and request.json is not None:
+            if request.is_json and request.json is not None:
                 if request.json.get('index') is not None:
                     index = request.json['index']
                     if index < len(coords_data[image]):

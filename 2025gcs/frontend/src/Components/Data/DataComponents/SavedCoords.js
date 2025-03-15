@@ -11,7 +11,7 @@ function SavedCoords() {
   const fetchCoords = async () => {
     try {
       const response = await axios.get(`${ENDPOINT_IP}/coordinates`);
-      console.log(response.data);
+
       if (response.data.coordinates) {
         setCoords(response.data.coordinates);
         setSortedCoords(Object.entries(response.data.coordinates));
@@ -19,7 +19,7 @@ function SavedCoords() {
         console.error("Failed to fetch coordinates: ", response.data.error ?? "Unknown error.");
       }
     } catch (error) {
-      console.error("Failed to fetch coordinates: ", error);
+      console.error("Failed to fetch coordinates: ", error.response ?? "Unknown error.");
     }
   };
 
@@ -36,7 +36,7 @@ function SavedCoords() {
         console.error("Failed to delete coordinate: ", response.data.error ?? "Unknown error.");
       }
     } catch (error) {
-      console.error("Failed to delete coordinate: ", error);
+      console.error("Failed to delete coordinate: ", error.response ?? "Unknown error.");
     }
   };
 
@@ -51,7 +51,7 @@ function SavedCoords() {
         console.error("Failed to clear coordinates: ", response.data.error ?? "Unknown error.");
       }
     } catch (error) {
-      console.error("Failed to clear coordinates: ", error);
+      console.error("Failed to clear coordinates: ", error.response ?? "Unknown error.");
     }
   };  
 
