@@ -87,7 +87,7 @@ def get_existing_image_count():
         return image_count
 
 @app.get('/get_heartbeat')
-def get_heartbeat()
+def get_heartbeat():
     '''
     This function is continuously called by the frontend to check if there's a connection to the drone
     '''
