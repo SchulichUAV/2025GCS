@@ -5,6 +5,7 @@ import NavBar from './Components/NavBar/NavBar';
 import Home from './Components/Home/Home';
 import DataPage from './Components/Data/DataPage';
 import { ENDPOINT_IP } from "./config";
+import axios from 'axios';
 
 function App() {
   // State for background color
@@ -13,20 +14,22 @@ function App() {
   useEffect(() => {
     const checkHeartbeat = async () => {
       try {
-        const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
-        const data = await response.json();
-        if (data.success === true)
-        {
-          setBgColor(data.success ? "#90EE90" : "#FF7F7F");
-        }
-        else
-        {
+        const response = await axios.get(`${ENDPOINT_IP}/get_heartbeat`);
+
+        if (response.data.success === true) {
+          setBgColor(response.data.success ? "#90EE90" : "#FF7F7F");
+        } else {
           setBgColor("#FF7F7F");
         }
-      } catch (error) { }
+      } catch (error) {
+        setBgColor("#FF7F7F");
+      }
     };
-    // Check heartbeat every 5 seconds
-    return () => clearInterval(setInterval(checkHeartbeat, 5000)); // Cleanup on unmount
+
+    checkHeartbeat(); // Check heartbeat on mount
+    const intervalId = setInterval(checkHeartbeat, 5000); // Check heartbeat every 5 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
 
   return (
