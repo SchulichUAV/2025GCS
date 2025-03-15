@@ -397,12 +397,22 @@ def images(filename=None):
             os.remove(image_path)
 
             # Clear the saved coordinates for the image.    
-            coords_data_path = os.path.join(IMAGES_DIR, 'savedCoords.json')
+            coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
             if os.path.exists(coords_data_path):
                 coords_data = load_json(coords_data_path)
                 if filename in coords_data:
                     del coords_data[filename]
                     save_json(coords_data_path, coords_data)
+
+            # Clear the image data for the image.
+            image_data_dir = os.path.join(DATA_DIR, 'imageData')
+            if os.path.exists(image_data_dir):
+                for file in os.listdir(image_data_dir):
+                    if file.startswith(filename.replace('.jpg', '')):
+                        try:
+                            os.remove(os.path.join(image_data_dir, file))
+                        except Exception as e:
+                            return jsonify({'success': False, 'error': str(e)}), 500
 
             return jsonify({'success': True, 'message': f'{filename} deleted successfully.'})
 
@@ -430,9 +440,21 @@ def images(filename=None):
                         success = False
 
             # Clearing all images will also clear the saved coordinates.
-            coords_data_path = os.path.join(IMAGES_DIR, 'savedCoords.json')
+            coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
             if os.path.exists(coords_data_path):
                 save_json(coords_data_path, {})
+
+            # Clearing all images will also clear all image data.
+            image_data_dir = os.path.join(DATA_DIR, 'imageData')
+            if os.path.exists(image_data_dir):
+                for filename in os.listdir(image_data_dir):
+                    if filename.endswith('.json'):
+                        try:
+                            os.remove(os.path.join(image_data_dir, filename))
+                        except Exception as e:
+                            files[filename] = str(e)
+                            success = False
+
             if success:
                 return jsonify({'success': True, 'files': files})
             else:
