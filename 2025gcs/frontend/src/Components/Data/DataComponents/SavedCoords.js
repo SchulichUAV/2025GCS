@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ENDPOINT_IP } from "../../../config";
 
 function SavedCoords() {
@@ -9,44 +10,48 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await fetch(`${ENDPOINT_IP}/get_saved_coords`);
-      const data = await response.json();
-      if (data.success) {
-        setCoords(data.coordinates);
-        setSortedCoords(Object.entries(data.coordinates));
+      const response = await axios.get(`${ENDPOINT_IP}/coordinates`);
+      console.log(response.data);
+      if (response.data.coordinates) {
+        setCoords(response.data.coordinates);
+        setSortedCoords(Object.entries(response.data.coordinates));
+      } else {
+        console.error("Failed to fetch coordinates: ", response.data.error ?? "Unknown error.");
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to fetch coordinates: ", error);
+    }
   };
 
   const deleteCoord = async (image, index) => {
     try {
-      const response = await fetch(`${ENDPOINT_IP}/delete_coord`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image, index }),
+      const response = await axios.delete(`${ENDPOINT_IP}/coordinates/${image}`, {
+        headers: { 'Content-Type': 'application/json' },
+        data: JSON.stringify({ index }),
       });
-      const data = await response.json();
-      if (data.success) {
+
+      if (response.data.success) {
         fetchCoords();
+      } else {
+        console.error("Failed to delete coordinate: ", response.data.error ?? "Unknown error.");
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to delete coordinate: ", error);
+    }
   };
 
   const clearAllCoords = async () => {
     try {
-      const response = await fetch(`${ENDPOINT_IP}/clear_all_coords`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.delete(`${ENDPOINT_IP}/coordinates`, {});
+
+      if (response.data.success) {
         setCoords({});
         setSortedCoords([]);
+      } else {
+        console.error("Failed to clear coordinates: ", response.data.error ?? "Unknown error.");
       }
     } catch (error) {
-      console.error("Failed to clear coordinates:", error);
+      console.error("Failed to clear coordinates: ", error);
     }
   };  
 

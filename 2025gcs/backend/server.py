@@ -324,6 +324,19 @@ def coordinates(image=None):
         # Clear the coordinates for the image.
         elif request.method == 'DELETE':
             coords_data = load_json(coords_data_path)
+
+            # If an index is provided in the request JSON, delete the coordinate at that index.
+            if request.is_json() and request.json is not None:
+                if request.json.get('index') is not None:
+                    index = request.json['index']
+                    if index < len(coords_data[image]):
+                        del coords_data[image][index]
+                        save_json(coords_data_path, coords_data)
+                        return jsonify({'success': True})
+                    else:
+                        return jsonify({'success': False, 'error': 'Index out of range.'}), 400
+
+            # If no index is provided, clear all coordinates for the image.
             coords_data[image] = []
             save_json(coords_data_path, coords_data)
             return jsonify({'success': True})
@@ -340,7 +353,7 @@ def coordinates(image=None):
         if request.method == 'GET':
             coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
             coords_data = load_json(coords_data_path)
-            return jsonify({'images': list(coords_data.keys())})
+            return jsonify({'coordinates': coords_data})
         
         # Clear all saved coordinates.
         elif request.method == 'DELETE':
@@ -349,7 +362,7 @@ def coordinates(image=None):
             return jsonify({'success': True})
         
         else:
-            return jsonify({'success': False, 'error': 'Invalid request method'}), 405
+            return jsonify({'success': False, 'error': 'Invalid request method.'}), 405
 
 
 @app.route('/images', methods=['GET', 'DELETE'])
@@ -424,6 +437,20 @@ def images(filename=None):
                 return jsonify({'success': True, 'files': files})
             else:
                 return jsonify({'success': False, 'files': files}), 500
+
+@app.route('/images/data', methods=['GET'], strict_slashes=False)
+def image_data():
+    image_data_dir = os.path.join(DATA_DIR, 'imageData')
+    image_data = []
+
+    for filename in sorted(os.listdir(image_data_dir)):
+        if filename.endswith('.json'):
+            with open(os.path.join(image_data_dir, filename), 'r') as file:
+                data = json.load(file)
+                data['image'] = filename.replace('.json', '.jpg')
+                image_data.append(data)
+
+    return jsonify({'success': True, 'data': image_data})
 
 
 @app.post('/toggle_camera_state')
