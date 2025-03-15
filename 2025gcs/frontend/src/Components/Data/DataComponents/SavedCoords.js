@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ENDPOINT_IP } from "../../../config";
 
 function SavedCoords() {
@@ -9,30 +10,50 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await fetch(`http://${ENDPOINT_IP}/get_saved_coords`);
-      const data = await response.json();
-      if (data.success) {
-        setCoords(data.coordinates);
-        setSortedCoords(Object.entries(data.coordinates));
+      const response = await axios.get(`${ENDPOINT_IP}/coordinates`);
+
+      if (response.data.coordinates) {
+        setCoords(response.data.coordinates);
+        setSortedCoords(Object.entries(response.data.coordinates));
+      } else {
+        console.error("Failed to fetch coordinates: ", response.data.error ?? "Unknown error.");
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to fetch coordinates: ", error.response ?? "Unknown error.");
+    }
   };
 
   const deleteCoord = async (image, index) => {
     try {
-      const response = await fetch(`http://${ENDPOINT_IP}/delete_coord`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image, index }),
+      const response = await axios.delete(`${ENDPOINT_IP}/coordinates/${image}`, {
+        headers: { 'Content-Type': 'application/json' },
+        data: JSON.stringify({ index }),
       });
-      const data = await response.json();
-      if (data.success) {
+
+      if (response.data.success) {
         fetchCoords();
+      } else {
+        console.error("Failed to delete coordinate: ", response.data.error ?? "Unknown error.");
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to delete coordinate: ", error.response ?? "Unknown error.");
+    }
   };
+
+  const clearAllCoords = async () => {
+    try {
+      const response = await axios.delete(`${ENDPOINT_IP}/coordinates`, {});
+
+      if (response.data.success) {
+        setCoords({});
+        setSortedCoords([]);
+      } else {
+        console.error("Failed to clear coordinates: ", response.data.error ?? "Unknown error.");
+      }
+    } catch (error) {
+      console.error("Failed to clear coordinates: ", error.response ?? "Unknown error.");
+    }
+  };  
 
   const toggleExpand = (image) => {
     setExpandedImages((prev) => ({
@@ -88,7 +109,17 @@ function SavedCoords() {
                 Image{getSortIndicator('image')}
               </th>
               <th className="w-1/3 py-2 px-4 border-b text-left">Coordinates</th>
-              <th className="w-1/3 py-2 px-4 border-b text-left">Actions</th>
+              <th className="w-1/3 py-2 px-4 border-b text-left">
+                <div className="flex justify-between items-center">
+                  <span>Actions</span>
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded shadow-sm transition ml-2"
+                    onClick={clearAllCoords}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>

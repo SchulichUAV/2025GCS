@@ -25,7 +25,7 @@ const AltitudePanel = () => {
     } 
     else {
       try {
-        const response = await axios.post(`http://${ENDPOINT_IP}/set-altitude-${type}`, { altitude });
+        const response = await axios.post(`${ENDPOINT_IP}/set-altitude-${type}`, { altitude });
         if (response.status === 200) {
           handleSuccess();
         } else {
