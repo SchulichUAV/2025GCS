@@ -202,6 +202,7 @@ def get_existing_image_count():
     IMAGES_DIR = os.path.join(current_dir, "data/images")
     if not os.path.exists(IMAGES_DIR):
         print(f"Warning: Directory '{IMAGES_DIR}' does not exist. Exiting function.")
+        return 0
     else:
         image_count = len([image for image in os.listdir(IMAGES_DIR) if image.endswith('.jpg')])
         return image_count

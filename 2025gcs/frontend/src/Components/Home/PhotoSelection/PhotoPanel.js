@@ -16,7 +16,7 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get(`${ENDPOINT_IP}/getImages`);
+        const response = await axios.get(`${ENDPOINT_IP}/images`);
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           setPhotos(loadedPhotos);
@@ -44,7 +44,7 @@ const PhotoPanel = () => {
       setMessage(`Selections Processed`);
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-        setError("Request failed");
+        setError("Request failed: " + error);
         setTimeout(() => setError(""), 3000);
       }
   };
@@ -79,9 +79,7 @@ const PhotoPanel = () => {
       return;
     }
     try {
-      const response = await axios.post(`${ENDPOINT_IP}/deleteImage`, {
-        imageName: photoToDelete,
-      });
+      const response = await axios.delete(`${ENDPOINT_IP}/images/${photoToDelete}`);
 
       if (response.data.success) {
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
@@ -99,14 +97,14 @@ const PhotoPanel = () => {
         if (photoToDelete === mainPhoto) {
           setMainPhoto(updatedPhotos[newStartIndex] || null);
         }
-        setMessage(`${photoToDelete} deleted`);
+        setMessage(`${photoToDelete} deleted.`);
         setTimeout(() => setMessage(""), 3000);
       } else {
-        setError("Error deleting image");
+        setError("Error deleting image: " + response.data.error);
         setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
-      setError("Error deleting image");
+      setError("Error deleting image: " + error);
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -133,16 +131,18 @@ const PhotoPanel = () => {
       setIsCameraOn(!isCameraOn);
       const response = await axios.post(`${ENDPOINT_IP}/toggle_camera_state`);
 
-      await response.json();
-      if (response.ok) {
+      // I changed this from await response.json() and response.ok since response.json() is not a function.
+      // Since this is not my code, I'm not sure if this is the correct way to handle this.
+      // - Rabi
+      if (response.data.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
       } else {
-        setError("Error toggling camera");
+        setError("Toggle camera error.");
         setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
-      setError("Request failed");
+      setError("Toggle camera error: " + error);
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -153,18 +153,19 @@ const PhotoPanel = () => {
     );
     if (userConfirmed) {
       try {
-        const response = await axios.delete(`${ENDPOINT_IP}/clearAllImages`);
-        const data = await response.json();
-        if (data.success) {
+        const response = await axios.delete(`${ENDPOINT_IP}/images`);
+        if (response.data.success) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
+          setMessage("Images cleared successfully.");
+          setTimeout(() => setMessage(""), 3000);
         } else {
-          setError("Error clearing images");
+          setError("Not all images were cleared.");
           setTimeout(() => setError(""), 3000);
         }
       } catch (error) {
-        setError("Error clearing images");
+        setError("Error clearing images: " + error);
         setTimeout(() => setError(""), 3000);
       }
     }
@@ -239,7 +240,7 @@ const PhotoPanel = () => {
             {mainPhoto ? (
               <>
                 <img
-                  src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
+                  src={`${ENDPOINT_IP}/images/${mainPhoto}`}
                   alt={mainPhoto}
                   className="object-fit w-full h-full"
                   onClick={handleImageClick}
@@ -284,7 +285,7 @@ const PhotoPanel = () => {
                   }`}
                 >
                   <img
-                    src={`http://${ENDPOINT_IP}/images/${photo}`}
+                    src={`${ENDPOINT_IP}/images/${photo}`}
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
