@@ -33,13 +33,6 @@ CAMERA_STATE = False
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 
-PAYLOAD_BAY_OPEN = {
-    "servo1": False,
-    "servo2": False,
-    "servo3": False,
-    "servo4": False
-}
-
 # Dictionary to maintain vehicle state
 vehicle_data = {
     "last_time": 0,
@@ -238,52 +231,6 @@ def delete_image():
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
-
-@app.route('/payload_toggle', methods=['POST'])
-def payload_toggle():
-    data = request.get_json()
-    print(f"Received payload_toggle request for: {data.get('payload_id')}")
-
-    try:
-        payload_id = data["payload_id"]
-
-        payload_map = {
-            1: "servo1",
-            2: "servo2",
-            3: "servo3",
-            4: "servo4"
-        }
-
-        if payload_id not in payload_map:
-            raise KeyError(f"Invalid payload_id: {payload_id}")
-
-        servo_key = payload_map[payload_id]
-        requested_status = not PAYLOAD_BAY_OPEN[servo_key]
-        
-    except KeyError as e:
-        print(f"Invalid payload id. Key error: {e}")
-        return jsonify({'success': False, 'error': f"Invalid request: {e}"}), 400
-    except Exception as e:
-        print(f"Error when toggling payload: {e}")
-        return jsonify({'success': False, 'error': "Internal server error"}), 500
-
-    outgoing_data = {"payload_id": payload_id, "payload_state": requested_status}
-    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-
-    try:
-        response = requests.post(VEHICLE_API_URL + 'payload_manual_control', json=outgoing_data, headers=headers)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-
-        if response.ok:
-            PAYLOAD_BAY_OPEN[servo_key] = requested_status
-
-        return jsonify({'success': True}), 200
-
-    except requests.exceptions.RequestException as e:
-        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
-        print(f"Request Error ({status_code}): {str(e)}")
-        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
-
     
 @app.route('/payload-release', methods=['POST'])
 def payload_release():
@@ -411,13 +358,6 @@ def submit_data():
         file.save('./data/images/' + file.filename) 
     print('Saved file', file.filename)
     return 'ok'
-
-@app.post('/payload-bay-close')
-def payload_bay_close():
-    data = request.get_json()
-    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-    # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
-    return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
 
 @app.post('/set-altitude-takeoff')
 def set_altitude_takeoff():

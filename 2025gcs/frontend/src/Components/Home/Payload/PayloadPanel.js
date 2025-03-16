@@ -79,19 +79,6 @@ const PayloadPanel = () => {
     }
   };
 
-  const HandleClose = async (index) => {
-    try {
-      const response = await axios.post(`http://${ENDPOINT_IP}/payload-bay-close`, {
-        bay: index + 1
-      }, {
-        headers: { "Content-Type": "application/json" }
-      });
-      if (response.status === 200) {
-        handleDisableButton(index, 'close'); // Disable only the Close button
-      }
-    } catch (error) {}
-  };
-
   const HandleRelease = async (index) => {
     try {
       const response = await axios.post(`http://${ENDPOINT_IP}/payload-release`, {
@@ -268,13 +255,6 @@ const PayloadPanel = () => {
                         onClick={() => HandleRelease(index)}
                       >
                         Release
-                      </button>
-                      <button
-                        disabled={disabledClose[index]}
-                        className={`bg-red-400 hover:bg-red-500 text-white px-3 py-1 rounded-md ${disabledClose[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => HandleClose(index)}
-                      >
-                        Close
                       </button>
                     </div>
                   </div>
