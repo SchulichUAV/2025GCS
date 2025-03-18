@@ -67,17 +67,10 @@ def save_json(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
-# heartbeat route
-'''
-so this method should be called every like
-5 seconds from the frontend and update 
-the display based on that data.
-'''
-
-'''
-This function will return the number images under backend\images
-'''
 def get_existing_image_count():
+    '''
+    This function will return the number images under backend\images
+    '''
     current_dir = os.path.dirname(os.path.abspath(__file__))
     IMAGES_DIR = os.path.join(current_dir, "data/images")
     if not os.path.exists(IMAGES_DIR):
@@ -88,6 +81,9 @@ def get_existing_image_count():
 
 @app.get('/get_heartbeat')
 def get_heartbeat():
+    '''
+    This function is continuously called by the frontend to check if there's a connection to the drone
+    '''
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
@@ -235,6 +231,23 @@ def delete_image():
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
+    
+@app.route('/payload-release', methods=['POST'])
+def payload_release():
+    data = request.get_json()
+    send_data = json.dumps({"bay": data.get("bay")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_release', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+
    
 @app.post('/clearAllImages')
 def clear_all_images():
@@ -260,18 +273,15 @@ def toggle_camera_state():
     image_count = get_existing_image_count()
     data = json.dumps({"is_camera_on": CAMERA_STATE, "image_count": image_count})
     headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+
     try:
-        # print(f"Sending API request with `is_camera_on`: {try_catch_camera_state}")
         response = requests.post(VEHICLE_API_URL + 'toggle_camera', data=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Number of images: {image_count}")
         return jsonify({'success': True, 'cameraState': CAMERA_STATE}), 200
-    except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
-    except requests.exceptions.HTTPError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
 
 @app.post('/manualSelection-save')
 def manual_selection_save():
@@ -348,20 +358,6 @@ def submit_data():
         file.save('./data/images/' + file.filename) 
     print('Saved file', file.filename)
     return 'ok'
-
-@app.post('/payload-bay-close')
-def payload_bay_close():
-    data = request.get_json()
-    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-    # response = requests.post(VEHICLE_API_URL + 'payload-bay-close', headers=headers)
-    return jsonify({'success': True, 'message': 'Payload bay closed'}), 200
-
-@app.post('/payload-release')
-def payload_release():
-    data = request.get_json()
-    # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-    # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
-    return jsonify({'success': True, 'message': 'Payload released'}), 200
 
 @app.post('/set-altitude-takeoff')
 def set_altitude_takeoff():
