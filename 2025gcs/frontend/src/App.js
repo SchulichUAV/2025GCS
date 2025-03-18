@@ -23,10 +23,13 @@ function App() {
         {
           setBgColor("#FF7F7F");
         }
-      } catch (error) { }
+      } catch {
+          // Do nothing, prevent console spam
+      }
     };
     // Check heartbeat every 5 seconds
-    return () => clearInterval(setInterval(checkHeartbeat, 5000)); // Cleanup on unmount
+    const intervalId = setInterval(checkHeartbeat, 5000);
+    return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
 
   return (
