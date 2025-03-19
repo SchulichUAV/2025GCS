@@ -16,7 +16,7 @@ const AIPanel = () => {
   useEffect(() => {
     const fetchDetectionData = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/detection-data`);
+        const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
         if (response.data) {
           setData(response.data);
         }

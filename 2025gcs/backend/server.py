@@ -341,8 +341,8 @@ def shutdown_workers():
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
     
-@app.get('/detection-data')
-def get_detection_data():
+@app.get('/fetch-TargetInformation')
+def fetch_TargetInformation():
     """Get the list of detections from the cache file."""
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
