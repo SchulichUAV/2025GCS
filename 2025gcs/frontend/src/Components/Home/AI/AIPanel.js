@@ -27,9 +27,8 @@ const AIPanel = () => {
     };
 
     fetchDetectionData();
-    const intervalId = setInterval(fetchDetectionData, 2000); // Fetch data every 2 seconds
-
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    const intervalId = setInterval(fetchDetectionData, 2000); 
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -64,7 +63,7 @@ const AIPanel = () => {
     }));
   };
 
-  const handleAIWorkflow = async () => {
+  const toggleDetectionModel = async () => {
     try {
       const endpoint = isAIActive ? "/AI-Shutdown" : "/AI";
       await axios.post(`http://${ENDPOINT_IP}${endpoint}`, {
@@ -80,7 +79,7 @@ const AIPanel = () => {
     }
   };
 
-  const clearCache = async () => {
+  const clearDetectionsCache = async () => {
     try {
       await axios.post(`http://${ENDPOINT_IP}/Clear-Detections-Cache`, {
         method: 'POST',
@@ -99,7 +98,7 @@ const AIPanel = () => {
       <div className="top-0 z-10 flex items-center justify-between">
         <div className="flex">
           <button
-            onClick={handleAIWorkflow}
+            onClick={toggleDetectionModel}
             className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               isAIActive
                 ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
@@ -109,7 +108,7 @@ const AIPanel = () => {
             {isAIActive ? "STOP DETECTING" : "START DETECTING"}
           </button>
           <button
-            onClick={clearCache}
+            onClick={clearDetectionsCache}
             className="px-4 py-2 font-semibold text-sm rounded-lg shadow-md bg-red-300 hover:bg-red-400"
           >
             CLEAR CACHE
