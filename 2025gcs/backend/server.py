@@ -340,6 +340,13 @@ def shutdown_workers():
         return jsonify({"message": "AI processing stopped"}), 200
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
+    
+@app.get('/detection-data')
+def get_detection_data():
+    """Get the list of detections from the cache file."""
+    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+    data = load_json(target_info_path)
+    return jsonify(data)
 
 @app.post('/Clear-Detections-Cache')
 def ClearCache():

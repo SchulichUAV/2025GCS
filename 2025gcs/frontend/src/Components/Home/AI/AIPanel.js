@@ -2,26 +2,46 @@ import React, { useState, useEffect } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import axios from "axios";
 
-const AIPanel = ({ data }) => {
+const AIPanel = () => {
   const [openClasses, setOpenClasses] = useState({});
   const [isAIActive, setIsAIActive] = useState(false);
   const [newDetections, setNewDetections] = useState({});
   const [error, setError] = useState(null);
+  const [data, setData] = useState({});
   const [prevData, setPrevData] = useState(() => {
     const storedData = localStorage.getItem("prevData");
     return storedData ? JSON.parse(storedData) : {};
   });
 
   useEffect(() => {
-    if (!data) return;
+    const fetchDetectionData = async () => {
+      try {
+        const response = await axios.get(`http://${ENDPOINT_IP}/detection-data`);
+        if (response.data) {
+          setData(response.data);
+        }
+      } catch (error) {
+        setError("Failed to fetch detection data");
+        setTimeout(() => setError(null), 3000);
+      }
+    };
 
+    fetchDetectionData();
+    const intervalId = setInterval(fetchDetectionData, 2000); // Fetch data every 2 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, []);
+
+  useEffect(() => {
+    if (!data || Object.keys(data).length === 0) return;
+  
     setNewDetections((prevDetections) => {
       const updatedDetections = { ...prevDetections };
-
+  
       Object.keys(data).forEach((className) => {
         const prevCount = prevData[className]?.length || 0;
         const newCount = data[className]?.length || 0;
-
+  
         if (newCount > prevCount) {
           updatedDetections[className] = true;
           setTimeout(() => {
@@ -29,14 +49,14 @@ const AIPanel = ({ data }) => {
           }, 3500);
         }
       });
+  
       return updatedDetections;
     });
-
+  
     setPrevData(data);
     localStorage.setItem("prevData", JSON.stringify(data));
-  }, [data, prevData]);
+  }, [data]);
   
-
   const toggleClassDropdown = (className) => {
     setOpenClasses((prevState) => ({
       ...prevState,
@@ -44,23 +64,15 @@ const AIPanel = ({ data }) => {
     }));
   };
 
-  const HandleAIWorkflow = async () => {
+  const handleAIWorkflow = async () => {
     try {
-      if (isAIActive) {
-        await axios.post(`http://${ENDPOINT_IP}/AI-Shutdown`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      } else {
-        await axios.post(`http://${ENDPOINT_IP}/AI`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      }
+      const endpoint = isAIActive ? "/AI-Shutdown" : "/AI";
+      await axios.post(`http://${ENDPOINT_IP}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       setIsAIActive(!isAIActive);
     } catch (error) {
       setError("Request failed");
@@ -68,7 +80,7 @@ const AIPanel = ({ data }) => {
     }
   };
 
-  const ClearCache = async () => {
+  const clearCache = async () => {
     try {
       await axios.post(`http://${ENDPOINT_IP}/Clear-Detections-Cache`, {
         method: 'POST',
@@ -87,7 +99,7 @@ const AIPanel = ({ data }) => {
       <div className="top-0 z-10 flex items-center justify-between">
         <div className="flex">
           <button
-            onClick={HandleAIWorkflow}
+            onClick={handleAIWorkflow}
             className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               isAIActive
                 ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
@@ -97,7 +109,7 @@ const AIPanel = ({ data }) => {
             {isAIActive ? "STOP DETECTING" : "START DETECTING"}
           </button>
           <button
-            onClick={ClearCache}
+            onClick={clearCache}
             className="px-4 py-2 font-semibold text-sm rounded-lg shadow-md bg-red-300 hover:bg-red-400"
           >
             CLEAR CACHE
