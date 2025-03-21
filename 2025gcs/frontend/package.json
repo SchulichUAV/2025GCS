@@ -28,7 +28,6 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "postinstall": "node scripts/create-symlink.js",
     "build": "webpack --config webpack.config.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

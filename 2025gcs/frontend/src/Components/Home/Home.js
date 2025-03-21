@@ -5,7 +5,6 @@ import AIPanel from './AI/AIPanel';
 import FlightModePanel from './FlightMode/FlightModePanel';
 import AltitudePanel from './AltitudePanel/AltitudePanel';
 import Mapping from './ODM/Mapping';
-import data from "../../data/TargetInformation.json";
 
 function Home() {
   return (
@@ -35,7 +34,7 @@ function Home() {
             </div>
             <div className="flex flex-row gap-2 flex-[1]">
               <div className="flex justify-center items-center flex-[1.5] rounded-xl shadow-lg">
-                <AIPanel data={data} />
+                <AIPanel/>
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <AltitudePanel />
