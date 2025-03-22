@@ -4,7 +4,7 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-from detection import stop_threads, start_threads
+#from detection import stop_threads, start_threads
 from geo import locate_target
 
 app = Flask(__name__)
@@ -25,7 +25,7 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "192.168.1.66"
+ENDPOINT_IP = "192.168.1.67"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -382,6 +382,18 @@ def process_mapping():
 def serve_odm_image(filename):
     odm_dir = os.path.join(DATA_DIR, 'ODM')
     return send_from_directory(odm_dir, filename)
+
+@app.post('/set_flight_mode')
+def set_flight_mode():
+    try:
+        data = request.get_json()
+        mode_id = data.get('mode_id')
+        data1 = json.dumps({"mode_id":mode_id})
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        response = requests.post(VEHICLE_API_URL + 'set_flight_mode', data=data1, headers=headers)
+    except requests.exceptions.RequestException as e:
+        print("nori")
+        # 2025 electronics is sending an invalid response!
 
 if __name__ == '__main__':
     '''

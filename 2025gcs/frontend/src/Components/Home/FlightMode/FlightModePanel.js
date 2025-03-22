@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DRONE_IP } from "../../../config";
+import { DRONE_IP, ENDPOINT_IP } from "../../../config";
 import ReactSlider from "react-slider";
 
 const FlightControl = () => {
@@ -10,10 +10,13 @@ const FlightControl = () => {
   );
 
   const handleSetFlightMode = async (mode_id) => {
-    if (!isUnlocked) return;
-    relockSlider();
+    console.log("This is the mode ID");
+
+    // if (!isUnlocked) return;
+    // relockSlider();
     const data = { mode_id };
-    await fetch(`http://${DRONE_IP}:5000/set_flight_mode`, {
+    console.log(mode_id);
+    await fetch(`http://${ENDPOINT_IP}/set_flight_mode`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
