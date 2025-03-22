@@ -14,7 +14,7 @@ class FilterSpecificLogs(logging.Filter):
     def filter(self, record):
         # Suppress logs for specific endpoints
         return not any(endpoint in record.getMessage() for endpoint in [
-            '/getImages', '/images/', '/get_heartbeat'
+            '/getImages', '/images/', '/get_heartbeat', '/fetch-TargetInformation'
         ])
 
 log = logging.getLogger('werkzeug')
@@ -32,6 +32,7 @@ CAMERA_STATE = False
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 IMAGES_DIR = os.path.join(DATA_DIR, 'images')
+IMAGEDATA_DIR = os.path.join(DATA_DIR, 'imageData')
 
 # Dictionary to maintain vehicle state
 vehicle_data = {
@@ -303,22 +304,27 @@ def manual_selection_save():
 def manual_selection_geo_calc():
     """Perform geomatics calculations for a manually selected target."""
     try:
-        saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
-        with open(saved_coords, "r") as file:
-            data = json.load(file)
+        saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+        with open(saved_coords_path, "r") as file:
+            saved_coords = json.load(file)
 
-        txt_lines = []
         # Iterate over each image entry
-        for image_name, coordinates in data.items():
+        for image_name, coordinates in saved_coords.items():
+            image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
+            if not os.path.exists(image_json_path):
+                continue
+            
+            with open(image_json_path, "r") as json_file:
+                image_data = json.load(json_file)
+
+            # Process each saved set of coordinates
             for coord in coordinates:
-                x, y = coord["x"], coord["y"]
-                txt_lines.append(f"{image_name},{x},{y}")
-        print(txt_lines)
-        latitude, longitude = locate_target()
+                image_data["x"] = coord["x"]
+                image_data["y"] = coord["y"]
+                latitude, longitude = locate_target(image_data)
 
-        # send to the vehicle ...
-
-        save_json(saved_coords, {}) # Clear the saved coordinates
+        # Clear the saved coordinates after processing
+        save_json(saved_coords_path, {})
         return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
