@@ -3,12 +3,14 @@ import logging
 import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import requests
 from detection import stop_threads, start_threads
 from geo import locate_target
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+#socketio = SocketIO(app, cors_allowed_origins="*")
 
 class FilterSpecificLogs(logging.Filter):
     def filter(self, record):
@@ -362,6 +364,15 @@ def payload_release():
     # headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
     # response = requests.post(VEHICLE_API_URL + 'payload-release', headers=headers)
     return jsonify({'success': True, 'message': 'Payload released'}), 200
+
+@app.route('/payload_status', methods=["POST"])
+def payload_status():
+    data = request.get_json()
+    servo_status = data["servo_open"]
+    if servo_status == True:
+        print("Payload Open")
+    else:    
+        print("Payload Close")
 
 @app.post('/set-altitude-takeoff')
 def set_altitude_takeoff():

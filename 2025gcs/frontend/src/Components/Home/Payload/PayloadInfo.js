@@ -1,4 +1,9 @@
 import React from "react";
+import { io } from 'socket.io-client';
+import { ENDPOINT_IP } from '../../../config';
+
+const socket = io(`http://${ENDPOINT_IP}`);
+
 
 const PayloadInfo = () => {
   // Example data (Replace with real-time values)
