@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import axios from "axios";
 
-const AIPanel = () => {
+const AIPanel = ({ currentTarget, setCurrentTarget }) => {
   const [openClasses, setOpenClasses] = useState({});
   const [isAIActive, setIsAIActive] = useState(false);
   const [newDetections, setNewDetections] = useState({});
@@ -13,7 +13,6 @@ const AIPanel = () => {
     return storedData ? JSON.parse(storedData) : {};
   });
   const [completedTargets, setCompletedTargets] = useState({});
-  const [currentTarget, setCurrentTarget] = useState(null);
 
   useEffect(() => {
     const fetchDetectionData = async () => {

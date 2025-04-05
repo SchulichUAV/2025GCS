@@ -5,8 +5,11 @@ import AIPanel from './AI/AIPanel';
 import FlightModePanel from './FlightMode/FlightModePanel';
 import AltitudePanel from './AltitudePanel/AltitudePanel';
 import Mapping from './ODM/Mapping';
+import React, { useState } from "react";
 
 function Home() {
+  const [currentTarget, setCurrentTarget] = useState(null);
+  
   return (
     <div className="flex flex-col min-h-screen w-screen p-3">
       <div className="flex flex-col lg:flex-row flex-grow gap-2 mt-20">
@@ -29,12 +32,12 @@ function Home() {
                 <PayloadPanel />
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
-                <PayloadInfo />
+                <PayloadInfo currentTarget={currentTarget}/>
               </div>
             </div>
             <div className="flex flex-row gap-2 flex-[1]">
               <div className="flex justify-center items-center flex-[1.5] rounded-xl shadow-lg">
-                <AIPanel/>
+                <AIPanel currentTarget={currentTarget} setCurrentTarget={setCurrentTarget}/>
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <AltitudePanel />

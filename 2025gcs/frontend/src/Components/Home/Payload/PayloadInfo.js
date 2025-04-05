@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import axios from "axios";
 
-const PayloadInfo = () => {
+const PayloadInfo = ({ currentTarget }) => {
   const [payloadStatus, setPayloadStatus] = useState("Not Set"); // Options: Not Set, Pending, Released
-  const [currentTarget, setCurrentTarget] = useState({
+  const [currentTargetInfo, setCurrentTargetInfo] = useState({
     name: "",
     latitude: "",
     longitude: ""
@@ -20,13 +20,13 @@ const PayloadInfo = () => {
     const fetchTargetInfo = async () => {
       try {
         const response = await axios.get(`http://${ENDPOINT_IP}/current-target`);
-        const data = await response.data;
+        const data = response.data;
         if (data.success) {
-          setCurrentTarget((prevTarget) => ({
+          setCurrentTargetInfo((prevTarget) => ({
             ...prevTarget,
-            name: data.current_target,
-            latitude: "", // Replace with averaged latitude
-            longitude: "" // Replace with averaged longitude
+            name: currentTarget,
+            latitude: data.coords[0],
+            longitude: data.coords[1]
           }));
   
           if (data.current_target) {
@@ -36,10 +36,10 @@ const PayloadInfo = () => {
       } catch (error) {
         console.error("Error fetching target info:", error);
       }
-    };  
-    const intervalId = setInterval(fetchTargetInfo, 3000);
-    return () => clearInterval(intervalId);
-  }, []);
+    };
+
+    fetchTargetInfo();
+  }, [currentTarget]);
 
   return (
     <div className="flex flex-col justify-between p-5 w-full h-full bg-white rounded-xl shadow-lg text-sm">
@@ -55,9 +55,9 @@ const PayloadInfo = () => {
       <div className="mt-2 border-t pt-1">
         <h2 className="font-bold text-center mb-1">Current Target</h2>
         <div className="flex flex-col gap-1 text-center">
-          <span className="text-gray-600">{currentTarget.name || "No target set"}</span>
-          <span className="text-gray-600">Lat: {currentTarget.latitude || "N/A"}</span>
-          <span className="text-gray-600">Long: {currentTarget.longitude || "N/A"}</span>
+          <span className="text-gray-600">{currentTargetInfo.name || "No target set"}</span>
+          <span className="text-gray-600">Lat: {currentTargetInfo.latitude || "N/A"}</span>
+          <span className="text-gray-600">Long: {currentTargetInfo.longitude || "N/A"}</span>
         </div>
       </div>
     </div>

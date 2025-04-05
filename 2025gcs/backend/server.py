@@ -364,7 +364,8 @@ def current_target_handler():
         return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
     elif request.method == 'GET':
         # PERFORM AVERAGING ON THE CURRENT_TARGET FROM INFORMATION IN TARGETINFORMATION.JSON
-        return jsonify({'success': True, 'current_target': current_target}), 200
+        coords = [1, 1]
+        return jsonify({'success': True, 'coords': coords}), 200
 
 if __name__ == '__main__':
     '''
