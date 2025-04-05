@@ -19,6 +19,7 @@ const PayloadInfo = ({ currentTarget }) => {
   useEffect(() => {
     const fetchTargetInfo = async () => {
       try {
+        console.log(currentTarget);
         const response = await axios.get(`http://${ENDPOINT_IP}/current-target`);
         const data = response.data;
         if (data.success) {
@@ -29,7 +30,10 @@ const PayloadInfo = ({ currentTarget }) => {
             longitude: data.coords[1]
           }));
   
-          if (data.current_target) {
+          if(!currentTarget) {
+            setPayloadStatus("Not Set");
+          }
+          else if (currentTarget) {
             setPayloadStatus("Pending");
           }
         }

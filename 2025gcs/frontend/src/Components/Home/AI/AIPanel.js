@@ -35,8 +35,10 @@ const AIPanel = ({ currentTarget, setCurrentTarget }) => {
   }, []);
 
   const handleCurrentTarget = async (className) => {
+    const targetToSet = currentTarget === className ? null : className;
+
     const response = await axios.post(`http://${ENDPOINT_IP}/current-target`, 
-      { target: className },
+      { target: targetToSet },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -44,7 +46,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget }) => {
       }
     );
     if (response.status === 200) {
-      setCurrentTarget(className);
+      setCurrentTarget(targetToSet);
     }
     else {
       setError("Failed to set current target");
@@ -187,9 +189,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget }) => {
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (className !== currentTarget) {
-                      handleCurrentTarget(className);
-                    }
+                    handleCurrentTarget(className);
                   }}
                 >
                   {className === currentTarget ? 'Current Target' : 'Set Current'}
