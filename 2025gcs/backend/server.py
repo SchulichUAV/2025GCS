@@ -4,7 +4,7 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-from detection import stop_threads, start_threads
+# from detection import stop_threads, start_threads
 from geo import locate_target
 
 app = Flask(__name__)
@@ -25,7 +25,7 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "10.13.33.133" # make sure to configure this to whatever your IP is before you start
+ENDPOINT_IP = "10.13.37.179" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -51,7 +51,8 @@ vehicle_data = {
     "position_uncertainty": 0,
     "alt_uncertainty": 0,
     "speed_uncertainty": 0,
-    "heading_uncertainty": 0
+    "heading_uncertainty": 0,
+    "flight_mode": 0
 }
 
 def load_json(file_path):
