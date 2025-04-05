@@ -372,6 +372,18 @@ def set_altitude_takeoff():
 
 @app.post('/set-altitude-goto')
 def set_altitude_goto():
+    data = request.get_json()
+    send_data = json.dumps({"altitude": data.get("altitude")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'set_altitude_goto', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
     return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
 
 @app.route('/process-mapping', methods=['GET'])
