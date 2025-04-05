@@ -22,8 +22,8 @@ log.addFilter(FilterSpecificLogs())
 
 # Data storage
 targets_list = []  # List of pending targets
-completed_targets = []  # List of completed targets
-current_target = None
+completed_targets = ["bus"]  # List of completed targets
+current_target = "boat"
 
 ENDPOINT_IP = "192.168.1.66"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
@@ -344,9 +344,11 @@ def shutdown_workers():
 @app.get('/fetch-TargetInformation')
 def fetch_TargetInformation():
     """Get the list of detections from the cache file."""
+    global completed_targets
+    global current_target
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
     data = load_json(target_info_path)
-    return jsonify(data)
+    return jsonify({'targets': data, 'completed_targets': completed_targets, 'current_target': current_target}), 200
 
 @app.post('/Clear-Detections-Cache')
 def ClearCache():

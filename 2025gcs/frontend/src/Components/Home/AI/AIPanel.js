@@ -12,13 +12,17 @@ const AIPanel = () => {
     const storedData = localStorage.getItem("prevData");
     return storedData ? JSON.parse(storedData) : {};
   });
+  const [completedTargets, setCompletedTargets] = useState({});
+  const [currentTarget, setCurrentTarget] = useState(null);
 
   useEffect(() => {
     const fetchDetectionData = async () => {
       try {
         const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
         if (response.data) {
-          setData(response.data);
+          setData(response.data.targets); // targets data
+          setCompletedTargets(response.data.completed_targets); // completed targets
+          setCurrentTarget(response.data.current_target); // current target
         }
       } catch (error) {
         setError("Failed to fetch detection data");
@@ -30,6 +34,10 @@ const AIPanel = () => {
     const intervalId = setInterval(fetchDetectionData, 2000); 
     return () => clearInterval(intervalId);
   }, []);
+
+  const handleCurrentTarget = (className) => {
+    console.log("Setting current target to:", className);
+  };
 
   useEffect(() => {
     if (!data || Object.keys(data).length === 0) return;
@@ -144,8 +152,11 @@ const AIPanel = () => {
           Object.entries(data).map(([className, predictions]) => (
             <div
               key={className}
-              className="bg-gray-100 p-4 mb-4 rounded-lg shadow-md border border-gray-300 relative"
-            >
+              className={`p-4 mb-4 rounded-lg shadow-md border ${
+                completedTargets.includes(className) 
+                  ? "bg-green-100 border-green-300" // cempleted target background is green
+                  : "bg-gray-100 border-gray-300" // Default gray background
+              }`}>
               {/* Class Header */}
               <div
                 className="flex justify-between cursor-pointer"
@@ -154,6 +165,21 @@ const AIPanel = () => {
                 <h3 className="font-bold text-gray-900">
                   {className} ({predictions.length}) {newDetections[className] && <span className="text-blue-500">●</span>}
                 </h3>
+                {!completedTargets.includes(className) && (
+                  <button
+                    className={`font-semibold text-sm border border-gray-200 ${
+                      className === currentTarget ? 'text-green-500' : 'text-blue-500'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent the click event from propagating to the parent
+                      if(className !== currentTarget) {
+                        handleCurrentTarget(className);
+                      }
+                    }}
+                  >
+                    {className === currentTarget ? 'Current Target' : 'Set Current'}
+                  </button>
+                )}
                 <button className="font-bold">
                   {openClasses[className] ? "▲" : "▼"}
                 </button>
