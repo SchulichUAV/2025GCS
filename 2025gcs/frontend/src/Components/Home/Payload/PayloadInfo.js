@@ -1,24 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { ENDPOINT_IP } from "../../../config";
+import axios from "axios";
 
 const PayloadInfo = () => {
-  // Example data (Replace with real-time values)
-  const payloadStatus = "Pending"; // Options: Pending, Ready, Released
-  const distanceFromWaypoint = "120m"; // Example value
-  const releaseTiming = "5s"; // Example: "5s", "10s", "Now"
+  const [payloadStatus, setPayloadStatus] = useState("Not Set"); // Options: Not Set, Pending, Released
+  const [currentTarget, setCurrentTarget] = useState({
+    name: "",
+    latitude: "",
+    longitude: ""
+  });
 
-  // Example target data
-  const target = {
-    name: "Motorcycle",
-    latitude: "51.0486° N",
-    longitude: "114.0708° W"
-  };
-
-  // Define status colors
   const statusColors = {
-    Pending: "bg-red-500",
-    Ready: "bg-green-500",
-    Released: "bg-blue-500"
+    'Not Set': "bg-gray-300",
+    'Pending': "bg-blue-500",
+    'Released': "bg-green-500"
   };
+
+  useEffect(() => {
+    const fetchTargetInfo = async () => {
+      try {
+        const response = await axios.get(`http://${ENDPOINT_IP}/current-target`);
+        const data = await response.data;
+        if (data.success) {
+          setCurrentTarget((prevTarget) => ({
+            ...prevTarget,
+            name: data.current_target,
+            latitude: "", // Replace with averaged latitude
+            longitude: "" // Replace with averaged longitude
+          }));
+  
+          if (data.current_target) {
+            setPayloadStatus("Pending");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching target info:", error);
+      }
+    };  
+    const intervalId = setInterval(fetchTargetInfo, 3000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <div className="flex flex-col justify-between p-5 w-full h-full bg-white rounded-xl shadow-lg text-sm">
@@ -30,25 +51,13 @@ const PayloadInfo = () => {
         <span className="font-semibold text-md">{payloadStatus}</span>
       </div>
 
-      {/* Data Display */}
-      <div className="flex flex-col gap-1 border-t pt-1">
-        <div className="flex justify-between text-md">
-          <span className="text-gray-600">Distance:</span>
-          <span className="font-semibold">{distanceFromWaypoint}</span>
-        </div>
-        <div className="flex justify-between text-md">
-          <span className="text-gray-600">Release:</span>
-          <span className="font-semibold">ETA: {releaseTiming}</span>
-        </div>
-      </div>
-
       {/* Target Info */}
       <div className="mt-2 border-t pt-1">
         <h2 className="font-bold text-center mb-1">Current Target</h2>
         <div className="flex flex-col gap-1 text-center">
-          <span className="text-gray-600">{target.name}</span>
-          <span className="text-gray-600">Lat: {target.latitude}</span>
-          <span className="text-gray-600">Long: {target.longitude}</span>
+          <span className="text-gray-600">{currentTarget.name || "No target set"}</span>
+          <span className="text-gray-600">Lat: {currentTarget.latitude || "N/A"}</span>
+          <span className="text-gray-600">Long: {currentTarget.longitude || "N/A"}</span>
         </div>
       </div>
     </div>

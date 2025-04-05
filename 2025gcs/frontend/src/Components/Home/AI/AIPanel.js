@@ -36,16 +36,14 @@ const AIPanel = () => {
   }, []);
 
   const handleCurrentTarget = async (className) => {
-    console.log("Setting current target to:", className);
-
-    const response = await axios.post(`http://${ENDPOINT_IP}/set-current-target`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        target: className,
-      },
-    });
+    const response = await axios.post(`http://${ENDPOINT_IP}/current-target`, 
+      { target: className },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     if (response.status === 200) {
       setCurrentTarget(className);
     }
@@ -183,18 +181,20 @@ const AIPanel = () => {
                 </h3>
                 {!completedTargets.includes(className) && (
                   <button
-                    className={`font-semibold text-sm border border-gray-200 ${
-                      className === currentTarget ? 'text-green-500' : 'text-blue-500'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent the click event from propagating to the parent
-                      if(className !== currentTarget) {
-                        handleCurrentTarget(className);
-                      }
-                    }}
-                  >
-                    {className === currentTarget ? 'Current Target' : 'Set Current'}
-                  </button>
+                  className={`px-3 py-1 text-sm rounded-full transition-colors duration-150 border ${
+                    className === currentTarget
+                      ? 'bg-green-100 text-green-700 border-green-300'
+                      : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (className !== currentTarget) {
+                      handleCurrentTarget(className);
+                    }
+                  }}
+                >
+                  {className === currentTarget ? 'Current Target' : 'Set Current'}
+                </button>
                 )}
                 <button className="font-bold">
                   {openClasses[className] ? "▲" : "▼"}

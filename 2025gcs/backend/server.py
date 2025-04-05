@@ -14,7 +14,7 @@ class FilterSpecificLogs(logging.Filter):
     def filter(self, record):
         # Suppress logs for specific endpoints
         return not any(endpoint in record.getMessage() for endpoint in [
-            '/getImages', '/images/', '/get_heartbeat'
+            '/getImages', '/images/', '/get_heartbeat', '/fetch-TargetInformation'
         ])
 
 log = logging.getLogger('werkzeug')
@@ -113,42 +113,6 @@ def complete_target():
     current_target = items[0] if items else None
     save_json(target_info_path, data)
     return jsonify({'success': True, 'completedTarget': completed, 'currentTarget': current_target})
-
-# return current target
-@app.get('/getCurrentTarget')
-def get_current_target():
-    # Get the index from the query parameters
-    index = request.args.get('index', type=int)
-    if index is None:
-        return jsonify({'success': False, 'error': 'Index parameter is required'}), 400
-
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
-    items = data.get('ITEM', [])
-    if not items:
-        return jsonify({'success': False, 'error': 'No targets available'})
-
-    # Check if the index is within the valid range
-    if index < 0 or index >= len(items):
-        return jsonify({'success': False, 'error': 'Index out of range'}), 400
-
-    # Return the target at the specified index
-    return jsonify({'success': True, 'currentTarget': items[index]})
-
-@app.get('/getTargets')
-def get_targets():
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
-    items = data.get('ITEM', [])
-    return jsonify({'success': True, 'targets': items})
-
-@app.get('/getCompletedTargets')
-def get_completed_targets():
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
-    completed_targets = data.get('completedTargets', [])
-    return jsonify({'success': True, 'completed_targets': completed_targets})
-
 # ^^^ CURRENTLY NOT USED ^^^
 
 @app.post('/addCoords')
@@ -392,12 +356,15 @@ def serve_odm_image(filename):
     odm_dir = os.path.join(DATA_DIR, 'ODM')
     return send_from_directory(odm_dir, filename)
 
-@app.post('/set-current-target')
-def set_current_target():
+@app.route('/current-target', methods=['GET', 'POST'])
+def current_target_handler():
     global current_target
-    data = request.get_json()
-    current_target = data.get('target')
-    return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+    if request.method == 'POST':
+        current_target = request.get_json().get('target')
+        return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+    elif request.method == 'GET':
+        # PERFORM AVERAGING ON THE CURRENT_TARGET FROM INFORMATION IN TARGETINFORMATION.JSON
+        return jsonify({'success': True, 'current_target': current_target}), 200
 
 if __name__ == '__main__':
     '''
