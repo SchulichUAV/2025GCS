@@ -26,7 +26,7 @@ const AIPanel = () => {
         }
       } catch (error) {
         setError("Failed to fetch detection data");
-        setTimeout(() => setError(null), 3000);
+        setTimeout(() => setError(null), 2000);
       }
     };
 
@@ -35,8 +35,24 @@ const AIPanel = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleCurrentTarget = (className) => {
+  const handleCurrentTarget = async (className) => {
     console.log("Setting current target to:", className);
+
+    const response = await axios.post(`http://${ENDPOINT_IP}/set-current-target`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        target: className,
+      },
+    });
+    if (response.status === 200) {
+      setCurrentTarget(className);
+    }
+    else {
+      setError("Failed to set current target");
+      setTimeout(() => setError(null), 2000);
+    }
   };
 
   useEffect(() => {

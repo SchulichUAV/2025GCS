@@ -392,6 +392,13 @@ def serve_odm_image(filename):
     odm_dir = os.path.join(DATA_DIR, 'ODM')
     return send_from_directory(odm_dir, filename)
 
+@app.post('/set-current-target')
+def set_current_target():
+    global current_target
+    data = request.get_json()
+    current_target = data.get('target')
+    return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+
 if __name__ == '__main__':
     '''
     May need to run this server with sudo (admin) permissions if you encounter blocked networking issues when making API requests to the flight controller.
