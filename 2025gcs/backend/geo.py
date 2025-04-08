@@ -1,6 +1,6 @@
 import time
 
-def locate_target():
+def locate_target(detect_data: dict) -> list[float]:
     """Performs geomatics calculations."""
     try:
         print("Performing geo calc...")
