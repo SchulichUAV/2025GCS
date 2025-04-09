@@ -10,7 +10,7 @@ from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
 from geo import locate_target
-from helper import convert_to_txt, serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
+from helper import serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
 
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
@@ -86,9 +86,9 @@ def process_data_and_locate_target_(detection : dict, path : str) -> None:
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             json_data = json.load(json_file)
-        # Perform geomatics calculations and cache the detection
-        convert_to_txt(detection['x'], detection['y'], json_data)
-        lat, lon = locate_target()
+        json_data['x'] = detection['x']
+        json_data['y'] = detection['y']
+        lat, lon = locate_target(json_data)
         serialize(detection['class'], detection['confidence'], lat, lon)
     else:
         print(f"JSON file not found for {path} - Skipping detection.")
