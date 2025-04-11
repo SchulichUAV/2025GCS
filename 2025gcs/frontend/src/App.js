@@ -5,6 +5,7 @@ import NavBar from './Components/NavBar/NavBar';
 import Home from './Components/Home/Home';
 import DataPage from './Components/Data/DataPage';
 import { ENDPOINT_IP } from "./config";
+import axios from 'axios';
 
 function App() {
   // State for background color
@@ -13,8 +14,8 @@ function App() {
   useEffect(() => {
     const checkHeartbeat = async () => {
       try {
-        const response = await fetch(`http://${ENDPOINT_IP}/get_heartbeat`);
-        const data = await response.json();
+        const response = await axios.get(`http://${ENDPOINT_IP}/get_heartbeat`);
+        const data =response.data;
         if (data.success === true)
         {
           setBgColor(data.success ? "#90EE90" : "#FF7F7F");
@@ -37,7 +38,7 @@ function App() {
       <div className="flex flex-col min-h-screen w-screen" style={{ backgroundColor: bgColor }}>
         <NavBar />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home/>} />
           <Route path="/data" element={<DataPage />} />
         </Routes>
       </div>

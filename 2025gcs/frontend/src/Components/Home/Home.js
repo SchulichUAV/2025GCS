@@ -32,12 +32,17 @@ function Home() {
                 <PayloadPanel />
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
-                <PayloadInfo currentTarget={currentTarget}/>
+                <PayloadInfo 
+                  currentTarget={currentTarget}
+                />
               </div>
             </div>
             <div className="flex flex-row gap-2 flex-[1]">
               <div className="flex justify-center items-center flex-[1.5] rounded-xl shadow-lg">
-                <AIPanel currentTarget={currentTarget} setCurrentTarget={setCurrentTarget}/>
+                <AIPanel 
+                  currentTarget={currentTarget} 
+                  setCurrentTarget={setCurrentTarget}
+                />
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <AltitudePanel />
