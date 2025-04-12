@@ -115,8 +115,15 @@ const MapComponent = () => {
 
         return (
             <div className="absolute top-2 right-2 z-[1000] bg-white p-4 rounded-lg shadow-lg max-w-xs opacity-90">
-                <div className="flex items-center mb-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+           <div className="flex items-center mb-2">
+                    <div className="w-4 h-4 mr-2 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-green-500 relative">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-white"></div>
+                                <div className="w-1 h-1 rounded-full bg-green-700 absolute"></div>
+                            </div>
+                        </div>
+                    </div>
                     <span>
                         Active Target <b>({activeTarget.class})</b>
                     </span>
@@ -250,25 +257,33 @@ const MapComponent = () => {
                 <Legend />
                 {/* Display active target as a green dot only if coordinates are valid */}
                 {activeTarget.latitude && activeTarget.longitude && !isNaN(activeTarget.latitude) && !isNaN(activeTarget.longitude) && (
-                    <CircleMarker
-                        center={[activeTarget.latitude, activeTarget.longitude]}
-                        radius={11.2}
-                        pathOptions={{
-                            color: "green",
-                            weight: 3,
-                            fillColor: "green",
-                            fillOpacity: 0.8,
-                            zIndex: 1000,
-                        }}
-                    >
-                        <Popup>
-                            <div>
-                                <p><strong>Active Target:</strong> {activeTarget.class}</p>
-                                <p><strong>Lat:</strong> {activeTarget.latitude.toFixed(6)}</p>
-                                <p><strong>Lon:</strong> {activeTarget.longitude.toFixed(6)}</p>
-                            </div>
-                        </Popup>
-                    </CircleMarker>
+                    <Marker
+                    position={[activeTarget.latitude, activeTarget.longitude]}
+                    icon={L.divIcon({ 
+                        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <!-- Outer Ring -->
+                                <circle cx="12" cy="12" r="11" stroke="black" stroke-width="0.5" fill="green" opacity="0.7"/>
+                                <!-- Middle Ring -->
+                                <circle cx="12" cy="12" r="7" stroke="black" stroke-width="0.5" fill="white" opacity="0.8"/>
+                                <!-- Inner Ring -->
+                                <circle cx="12" cy="12" r="3" stroke="black" stroke-width="0.5" fill="green" opacity="0.9"/>
+                                <!-- Center Dot -->
+                                <circle cx="12" cy="12" r="1" stroke="none" fill="black"/>
+                            </svg>`, 
+                        className: '', 
+                        iconSize: [30, 30], 
+                        iconAnchor: [15, 15] 
+                    })}
+                    zIndexOffset={1000}
+                >
+                    <Popup>
+                        <div>
+                            <p><strong>Active Target:</strong> {activeTarget.class}</p>
+                            <p><strong>Lat:</strong> {activeTarget.latitude.toFixed(6)}</p>
+                            <p><strong>Lon:</strong> {activeTarget.longitude.toFixed(6)}</p>
+                        </div>
+                    </Popup>
+                </Marker>
                 )}        
                 {/* Filter out invalid coordinates before mapping */}
                 {objects.filter(obj => obj && obj.lat && obj.lon && !isNaN(obj.lat) && !isNaN(obj.lon)).map((obj, index) => (
