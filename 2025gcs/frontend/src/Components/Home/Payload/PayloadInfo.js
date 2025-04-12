@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import axios from "axios";
 
-const PayloadInfo = ({ currentTarget }) => {
+const PayloadInfo = ({ currentTarget, targetCompleted }) => {
   const [payloadStatus, setPayloadStatus] = useState("Not Set"); // "Not Set", "Pending", "Released"
   const [currentTargetInfo, setCurrentTargetInfo] = useState({ name: "", latitude: 0, longitude: 0 });
   const [error, setError] = useState(null);
@@ -38,6 +38,19 @@ const PayloadInfo = ({ currentTarget }) => {
 
     fetchTargetInfo();
   }, [currentTarget]);
+
+  useEffect(() => {
+    if (targetCompleted && currentTarget) {
+      setPayloadStatus("Released");
+      targetCompleted = false;
+  
+      const timer = setTimeout(() => {
+        setPayloadStatus(currentTarget ? "Pending" : "Not Set");
+      }, 8000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [targetCompleted]);
 
   return (
     <div className="flex flex-col gap-4 p-6 w-full h-full bg-white rounded-2xl shadow-md text-sm">

@@ -10,15 +10,19 @@ import axios from 'axios';
 function App() {
   // State for background color
   const [bgColor, setBgColor] = useState("#FF7F7F");
+  const [vehicleData, setVehicleData] = useState(null); // store the heartbeat vehicle data
 
   useEffect(() => {
     const checkHeartbeat = async () => {
       try {
         const response = await axios.get(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data =response.data;
+
+        setVehicleData(data.vehicle_data);
+
         if (data.success === true)
         {
-          setBgColor(data.success ? "#90EE90" : "#FF7F7F");
+          setBgColor("#90EE90");
         }
         else
         {
@@ -38,7 +42,7 @@ function App() {
       <div className="flex flex-col min-h-screen w-screen" style={{ backgroundColor: bgColor }}>
         <NavBar />
         <Routes>
-          <Route path="/" element={<Home/>} />
+          <Route path="/" element={<Home vehicleData={vehicleData}/>} />
           <Route path="/data" element={<DataPage />} />
         </Routes>
       </div>

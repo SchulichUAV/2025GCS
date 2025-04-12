@@ -7,7 +7,7 @@ import AltitudePanel from './AltitudePanel/AltitudePanel';
 import Mapping from './ODM/Mapping';
 import React, { useState } from "react";
 
-function Home() {
+function Home({ vehicleData }) {
   const [currentTarget, setCurrentTarget] = useState(null);
   
   return (
@@ -34,7 +34,7 @@ function Home() {
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <PayloadInfo 
                   currentTarget={currentTarget}
-                />
+                  targetCompleted={vehicleData?.is_dropped || false}                />
               </div>
             </div>
             <div className="flex flex-row gap-2 flex-[1]">
