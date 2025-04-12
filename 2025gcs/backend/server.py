@@ -20,7 +20,7 @@ class FilterSpecificLogs(logging.Filter):
 log = logging.getLogger('werkzeug')
 log.addFilter(FilterSpecificLogs())
 
-completed_targets = ["bus", "stop sign"]
+completed_targets = []
 current_target = None
 
 ENDPOINT_IP = "192.168.1.66"

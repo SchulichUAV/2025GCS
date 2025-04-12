@@ -42,8 +42,7 @@ const PayloadInfo = ({ currentTarget, targetCompleted }) => {
   useEffect(() => {
     if (targetCompleted && currentTarget) {
       setPayloadStatus("Released");
-      targetCompleted = false;
-  
+
       const timer = setTimeout(() => {
         setPayloadStatus(currentTarget ? "Pending" : "Not Set");
       }, 8000);
