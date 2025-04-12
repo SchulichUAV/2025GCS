@@ -4,9 +4,7 @@ import PayloadInfo from "./Payload/PayloadInfo";
 import AIPanel from "./AI/AIPanel";
 import FlightModePanel from "./FlightMode/FlightModePanel";
 import AltitudePanel from "./AltitudePanel/AltitudePanel";
-// import Mapping from "./ODM/Mapping";
 import FlightData from "./FlightData/FlightData";
-
 function Home({ vehicleData }) {
   return (
     <div className="flex flex-col min-h-screen w-screen p-3">
