@@ -76,6 +76,11 @@ def get_heartbeat():
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
         response = requests.get(VEHICLE_API_URL + 'heartbeat-validate', headers=headers, timeout=5)
         heartbeat_data = response.json()
+
+        if heartbeat_data.get("is_dropped") == True:
+            completed_targets.append(current_target)
+            current_target = None
+
         vehicle_data.update(heartbeat_data)
         return jsonify({'success': True, 'vehicle_data': vehicle_data}), 200
 

@@ -261,15 +261,11 @@ const MapComponent = () => {
                     position={[activeTarget.latitude, activeTarget.longitude]}
                     icon={L.divIcon({ 
                         html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <!-- Outer Ring -->
                                 <circle cx="12" cy="12" r="11" stroke="black" stroke-width="0.5" fill="green" opacity="0.7"/>
-                                <!-- Middle Ring -->
                                 <circle cx="12" cy="12" r="7" stroke="black" stroke-width="0.5" fill="white" opacity="0.8"/>
-                                <!-- Inner Ring -->
                                 <circle cx="12" cy="12" r="3" stroke="black" stroke-width="0.5" fill="green" opacity="0.9"/>
-                                <!-- Center Dot -->
                                 <circle cx="12" cy="12" r="1" stroke="none" fill="black"/>
-                            </svg>`, 
+                               </svg>`, 
                         className: '', 
                         iconSize: [30, 30], 
                         iconAnchor: [15, 15] 
