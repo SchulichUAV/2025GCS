@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import axios from "axios";
+import { InfinityIcon } from "lucide-react";
+import { calculateDistance, R } from "../../../utils/common";
 
-const PayloadInfo = ({ currentTarget, targetCompleted }) => {
+const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   const [payloadStatus, setPayloadStatus] = useState("Not Set"); // "Not Set", "Pending", "Released"
   const [currentTargetInfo, setCurrentTargetInfo] = useState({ name: "", latitude: 0, longitude: 0 });
+  const [payloadETA, setPayloadETA] = useState({ distance : "∞", ETA : "∞" });
   const [error, setError] = useState(null);
 
   const statusColors = {
@@ -51,8 +54,48 @@ const PayloadInfo = ({ currentTarget, targetCompleted }) => {
     }
   }, [targetCompleted]);
 
+
+// Get a new lat/lon point offset by `distance` (in meters) along `heading` (in degrees)
+function getReleasePoint(lat, lon, headingDeg, distanceBackwards) {
+  const headingRad = (headingDeg + 180) * Math.PI / 180; // Reverse the heading
+  const dByR = distanceBackwards / R;
+
+  const lat1 = lat * Math.PI / 180;
+  const lon1 = lon * Math.PI / 180;
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dByR) + Math.cos(lat1) * Math.sin(dByR) * Math.cos(headingRad));
+  const lon2 = lon1 + Math.atan2(Math.sin(headingRad) * Math.sin(dByR) * Math.cos(lat1), Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat2));
+
+  return {
+    latitude: lat2 * 180 / Math.PI,
+    longitude: lon2 * 180 / Math.PI
+  };
+}
+
+useEffect(() => {
+  const estimatedReleaseDist = 8; // Estimated release distance for the payload from the target in meters
+
+  const calculateETA = () => {
+    if (!currentTargetInfo || !vehicleInfo.latitude || !vehicleInfo.longitude || !vehicleInfo.speed 
+        || vehicleInfo.speed <= 0 || vehicleInfo.heading === undefined) return;
+  
+    // Get release point based on estimatedReleaseDist (m) backwards from the target along heading
+    const releasePoint = getReleasePoint(currentTargetInfo.latitude, currentTargetInfo.longitude, vehicleInfo.heading, estimatedReleaseDist);
+  
+    // Distance from UAV to release point
+    const distanceToRelease = calculateDistance(vehicleInfo.latitude, vehicleInfo.longitude, releasePoint.latitude, releasePoint.longitude);
+    const ETA = distanceToRelease / vehicleInfo.speed;
+  
+    setPayloadETA({ 
+      distance: Math.round(distanceToRelease), 
+      ETA: ETA === Infinity ? "∞" : Math.round(ETA) 
+    });
+  };
+  
+  calculateETA();
+}, [vehicleInfo, currentTargetInfo]);  // vehicle location [lat, lon], vehicle speed (m/s)
+
   return (
-    <div className="flex flex-col gap-4 p-6 w-full h-full bg-white rounded-2xl shadow-md text-sm">
+    <div className="flex flex-col gap-3 p-5 w-full h-full bg-white rounded-2xl shadow-md text-sm">
       <h1 className="font-semibold text-xl text-center text-gray-800">Payload Status</h1>
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative text-center text-sm">
@@ -65,13 +108,30 @@ const PayloadInfo = ({ currentTarget, targetCompleted }) => {
         <span className="font-medium text-gray-700">{payloadStatus}</span>
       </div>
 
-      <div className="border-t border-gray-200" />
+      {/* Data Display */}
+      <div className="flex flex-col gap-1 border-t">
+        <div className="flex justify-between text-md">
+          <span className="text-gray-600">Distance:</span>
+          <span>
+            {typeof payloadETA.distance === "number"
+              ? `${payloadETA.distance} m`
+              : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
+          </span>
+        </div>
+        <div className="flex justify-between text-md">
+          <span className="text-gray-600">Release:</span>
+          <span>
+            {typeof payloadETA.ETA === "number"
+              ? `${payloadETA.ETA} s`
+              : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
+          </span>
+        </div>
+      </div>
 
       {/* Target Info */}
       <div className="text-center">
-        <h2 className="font-semibold text-lg text-gray-800 mb-1">Current Target</h2>
+        <h2 className="font-semibold text-lg text-gray-800 mb-1">{currentTargetInfo.name || "Not Set"}</h2>
         <div className="space-y-1 text-gray-600">
-          <div>{<span className="font-bold">{currentTargetInfo.name}</span> || <span className="text-gray-400 italic">No target set</span>}</div>
           <div><span className="font-semibold">Lat</span>: {currentTargetInfo.latitude.toFixed(6)}</div>
           <div><span className="font-semibold">Lon</span>: {currentTargetInfo.longitude.toFixed(6)}</div>
         </div>

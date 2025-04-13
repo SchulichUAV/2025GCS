@@ -1,6 +1,7 @@
-// Function to calculate distance between two points in meters
+export const R = 6371000;   // Radius of the earth in meters
+
+// Function to calculate distance between two points in meters (haversine formula)
 export const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371000;
     const q1 = lat1 * Math.PI / 180;
     const q2 = lat2 * Math.PI / 180;
     const x = (lat2 - lat1) * Math.PI / 180;
