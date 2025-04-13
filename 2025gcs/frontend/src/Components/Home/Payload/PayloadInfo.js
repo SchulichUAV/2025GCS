@@ -12,8 +12,8 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
 
   const statusColors = {
     "Not Set": "bg-gray-400",
-    Pending: "bg-blue-400",
-    Released: "bg-green-500"
+    "Pending": "bg-blue-400",
+    "Released": "bg-green-500"
   };
 
   const handleError = (error) => {
@@ -29,7 +29,7 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
     const secs = seconds % 60;
     return `${mins} min ${secs} s`;
   }
-  
+
   function formatDistance(distance) {
     return distance.toLocaleString("en-US").replace(/,/g, " ");
   }  

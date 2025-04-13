@@ -16,11 +16,10 @@ function App() {
         const response = await axios.get(`http://${ENDPOINT_IP}/get_heartbeat`);
         const data = response.data;
 
-        setVehicleData(data.vehicle_data);
-
         if (data.success === true)
         {
           setBgColor("#90EE90");
+          setVehicleData(data.vehicle_data);
         }
         else
         {

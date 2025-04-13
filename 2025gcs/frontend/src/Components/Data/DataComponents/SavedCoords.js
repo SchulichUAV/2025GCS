@@ -32,34 +32,6 @@ function SavedCoords() {
     } catch (error) { console.error("Error deleting coordinate:", error); }
   };
   
-  const clearAllCoords = async () => {
-    try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.data.success) {
-        setCoords({});
-        setSortedCoords([]);
-      }
-    } catch (error) { console.error("Error clearing coordinates:", error); }
-  };
-
-  const clearCoordsForImage = async (image) => {
-    try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
-        data: { image },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.data.success) {
-        fetchCoords();
-      }
-    } catch (error) { console.error("Error clearing image coordinates:", error); }
-  };
-  
   const toggleExpand = (image) => {
     setExpandedImages((prev) => ({
       ...prev,
@@ -119,7 +91,7 @@ function SavedCoords() {
                   <span>Actions</span>
                   <button
                     className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded shadow-sm transition ml-2"
-                    onClick={clearAllCoords}
+                    onClick={() => deleteCoord(null, null)}
                   >
                     Clear All
                   </button>
@@ -144,7 +116,7 @@ function SavedCoords() {
                       className="bg-red-400 hover:bg-red-500 text-white text-xs px-2 py-1 rounded shadow-sm transition"
                       onClick={(e) => {
                         e.stopPropagation();
-                        clearCoordsForImage(image);
+                        deleteCoord(image, null);
                       }}
                     >
                       Clear
