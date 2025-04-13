@@ -79,11 +79,11 @@ const getClassIcon = (className, severity, isCompleted = false) => {
                        <rect x="8" y="11" width="4" height="2" stroke="black" stroke-width="0.5" fill="white" opacity="${opacity}"/>`;
             break;
         case "motorcycle":
-            svgPath = `<circle cx="4" cy="14" r="3" stroke="black" stroke-width="1" fill="black" opacity="${opacity}"/>
-                       <circle cx="16" cy="14" r="3" stroke="black" stroke-width="1" fill="black" opacity="${opacity}"/>
-                       <path d="M7,14 h6 M13,14 l3,-4 l-6,-3 l-3,3 h-3" stroke="black" stroke-width="1" fill="none" opacity="${opacity}"/>
-                       <path d="M13,10 l-3,-3" stroke="black" stroke-width="1" fill="none" opacity="${opacity}"/>
-                       <path d="M16,10 v-2 h-2" stroke="black" stroke-width="1" fill="none" opacity="${opacity}"/>`;
+            svgPath = `<circle cx="4" cy="14" r="3" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>
+                       <circle cx="16" cy="14" r="3" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>
+                       <path d="M7,14 h6 M13,14 l3,-4 l-6,-3 l-3,3 h-3" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>
+                       <path d="M13,10 l-3,-3" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>
+                       <path d="M16,10 v-2 h-2" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>`;
             break;
         case "Football":
             svgPath = `<ellipse cx="10" cy="10" rx="7" ry="5" stroke="black" stroke-width="1" fill="${color}" opacity="${opacity}"/>
