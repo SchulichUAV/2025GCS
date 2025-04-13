@@ -23,17 +23,24 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
     setCurrentTargetInfo({ name: "", latitude: 0, longitude: 0 });
   };
 
+  function formatTime(seconds) {
+    if (seconds < 60) return `${seconds} s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} min ${secs} s`;
+  }
+  
+  function formatDistance(distance) {
+    return distance.toLocaleString("en-US").replace(/,/g, " ");
+  }  
+
   useEffect(() => {
     const fetchTargetInfo = async () => {
       try {
         const response = await axios.get(`http://${ENDPOINT_IP}/current-target`);
         const data = response.data;
         if (data.success) {
-          setCurrentTargetInfo({
-            name: currentTarget,
-            latitude: data.coords[0],
-            longitude: data.coords[1]
-          });
+          setCurrentTargetInfo({ name: currentTarget, latitude: data.coords[0], longitude: data.coords[1] });
           setPayloadStatus(currentTarget ? "Pending" : "Not Set");
         }
       } catch (error) { handleError("Error fetching target"); }
@@ -85,14 +92,14 @@ useEffect(() => {
     const distanceToRelease = calculateDistance(vehicleInfo.latitude, vehicleInfo.longitude, releasePoint.latitude, releasePoint.longitude);
     const ETA = distanceToRelease / vehicleInfo.speed;
   
-    setPayloadETA({ 
-      distance: Math.round(distanceToRelease), 
-      ETA: ETA === Infinity ? "∞" : Math.round(ETA) 
+    setPayloadETA({
+      distance: formatDistance(Math.round(distanceToRelease)),
+      ETA: ETA === Infinity ? "∞" : formatTime(Math.round(ETA))
     });
   };
   
   calculateETA();
-}, [vehicleInfo, currentTargetInfo]);  // vehicle location [lat, lon], vehicle speed (m/s)
+}, [vehicleInfo, currentTargetInfo]);
 
   return (
     <div className="flex flex-col gap-3 p-5 w-full h-full bg-white rounded-2xl shadow-md text-sm">
@@ -109,21 +116,17 @@ useEffect(() => {
       </div>
 
       {/* Data Display */}
-      <div className="flex flex-col gap-1 border-t">
-        <div className="flex justify-between text-md">
+      <div className="flex flex-col gap-1 border-t border-b pb-1 pt-1">
+        <div className="flex justify-between">
           <span className="text-gray-600">Distance:</span>
           <span>
-            {typeof payloadETA.distance === "number"
-              ? `${payloadETA.distance} m`
-              : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
+            {payloadETA.distance && currentTarget ? `${payloadETA.distance} m` : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
           </span>
         </div>
-        <div className="flex justify-between text-md">
+        <div className="flex justify-between">
           <span className="text-gray-600">Release:</span>
           <span>
-            {typeof payloadETA.ETA === "number"
-              ? `${payloadETA.ETA} s`
-              : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
+            {payloadETA.ETA && currentTarget ? `${payloadETA.ETA}` : <InfinityIcon className="w-4 h-4 text-gray-500 inline" />}
           </span>
         </div>
       </div>

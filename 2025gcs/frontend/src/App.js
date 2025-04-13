@@ -40,7 +40,7 @@ function App() {
         <NavBar />
         <Routes>
           <Route path="/" element={<Home vehicleData={vehicleData} />} />
-          <Route path="/data" element={<DataPage vehicleData={vehicleData} />} />
+          <Route path="/data" element={<DataPage />} />
         </Routes>
       </div>
     </Router>
