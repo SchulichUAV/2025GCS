@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ENDPOINT_IP } from "../../../config";
+import axios from 'axios';
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});
@@ -9,31 +10,28 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await fetch(`http://${ENDPOINT_IP}/get_saved_coords`);
-      const data = await response.json();
-      if (data.success) {
-        setCoords(data.coordinates);
-        setSortedCoords(Object.entries(data.coordinates));
+      const response = await axios.get(`http://${ENDPOINT_IP}/get_saved_coords`);
+      if (response.data.success) {
+        setCoords(response.data.coordinates);
+        setSortedCoords(Object.entries(response.data.coordinates));
       }
     } catch (error) {}
   };
 
   const deleteCoord = async (image, index) => {
     try {
-      const response = await fetch(`http://${ENDPOINT_IP}/delete_coord`, {
-        method: 'POST',
+      const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
+        data: { image, index },
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ image, index }),
       });
-      const data = await response.json();
-      if (data.success) {
+      if (response.data.success) {
         fetchCoords();
       }
-    } catch (error) {}
+    } catch (error) { console.error("Error deleting coordinate:", error); }
   };
-
+  
   const toggleExpand = (image) => {
     setExpandedImages((prev) => ({
       ...prev,
@@ -88,7 +86,17 @@ function SavedCoords() {
                 Image{getSortIndicator('image')}
               </th>
               <th className="w-1/3 py-2 px-4 border-b text-left">Coordinates</th>
-              <th className="w-1/3 py-2 px-4 border-b text-left">Actions</th>
+              <th className="w-1/3 py-2 px-4 border-b text-left">
+                <div className="flex justify-between items-center">
+                  <span>Actions</span>
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded shadow-sm transition ml-2"
+                    onClick={() => deleteCoord(null, null)}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +111,17 @@ function SavedCoords() {
                     {image}
                   </td>
                   <td className="py-2 px-4 border-b"></td>
-                  <td className="py-2 px-4 border-b"></td>
+                  <td className="py-2 px-4 border-b">
+                    <button
+                      className="bg-red-400 hover:bg-red-500 text-white text-xs px-2 py-1 rounded shadow-sm transition"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteCoord(image, null);
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </td>
                 </tr>
                 {expandedImages[image] &&
                   coordinates.map((coord, i) => (
@@ -112,12 +130,12 @@ function SavedCoords() {
                       <td className="py-2 px-4 border-b">
                         <span className="font-semibold">x:</span> {coord.x}, <span className="font-semibold">y:</span> {coord.y}
                       </td>
-                      <td className="py-2 px-4 border-b">
+                      <td className="py-2 px-3 border-b">
                         <button
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow-sm transition"
                           onClick={() => deleteCoord(image, i)}
                         >
-                          Delete
+                          x
                         </button>
                       </td>
                     </tr>

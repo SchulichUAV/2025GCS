@@ -1,11 +1,15 @@
-import PhotoPanel from "./PhotoSelection/PhotoPanel";
-import PayloadPanel from "./Payload/PayloadPanel";
-import PayloadInfo from "./Payload/PayloadInfo";
-import AIPanel from "./AI/AIPanel";
-import FlightModePanel from "./FlightMode/FlightModePanel";
-import AltitudePanel from "./AltitudePanel/AltitudePanel";
+import PhotoPanel from './PhotoSelection/PhotoPanel';
+import PayloadPanel from './Payload/PayloadPanel';
+import PayloadInfo from './Payload/PayloadInfo';
+import AIPanel from './AI/AIPanel';
+import FlightModePanel from './FlightMode/FlightModePanel';
+import AltitudePanel from './AltitudePanel/AltitudePanel';
 import FlightData from "./FlightData/FlightData";
+import React, { useState } from "react";
+
 function Home({ vehicleData }) {
+  const [currentTarget, setCurrentTarget] = useState(null);
+  
   return (
     <div className="flex flex-col min-h-screen w-screen p-3">
       <div className="flex flex-col lg:flex-row flex-grow gap-2 mt-20">
@@ -27,12 +31,21 @@ function Home({ vehicleData }) {
                 <PayloadPanel />
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
-                <PayloadInfo />
+                <PayloadInfo 
+                  currentTarget={currentTarget}
+                  //vehicleInfo={{ latitude: vehicleData?.lat || Infinity, longitude: vehicleData?.lon || Infinity, 
+                  //               speed: vehicleData?.airspeed || 0, heading: vehicleData?.heading || 0 }}
+                  vehicleInfo={{ latitude: 50.976200, longitude: -114.072100, speed: 11, heading: 135 }}
+                  targetCompleted={vehicleData?.is_dropped || false}
+                />
               </div>
             </div>
             <div className="flex flex-row gap-2 flex-[1]">
               <div className="flex justify-center items-center flex-[1.5] rounded-xl shadow-lg">
-                <AIPanel />
+                <AIPanel 
+                  currentTarget={currentTarget} 
+                  setCurrentTarget={setCurrentTarget}
+                />
               </div>
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <AltitudePanel />
