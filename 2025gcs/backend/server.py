@@ -134,8 +134,25 @@ def serve_image(filename):
 @app.post('/deleteImage')
 def delete_image():
     """Delete an image from the server"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     image_name = data.get("imageName")
+
+    # No image provided. Delete all images
+    if image_name is None:
+        errors = []
+        if os.path.exists(IMAGES_DIR):
+            for filename in os.listdir(IMAGES_DIR):
+                file_path = os.path.join(IMAGES_DIR, filename)
+                if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        errors.append(str(e))
+        if errors:
+            return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
+        return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
+
+    # Image provided. Delete the specific image
     if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
@@ -145,23 +162,6 @@ def delete_image():
         return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
-    
-@app.post('/clearAllImages')
-def clear_all_images():
-    """Delete all images from the images directory."""
-    errors = []
-    if os.path.exists(IMAGES_DIR):
-        for filename in os.listdir(IMAGES_DIR):
-            file_path = os.path.join(IMAGES_DIR, filename)
-            if os.path.isfile(file_path) and filename.endswith('.jpg'):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    errors.append(str(e))
-    if errors:
-        return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
-
-    return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
 
 @app.get('/getImageData')
 def get_image_data():
@@ -232,7 +232,8 @@ def manual_selection_geo_calc():
         with open(saved_coords_path, "r") as file:
             saved_coords = json.load(file)
 
-        # Iterate over each image entry
+        position_data = [0, 0] # latitude, longitude
+        count = 0 # count of number of saved coords processed for averaging
         for image_name, coordinates in saved_coords.items():
             image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
             if not os.path.exists(image_json_path):
@@ -246,10 +247,23 @@ def manual_selection_geo_calc():
                 image_data["x"] = coord["x"]
                 image_data["y"] = coord["y"]
                 latitude, longitude = locate_target(image_data)
+                position_data[0] += latitude
+                position_data[1] += longitude
+                count += 1
 
-        # Clear the saved coordinates after processing
-        save_json(saved_coords_path, {})
-        return jsonify({'success': True, 'message': 'Geomatics calculation complete'}), 200
+        if count > 0:
+            position_data[0] /= count  # Average latitude
+            position_data[1] /= count  # Average longitude
+
+            headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+            data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
+            response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers) # ADD ENDPOINT NAME
+
+            if response.status_code == 200:
+                save_json(saved_coords_path, {}) # Clear saved coordinates after processing
+                return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
+            else:
+                return jsonify({'success': False, 'error': 'Failed to send data'}), 500
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -322,20 +336,19 @@ def fetch_TargetInformation():
     data = load_json(target_info_path)
     return jsonify({'targets': data, 'completed_targets': completed_targets, 'current_target': current_target}), 200
 
-@app.post('/Clear-Detections')
-def ClearCache():
-    """Clears the TargetInformation.json cache file."""
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    save_json(target_info_path, {})
-    return jsonify({"message": "TargetInformation cache cleared"}), 200
-
 @app.delete('/delete-prediction')
 def delete_prediction():
-    """Delete a specific prediction from the cache based on index."""
-    data = request.get_json()
+    """Delete predictions from the cache based on index."""
+    data = request.get_json(silent=True) or {}
     class_name = data.get('class_name')
     index = data.get('index')
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
+
+    # No class or index provided, clear the cache
+    if class_name is None or index is None:
+        save_json(target_info_path, {})
+        return jsonify({"message": "TargetInformation cache cleared"}), 200
+
     coords_data = load_json(target_info_path)
     if class_name in coords_data:
         if 0 <= index < len(coords_data[class_name]):

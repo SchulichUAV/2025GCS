@@ -154,7 +154,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const clearDetectionsCache = async () => {
     try {
-      await axios.post(`http://${ENDPOINT_IP}/Clear-Detections`);
+      await axios.delete(`http://${ENDPOINT_IP}/delete-prediction`);
     } catch (error) { showError("Request failed"); }
   };
 
