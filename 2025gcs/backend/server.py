@@ -213,14 +213,17 @@ def manual_selection_save():
     data = request.get_json()
     saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
     coords_data = load_json(saved_coords)
-    file_name = data['file_name']
-    if file_name not in coords_data:
-        coords_data[file_name] = []
 
-    coords_data[file_name].append({
+    object_name = data.get('object')
+    if object_name not in coords_data:
+        coords_data[object_name] = []
+
+    coords_data[object_name].append({
+        'image': data['file_name'],
         'x': data['selected_x'],
         'y': data['selected_y']
     })
+
     save_json(saved_coords, coords_data)
     return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
 
@@ -232,38 +235,44 @@ def manual_selection_geo_calc():
         with open(saved_coords_path, "r") as file:
             saved_coords = json.load(file)
 
-        position_data = [0, 0] # latitude, longitude
-        count = 0 # count of number of saved coords processed for averaging
-        for image_name, coordinates in saved_coords.items():
-            image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
-            if not os.path.exists(image_json_path):
-                continue
-            
-            with open(image_json_path, "r") as json_file:
-                image_data = json.load(json_file)
+        data = request.get_json()
+        requested_object = data.get('object')
+        if requested_object is None or requested_object not in saved_coords:
+            return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
 
-            # Process each saved set of coordinates
-            for coord in coordinates:
-                image_data["x"] = coord["x"]
-                image_data["y"] = coord["y"]
+        position_data = [0, 0]  # latitude, longitude
+        count = len(saved_coords[requested_object])  # count of number of saved coords processed for averaging
+        if count > 0:
+            for coord_entry in saved_coords[requested_object]:
+                image_name = coord_entry["image"]
+                image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
+                if not os.path.exists(image_json_path):
+                    continue
+
+                with open(image_json_path, "r") as json_file:
+                    image_data = json.load(json_file)
+
+                # Process each coordinate
+                image_data["x"] = coord_entry["x"]
+                image_data["y"] = coord_entry["y"]
                 latitude, longitude = locate_target(image_data)
                 position_data[0] += latitude
                 position_data[1] += longitude
-                count += 1
 
-        if count > 0:
             position_data[0] /= count  # Average latitude
             position_data[1] /= count  # Average longitude
 
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
             data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
-            response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers) # ADD ENDPOINT NAME
+            response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers)  # ADD ENDPOINT NAME
 
             if response.status_code == 200:
-                save_json(saved_coords_path, {}) # Clear saved coordinates after processing
+                save_json(saved_coords_path, {})  # Clear saved coordinates after processing
                 return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
             else:
                 return jsonify({'success': False, 'error': 'Failed to send data'}), 500
+        else:
+            return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -278,28 +287,28 @@ def get_saved_coords():
 def delete_coord():
     """Delete a specific coordinate from the saved coordinates."""
     data = request.get_json(silent=True) or {}
-    image = data.get('image')
+    req_object = data.get('object')
     index = data.get('index')
 
     saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
     coords_data = load_json(saved_coords_path) or {}
 
-    if image is None:
+    if req_object is None:
         save_json(saved_coords_path, {})
         return jsonify({'success': True, 'message': 'All coordinates deleted successfully'})
 
-    if image and index is None:
-        if image in coords_data:
-            del coords_data[image]
+    if req_object and index is None:
+        if req_object in coords_data:
+            del coords_data[req_object]
             save_json(saved_coords_path, coords_data)
-            return jsonify({'success': True, 'message': 'All coordinates for image deleted successfully'})
+            return jsonify({'success': True, 'message': 'All coordinates for object deleted successfully'})
         else:
-            return jsonify({'success': False, 'error': 'Image not found'}), 404
+            return jsonify({'success': False, 'error': 'Object not found'}), 404
 
-    if image in coords_data and isinstance(index, int) and 0 <= index < len(coords_data[image]):
-        del coords_data[image][index]
-        if not coords_data[image]:
-            del coords_data[image]
+    if req_object in coords_data and isinstance(index, int) and 0 <= index < len(coords_data[req_object]):
+        del coords_data[req_object][index]
+        if not coords_data[req_object]:
+            del coords_data[req_object]
         save_json(saved_coords_path, coords_data)
         return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
     else:

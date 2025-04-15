@@ -11,6 +11,8 @@ const PhotoPanel = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [selectedSaveObject, setSelectedSaveObject] = useState(""); // for Save dropdown
+  const [selectedSendObject, setSelectedSendObject] = useState(""); // for Send dropdown
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -50,7 +52,13 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-      await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`);
+      if (!selectedSendObject) {
+        showError("Select object before sending.");
+        return;
+      }
+      await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`, {
+        object: selectedSendObject
+      });
       showMessage(`Selections Processed`);
     } catch (error) {
       showError("Request Failed")
@@ -59,6 +67,10 @@ const PhotoPanel = () => {
 
   const handleManualCoordSave = async () => {
     if (mainPhoto && selectedPoint) {
+      if (!selectedSaveObject) {
+        showError("Select object before saving.");
+        return;
+      }
       const imgElement = document.querySelector(`img[alt="${mainPhoto}"]`);
       if (imgElement) {
         // Normalize selected point to 640x640 image size
@@ -72,7 +84,8 @@ const PhotoPanel = () => {
         await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
           selected_y: normalizedY,
-          file_name: mainPhoto
+          file_name: mainPhoto,
+          object: selectedSaveObject
         });
         setSelectedPoint(null);
         showMessage("Selection saved");
@@ -192,8 +205,11 @@ const PhotoPanel = () => {
                 >
                   Save
                 </button>
-                <select className="px-2 py-2 border rounded w-1/2">
-                  <option value="">All</option>
+                <select className="px-2 py-2 border rounded w-1/2"
+                  value={selectedSaveObject}
+                  onChange={(e) => setSelectedSaveObject(e.target.value)}
+                >
+                  <option id="saveObject" value=""></option>
                   {objectList.map((item, index) => (
                     <option key={index} value={item}>
                       {item}
@@ -208,8 +224,11 @@ const PhotoPanel = () => {
                 >
                   Send
                 </button>
-                <select className="px-2 py-2 border rounded w-1/2">
-                  <option value="">All</option>
+                <select className="px-2 py-2 border rounded w-1/2"
+                  value={selectedSendObject}
+                  onChange={(e) => setSelectedSendObject(e.target.value)}
+                >
+                  <option id="sendObject" value=""></option>
                   {objectList.map((item, index) => (
                     <option key={index} value={item}>
                       {item}
