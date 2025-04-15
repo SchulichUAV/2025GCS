@@ -38,20 +38,20 @@ export const outlierSeverity = {
 
 
 export const objectList = [
-    "sports ball",
-    "football",
-    "person",
-    "car",
-    "snowboard",
-    "skis",
-    "bus",
-    "umbrella",
-    "plane",
+    "baseball bat",
     "bed",
-    "tennis racket",
+    "boat",
+    "bus",
+    "car",
+    "football",
+    "motorcycle",
+    "person",
+    "plane",
+    "skis",
+    "snowboard",
+    "sports ball",
     "stop sign",
     "suitcase",
-    "motorcycle",
-    "boat",
-    "baseball bat"
-]
+    "tennis racket",
+    "umbrella"
+  ];  
