@@ -224,7 +224,7 @@ def manual_selection_save():
     save_json(saved_coords, coords_data)
     return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
 
-@app.post('/manualSelection-geo-calc')
+@app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for all manually selected targets."""
     try:

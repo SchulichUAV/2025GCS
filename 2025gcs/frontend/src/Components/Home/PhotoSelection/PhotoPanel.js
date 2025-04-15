@@ -14,13 +14,13 @@ const PhotoPanel = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const showError = (error, timeout = 2000) => {
+  const showError = (error, timeout = 1500) => {
     setError(error);
     setTimeout(() => setError(null), timeout);
   };
-  const showMessage = (message, timeout = 2000) => {
+  const showMessage = (message, timeout = 1500) => {
     setMessage(message);
-    setTimeout(() => setError(null), timeout);
+    setTimeout(() => setMessage(null), timeout);
   };
 
   useEffect(() => {
@@ -50,7 +50,7 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-      await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+      await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`);
       showMessage(`Selections Processed`);
     } catch (error) {
       showError("Request Failed")
@@ -131,7 +131,6 @@ const PhotoPanel = () => {
     }
   };
   
-
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
@@ -184,20 +183,40 @@ const PhotoPanel = () => {
             >
               📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
             </button>
-
-            <div className="flex gap-2">
-              <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              disabled={!selectedPoint}
-              onClick={handleManualCoordSave}
-              >
-                Save
-              </button>
-              <button
-                onClick={handleManualSelectionSend}
-                className={`px-3 py-2 rounded w-1/2 bg-gray-300 hover:bg-gray-400`}
-              >
-                Send
-              </button>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!selectedPoint}
+                  onClick={handleManualCoordSave}
+                >
+                  Save
+                </button>
+                <select className="px-2 py-2 border rounded w-1/2">
+                  <option value="">All</option>
+                  {objectList.map((item, index) => (
+                    <option key={index} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleManualSelectionSend}
+                  className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2"
+                >
+                  Send
+                </button>
+                <select className="px-2 py-2 border rounded w-1/2">
+                  <option value="">All</option>
+                  {objectList.map((item, index) => (
+                    <option key={index} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button
               onClick={clearImages}
