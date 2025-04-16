@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Popup, CircleMarker, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from "axios";
@@ -124,9 +124,7 @@ const MapComponent = () => {
                             </div>
                         </div>
                     </div>
-                    <span>
-                        Active Target <b>({activeTarget.class})</b>
-                    </span>
+                    <span> Active Target <b>({activeTarget.class})</b> </span>
                     <button
                         onClick={handleGoTo}
                         className="ml-2 px-2 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
@@ -134,9 +132,7 @@ const MapComponent = () => {
                         Go to
                     </button>
                 </div>
-            
                 <div className="font-bold mt-2 mb-2">Outliers</div>
-            
                 <div className="flex items-center mb-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
                     <span>Normal</span>
@@ -162,7 +158,6 @@ const MapComponent = () => {
                         </div>
                     </div>
                 )}
-
                 <div className="mt-3">
                     <button
                         onClick={() => {setShowCompleted(!showCompleted);}}
@@ -249,7 +244,7 @@ const MapComponent = () => {
     // const defaultCenter = [38.315575, -76.551095]; // (Maryland airstrip)(for comp)
     return (
         <div className="h-full w-full relative">
-            <MapContainer center={defaultCenter} zoom={15} minZoom={3} scrollWheelZoom={true} style={{ height: "100%", width: "100%" }}>
+            <MapContainer center={defaultCenter} zoom={15} minZoom={3} attributionControl={false} zoomControl={false} scrollWheelZoom={true} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                     attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
