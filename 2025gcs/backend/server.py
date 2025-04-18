@@ -267,7 +267,8 @@ def manual_selection_geo_calc():
             response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers)  # ADD ENDPOINT NAME
 
             if response.status_code == 200:
-                save_json(saved_coords_path, {})  # Clear saved coordinates after processing
+                saved_coords.pop(requested_object, None)
+                save_json(saved_coords_path, saved_coords)
                 return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
             else:
                 return jsonify({'success': False, 'error': 'Failed to send data'}), 500
