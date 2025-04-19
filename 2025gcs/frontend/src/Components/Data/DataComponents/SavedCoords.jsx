@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ENDPOINT_IP } from "../../../config";
-import axios from 'axios';
+import { fetchSavedCoords, deleteSavedCoord } from "../../../utils/api/api-config";
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});
@@ -10,26 +9,23 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await axios.get(`http://${ENDPOINT_IP}/get_saved_coords`);
-      if (response.data.success) {
-        setCoords(response.data.coordinates);
-        setSortedCoords(Object.entries(response.data.coordinates));
-      }
-    } catch (error) {}
+      const coordinates = await fetchSavedCoords();
+      setCoords(coordinates);
+      setSortedCoords(Object.entries(coordinates));
+    } catch (error) {
+      console.error("Error fetching coordinates:", error);
+    }
   };
 
   const deleteCoord = async (image, index) => {
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
-        data: { image, index },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.data.success) {
+      const success = await deleteSavedCoord(image, index);
+      if (success) {
         fetchCoords();
       }
-    } catch (error) { console.error("Error deleting coordinate:", error); }
+    } catch (error) {
+      console.error("Error deleting coordinate:", error);
+    }
   };
   
   const toggleExpand = (image) => {

@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Popup, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from "axios";
-import { ENDPOINT_IP } from "../../../config";
+import { fetchTargetInformation, deletePrediction } from "../../../utils/api/api-config.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const getOutlierColor = (severity) => {
@@ -213,28 +213,27 @@ const MapComponent = () => {
         setObjects(flattened);
     };
 
-    const handleDeletePrediction = async (className, index) => {
-        try {
-            const response = await axios.delete(`http://${ENDPOINT_IP}/delete-prediction`, {
-                data: { class_name: className, index },
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (response.status === 200) {
-                fetchData();
-            }
-        } catch (error) { console.error("Error deleting prediction:", error); }
-    };
-
     const fetchData = async () => {
         try {
-            const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
-            if (response.data) {  
-                if (response.data.targets) {
-                    computeOutliers(response.data.targets, response.data.completed_targets, response.data.current_target);
-                }
-            }
-        } catch (error) { console.error("Error fetching data:", error); }
-    };
+          const data = await fetchTargetInformation();
+          if (data.targets) {
+            computeOutliers(data.targets, data.completed_targets, data.current_target);
+          }
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      };
+      
+    const handleDeletePrediction = async (className, index) => {
+        try {
+          const success = await deletePrediction(className, index);
+          if (success) {
+            fetchData();
+          }
+        } catch (error) {
+          console.error("Error deleting prediction:", error);
+        }
+      };
 
     useEffect(() => {
         fetchData();
