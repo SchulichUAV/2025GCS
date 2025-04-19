@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
-import { fetchImageData } from "../../../utils/api/api-config";
+import { fetchImageDataAPI } from "../../../utils/api/api-config";
 
 const ImageData = () => {
   const [imageData, setImageData] = useState([]);
@@ -27,7 +27,7 @@ const ImageData = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchImageData();
+        const data = await fetchImageDataAPI();
         setImageData(data);
         setSortedData(data);
       } catch (error) {
@@ -140,7 +140,7 @@ const ImageData = () => {
         </div>
         <div className="flex space-x-4">
           <button 
-            onClick={fetchImageData} 
+            onClick={fetchImageDataAPI} 
             className="p-2 px-4 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 duration-200">
             <RefreshCw className="w-5 h-5" />
           </button>

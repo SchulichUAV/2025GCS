@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Popup, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from "axios";
-import { fetchTargetInformation, deletePrediction } from "../../../utils/api/api-config.js";
+import { fetchTargetInformationAPI, deletePredictionAPI } from "../../../utils/api/api-config.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const getOutlierColor = (severity) => {
@@ -215,7 +215,7 @@ const MapComponent = () => {
 
     const fetchData = async () => {
         try {
-          const data = await fetchTargetInformation();
+          const data = await fetchTargetInformationAPI();
           if (data.targets) {
             computeOutliers(data.targets, data.completed_targets, data.current_target);
           }
@@ -226,7 +226,7 @@ const MapComponent = () => {
       
     const handleDeletePrediction = async (className, index) => {
         try {
-          const success = await deletePrediction(className, index);
+          const success = await deletePredictionAPI(className, index);
           if (success) {
             fetchData();
           }

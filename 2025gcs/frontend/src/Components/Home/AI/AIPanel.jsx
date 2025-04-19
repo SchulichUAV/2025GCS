@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { ENDPOINT_IP } from "../../../config";
-import axios from "axios";
+import {
+  fetchTargetInformationAPI,
+  setCurrentTargetAPI,
+  deletePredictionAPI,
+  toggleDetectionModelAPI,
+  clearDetectionsCacheAPI,
+} from "../../../utils/api/api-config.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
@@ -24,17 +29,19 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   useEffect(() => {
     const fetchDetectionData = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
-        if (response.data) {
-          setData(response.data.targets);
-          setCurrentTarget(response.data.current_target);
+        const response = await fetchTargetInformationAPI();
+        if (response) {
+          setData(response.targets);
+          setCurrentTarget(response.current_target);
 
-          if (completedTargets !== response.data.completed_targets) {
-            setCompletedTargets(response.data.completed_targets);
+          if (completedTargets !== response.completed_targets) {
+            setCompletedTargets(response.completed_targets);
             targetCompleted = true;
           }
         }
-      } catch (error) { showError("Failed to fetch detection data"); }
+      } catch (error) {
+        showError("Failed to fetch detection data");
+      }
     };
 
     fetchDetectionData();
@@ -43,17 +50,17 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   }, []);
 
   const handleCurrentTarget = async (className) => {
-    try{
+    try {
       const targetToSet = currentTarget === className ? null : className;
-      const response = await axios.post(`http://${ENDPOINT_IP}/current-target`, 
-        { target: targetToSet },
-        { headers: { 'Content-Type': 'application/json' }, }
-      );
-      if (response.status === 200) {
+      const success = await setCurrentTargetAPI(targetToSet);
+      if (success) {
         setCurrentTarget(targetToSet);
-      } else { showError("Failed to set current target"); }
+      } else {
+        showError("Failed to set current target");
+      }
+    } catch (error) {
+      showError("Failed to set current target");
     }
-    catch (error) { showError("Failed to set current target"); }
   };
 
   const computeOutliers = (data) => {
@@ -118,22 +125,18 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const handleDeletePrediction = async (className, index) => {
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete-prediction`, {
-        data: { class_name: className, index },
-        headers: { 'Content-Type': 'application/json' },
-      });
-  
-      if (response.status === 200) {
+      const success = await deletePredictionAPI(className, index);
+      if (success) {
         setData((prevData) => {
           const updatedData = { ...prevData };
           updatedData[className] = updatedData[className].filter((_, i) => i !== index);
-  
+
           if (updatedData[className].length === 0) {
             delete updatedData[className];
           }
           return updatedData;
         });
-  
+
         setNewDetections((prevDetections) => ({
           ...prevDetections,
           [className]: false,
@@ -141,21 +144,33 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
       } else {
         showError("Failed to delete prediction");
       }
-    } catch (error) { showError("Failed to delete prediction"); }
+    } catch (error) {
+      showError("Failed to delete prediction");
+    }
   };
 
   const toggleDetectionModel = async () => {
     try {
-      const endpoint = isAIActive ? "/AI-Shutdown" : "/AI";
-      await axios.post(`http://${ENDPOINT_IP}${endpoint}`);
-      setIsAIActive(!isAIActive);
-    } catch (error) { showError("Request failed"); }
+      const success = await toggleDetectionModelAPI(isAIActive);
+      if (success) {
+        setIsAIActive(!isAIActive);
+      } else {
+        showError("Failed to toggle detection model");
+      }
+    } catch (error) {
+      showError("Request failed");
+    }
   };
 
   const clearDetectionsCache = async () => {
     try {
-      await axios.post(`http://${ENDPOINT_IP}/Clear-Detections`);
-    } catch (error) { showError("Request failed"); }
+      const success = await clearDetectionsCacheAPI();
+      if (!success) {
+        showError("Failed to clear detections cache");
+      }
+    } catch (error) {
+      showError("Request failed");
+    }
   };
 
   const getOutlierBorder = (severity) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchSavedCoords, deleteSavedCoord } from "../../../utils/api/api-config";
+import { fetchSavedCoordsAPI, deleteSavedCoordAPI } from "../../../utils/api/api-config";
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});
@@ -9,7 +9,7 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const coordinates = await fetchSavedCoords();
+      const coordinates = await fetchSavedCoordsAPI();
       setCoords(coordinates);
       setSortedCoords(Object.entries(coordinates));
     } catch (error) {
@@ -19,7 +19,7 @@ function SavedCoords() {
 
   const deleteCoord = async (image, index) => {
     try {
-      const success = await deleteSavedCoord(image, index);
+      const success = await deleteSavedCoordAPI(image, index);
       if (success) {
         fetchCoords();
       }
