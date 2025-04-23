@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
-import { fetchImageDataAPI } from "../../../utils/api/api-config";
+import { fetchImageDataAPI } from "../../../Api/apiConfig";
 
 const ImageData = () => {
   const [imageData, setImageData] = useState([]);

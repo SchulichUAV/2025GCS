@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { ENDPOINT_IP } from "../../../config";
+import { processMappingAPI, fetchMappingImageAPI } from "../../../Api/apiConfig";
 
 function Mapping() {
   const [imageUrl, setImageUrl] = useState(null);
@@ -9,9 +8,10 @@ function Mapping() {
   const handleProcessMapping = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(`http://${ENDPOINT_IP}/process-mapping`);
+      const response = await processMappingAPI();
       if (response.status === 200) {
-        setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
+        const imageUrl = await fetchMappingImageAPI();
+        setImageUrl(imageUrl);
       }
     } catch (error) {} 
     finally {
@@ -22,7 +22,8 @@ function Mapping() {
   useEffect(() => {
     const fetchInitialImage = async () => {
       try {
-          setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
+          const imageUrl = await fetchMappingImageAPI();
+          setImageUrl(imageUrl);
       } catch (error) {}
     };
 

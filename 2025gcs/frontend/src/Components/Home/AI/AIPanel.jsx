@@ -5,7 +5,7 @@ import {
   deletePredictionAPI,
   toggleDetectionModelAPI,
   clearDetectionsCacheAPI,
-} from "../../../utils/api/api-config.js";
+} from "../../../Api/apiConfig.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
@@ -33,7 +33,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
         if (response) {
           setData(response.targets);
           setCurrentTarget(response.current_target);
-
+    
           if (completedTargets !== response.completed_targets) {
             setCompletedTargets(response.completed_targets);
             targetCompleted = true;
@@ -50,17 +50,14 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   }, []);
 
   const handleCurrentTarget = async (className) => {
-    try {
+    try{
       const targetToSet = currentTarget === className ? null : className;
-      const success = await setCurrentTargetAPI(targetToSet);
-      if (success) {
+      const response = await setCurrentTargetAPI(targetToSet);
+      if (response.status === 200) {
         setCurrentTarget(targetToSet);
-      } else {
-        showError("Failed to set current target");
-      }
-    } catch (error) {
-      showError("Failed to set current target");
+      } else { showError("Failed to set current target"); }
     }
+    catch (error) { showError("Failed to set current target"); }
   };
 
   const computeOutliers = (data) => {
@@ -125,18 +122,18 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const handleDeletePrediction = async (className, index) => {
     try {
-      const success = await deletePredictionAPI(className, index);
-      if (success) {
+      const response = await deletePredictionAPI(className, index);
+      if (response.status === 200) {
         setData((prevData) => {
           const updatedData = { ...prevData };
           updatedData[className] = updatedData[className].filter((_, i) => i !== index);
-
+  
           if (updatedData[className].length === 0) {
             delete updatedData[className];
           }
           return updatedData;
         });
-
+  
         setNewDetections((prevDetections) => ({
           ...prevDetections,
           [className]: false,
@@ -144,33 +141,20 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
       } else {
         showError("Failed to delete prediction");
       }
-    } catch (error) {
-      showError("Failed to delete prediction");
-    }
+    } catch (error) { showError("Failed to delete prediction"); }
   };
 
   const toggleDetectionModel = async () => {
     try {
-      const success = await toggleDetectionModelAPI(isAIActive);
-      if (success) {
-        setIsAIActive(!isAIActive);
-      } else {
-        showError("Failed to toggle detection model");
-      }
-    } catch (error) {
-      showError("Request failed");
-    }
+      await toggleDetectionModelAPI(isAIActive);
+      setIsAIActive(!isAIActive);
+    } catch (error) { showError("Request failed"); }
   };
 
   const clearDetectionsCache = async () => {
     try {
-      const success = await clearDetectionsCacheAPI();
-      if (!success) {
-        showError("Failed to clear detections cache");
-      }
-    } catch (error) {
-      showError("Request failed");
-    }
+      await clearDetectionsCacheAPI();
+    } catch (error) { showError("Request failed"); }
   };
 
   const getOutlierBorder = (severity) => {
