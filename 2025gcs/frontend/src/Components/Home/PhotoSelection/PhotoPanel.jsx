@@ -7,7 +7,7 @@ import {
   deletePhotoAPI,
   toggleCameraStateAPI,
   clearAllImagesAPI,
-} from "../../../Api/apiConfig";
+} from "../../../Api/apiFactory";
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
   const [photos, setPhotos] = useState([]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { processMappingAPI, fetchMappingImageAPI } from "../../../Api/apiConfig";
+import { processMappingAPI, fetchMappingImageAPI } from "../../../Api/apiFactory";
 
 function Mapping() {
   const [imageUrl, setImageUrl] = useState(null);

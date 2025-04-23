@@ -5,7 +5,7 @@ import {
   deletePredictionAPI,
   toggleDetectionModelAPI,
   clearDetectionsCacheAPI,
-} from "../../../Api/apiConfig.js";
+} from "../../../Api/apiFactory.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { InfinityIcon } from "lucide-react";
 import { calculateDistance, R } from "../../../utils/common";
-import { fetchCurrentTargetAPI } from "../../../Api/apiConfig";
+import { fetchCurrentTargetAPI } from "../../../Api/apiFactory";
 const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   const [payloadStatus, setPayloadStatus] = useState("Not Set"); // "Not Set", "Pending", "Released"
   const [currentTargetInfo, setCurrentTargetInfo] = useState({ name: "", latitude: 0, longitude: 0 });

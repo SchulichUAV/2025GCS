@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchSavedCoordsAPI, deleteSavedCoordAPI } from "../../../Api/apiConfig";
+import { fetchSavedCoordsAPI, deleteSavedCoordAPI } from "../../../Api/apiFactory";
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});

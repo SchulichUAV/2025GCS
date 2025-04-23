@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { releasePayloadAPI } from "../../../Api/apiConfig";
+import { releasePayloadAPI } from "../../../Api/apiFactory";
 
 const PayloadPanel = () => {
   const [droneType, setDroneType] = useState(() => {

@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import NavBar from "./Components/NavBar/NavBar";
 import Home from "./Components/Home/Home";
 import DataPage from "./Components/Data/DataPage";
-import { checkHeartbeatAPI } from "./Api/apiConfig"; 
+import { checkHeartbeatAPI } from "./Api/apiFactory"; 
 
 function App() {
   const [bgColor, setBgColor] = useState("#FF7F7F");    // State for background color

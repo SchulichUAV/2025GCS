@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { setAltitudeAPI } from "../../../Api/apiConfig";
+import { setAltitudeAPI } from "../../../Api/apiFactory";
 
 
 const AltitudePanel = () => {

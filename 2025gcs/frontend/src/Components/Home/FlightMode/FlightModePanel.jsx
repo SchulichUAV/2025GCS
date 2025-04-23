@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ReactSlider from "react-slider";
-import { setFlightModeAPI, takeoffAPI } from "../../../Api/apiConfig";
+import { setFlightModeAPI, takeoffAPI } from "../../../Api/apiFactory";
 
 const FlightControl = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
