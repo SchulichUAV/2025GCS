@@ -2,7 +2,6 @@ import axios from "axios";
 export const ENDPOINT_IP = process.env.REACT_APP_FLASK_IP || "FAILED LOAD";
 export const DRONE_IP = process.env.REACT_APP_DRONE_IP || "FAILED LOAD";
 
-
 // -------------------- General APIs -------------------
 
 // Fetch target information
@@ -30,6 +29,7 @@ export const deletePredictionAPI = async (className, index) => {
   }
 };
 
+
 //   -------------------- App APIs----------------------------
 export const checkHeartbeatAPI = async () => {
   try {
@@ -40,6 +40,8 @@ export const checkHeartbeatAPI = async () => {
     throw error;
   }
 };
+
+
 // -------------------- Data Component APIs--------------------
 
 // Fetch image data
@@ -93,7 +95,6 @@ export const deleteSavedCoordAPI = async (image, index) => {
     throw error;
   }
 };
-
 
 
 // -----------------------  AI Panel Api's ---------------------------- 
@@ -179,6 +180,7 @@ export const takeoffAPI = async (altitude) => {
   }
 };
 
+
 // ----------------------------- ODM APIs --------------------------------------- 
 
 // Process mapping
@@ -202,7 +204,7 @@ export const fetchMappingImageAPI = async () => {
   }
 };
 
-// - Payload Component 
+// --------------------------------- Payload Component --------------------------------------
 
 // Fetch current target
 export const fetchCurrentTargetAPI = async () => {
@@ -229,6 +231,7 @@ export const releasePayloadAPI = async (bay) => {
     throw error;
   }
 };
+
 
 // -----------------------------------------  Photo Selection Apis --------------------------------------- 
 
@@ -268,7 +271,6 @@ export const manualCoordSaveAPI = async (normalizedX, normalizedY, mainPhoto) =>
     throw error;
   }
 };
-
 
 // Delete photo
 export const deletePhotoAPI = async (photoToDelete) => {
