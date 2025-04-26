@@ -27,7 +27,7 @@ const ImageData = () => {
 
   const fetchImageData = async () => {
     try {
-      const response = await axios.get(`${ENDPOINT_IP}/images/data`);
+      const response = await axios.get(`http://${ENDPOINT_IP}/images/data`);
 
       if (response.data.success) {
         setImageData(response.data.data);

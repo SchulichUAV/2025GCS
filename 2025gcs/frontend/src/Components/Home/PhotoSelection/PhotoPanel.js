@@ -16,7 +16,7 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get(`${ENDPOINT_IP}/images`);
+        const response = await axios.get(`http://${ENDPOINT_IP}/images`);
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           setPhotos(loadedPhotos);
@@ -40,7 +40,7 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-      await axios.post(`${ENDPOINT_IP}/manualSelection-calculate`);
+      await axios.post(`http://${ENDPOINT_IP}/manualSelection-calculate`);
       setMessage(`Selections Processed`);
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -61,7 +61,7 @@ const PhotoPanel = () => {
         const normalizedX = relativeX * 640;
         const normalizedY = relativeY * 640;
   
-        await axios.post(`${ENDPOINT_IP}/manualSelection-save`, {
+        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
           selected_y: normalizedY,
           file_name: mainPhoto
@@ -79,7 +79,7 @@ const PhotoPanel = () => {
       return;
     }
     try {
-      const response = await axios.delete(`${ENDPOINT_IP}/images/${photoToDelete}`);
+      const response = await axios.delete(`http://${ENDPOINT_IP}/images/${photoToDelete}`);
 
       if (response.data.success) {
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
@@ -129,20 +129,17 @@ const PhotoPanel = () => {
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
-      const response = await axios.post(`${ENDPOINT_IP}/toggle_camera_state`);
+      const response = await axios.post(`http://${ENDPOINT_IP}/toggle_camera_state`);
 
-      // I changed this from await response.json() and response.ok since response.json() is not a function.
-      // Since this is not my code, I'm not sure if this is the correct way to handle this.
-      // - Rabi
       if (response.data.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
       } else {
-        setError("Toggle camera error.");
+        setError("Error toggling camera. Response data does not return 200 OK.");
         setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
-      setError("Toggle camera error: " + error);
+      setError("Error toggling camera. Request unsuccessful: " + error);
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -153,7 +150,7 @@ const PhotoPanel = () => {
     );
     if (userConfirmed) {
       try {
-        const response = await axios.delete(`${ENDPOINT_IP}/images`);
+        const response = await axios.delete(`http://${ENDPOINT_IP}/images`);
         if (response.data.success) {
           setPhotos([]);
           setVisiblePhotos([]);
@@ -240,7 +237,7 @@ const PhotoPanel = () => {
             {mainPhoto ? (
               <>
                 <img
-                  src={`${ENDPOINT_IP}/images/${mainPhoto}`}
+                  src={`http://${ENDPOINT_IP}/images/${mainPhoto}`}
                   alt={mainPhoto}
                   className="object-fit w-full h-full"
                   onClick={handleImageClick}
@@ -285,7 +282,7 @@ const PhotoPanel = () => {
                   }`}
                 >
                   <img
-                    src={`${ENDPOINT_IP}/images/${photo}`}
+                    src={`http://${ENDPOINT_IP}/images/${photo}`}
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />

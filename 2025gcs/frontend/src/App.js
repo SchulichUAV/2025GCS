@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     const checkHeartbeat = async () => {
       try {
-        const response = await axios.get(`${ENDPOINT_IP}/get_heartbeat`);
+        const response = await axios.get(`http://${ENDPOINT_IP}/get_heartbeat`);
 
         if (response.data.success === true) {
           setBgColor(response.data.success ? "#90EE90" : "#FF7F7F");

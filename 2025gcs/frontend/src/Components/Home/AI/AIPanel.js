@@ -47,14 +47,14 @@ const AIPanel = ({ data }) => {
   const HandleAIWorkflow = async () => {
     try {
       if (isAIActive) {
-        await axios.post(`${ENDPOINT_IP}/AI-Shutdown`, {
+        await axios.post(`http://${ENDPOINT_IP}/AI-Shutdown`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
         });
       } else {
-        await axios.post(`${ENDPOINT_IP}/AI`, {
+        await axios.post(`http://${ENDPOINT_IP}/AI`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ const AIPanel = ({ data }) => {
 
   const ClearCache = async () => {
     try {
-      await axios.post(`${ENDPOINT_IP}/Clear-Detections-Cache`, {
+      await axios.post(`http://${ENDPOINT_IP}/Clear-Detections-Cache`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -10,7 +10,7 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await axios.get(`${ENDPOINT_IP}/coordinates`);
+      const response = await axios.get(`http://${ENDPOINT_IP}/coordinates`);
 
       if (response.data.coordinates) {
         setCoords(response.data.coordinates);
@@ -25,7 +25,7 @@ function SavedCoords() {
 
   const deleteCoord = async (image, index) => {
     try {
-      const response = await axios.delete(`${ENDPOINT_IP}/coordinates/${image}`, {
+      const response = await axios.delete(`http://${ENDPOINT_IP}/coordinates/${image}`, {
         headers: { 'Content-Type': 'application/json' },
         data: JSON.stringify({ index }),
       });
@@ -42,7 +42,7 @@ function SavedCoords() {
 
   const clearAllCoords = async () => {
     try {
-      const response = await axios.delete(`${ENDPOINT_IP}/coordinates`, {});
+      const response = await axios.delete(`http://${ENDPOINT_IP}/coordinates`, {});
 
       if (response.data.success) {
         setCoords({});

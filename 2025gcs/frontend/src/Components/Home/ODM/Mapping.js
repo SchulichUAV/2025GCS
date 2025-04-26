@@ -9,9 +9,9 @@ function Mapping() {
   const handleProcessMapping = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(`${ENDPOINT_IP}/process-mapping`);
+      const response = await axios.post(`http://${ENDPOINT_IP}/process-mapping`);
       if (response.status === 200) {
-        setImageUrl(`${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
+        setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
       }
     } catch (error) {} 
     finally {
@@ -22,7 +22,7 @@ function Mapping() {
   useEffect(() => {
     const fetchInitialImage = async () => {
       try {
-          setImageUrl(`${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
+          setImageUrl(`http://${ENDPOINT_IP}/data/ODM/ODMMap.jpg`);
       } catch (error) {}
     };
 
