@@ -35,3 +35,23 @@ export const outlierSeverity = {
     minor: 65,
     mild: 90
 }
+
+
+export const objectList = [
+    "baseball bat",
+    "bed",
+    "boat",
+    "bus",
+    "car",
+    "football",
+    "motorcycle",
+    "person",
+    "plane",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "stop sign",
+    "suitcase",
+    "tennis racket",
+    "umbrella"
+  ];  
