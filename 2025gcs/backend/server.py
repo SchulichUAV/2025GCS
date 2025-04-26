@@ -100,7 +100,7 @@ def get_heartbeat():
 
 # ROUTES
 
-@app.route('/targets', methods=['GET'], strict_slashes=False)
+@app.get('/targets')
 def get_targets():
     # Return the list of all active targets.
     return jsonify({
@@ -109,7 +109,7 @@ def get_targets():
     }), 200
 
 
-@app.route('/targets', methods=['POST'], strict_slashes=False)
+@app.post('/targets')
 def create_target():
     # Create a new target from JSON body if the ID is unique.
     body = request.get_json()
@@ -133,7 +133,7 @@ def create_target():
     return jsonify({'success': True}), 201
 
 
-@app.route('/targets/<id>', methods=['GET'], strict_slashes=False)
+@app.get('/targets/<id>')
 def get_target_by_id(id):
     # Retrieve either special lists or a single target by its ID.
     if id == 'active':
@@ -174,7 +174,7 @@ def get_target_by_id(id):
     }), 200
 
 
-@app.route('/targets/<id>', methods=['PUT'], strict_slashes=False)
+@app.put('/targets/<id>')
 def mark_target_complete(id):
     # Mark the specified target as completed.
     result = Targets.complete_target(id)
@@ -184,13 +184,13 @@ def mark_target_complete(id):
     return jsonify({'success': True}), 200
 
 
-@app.route('/targets/<id>', methods=['DELETE'], strict_slashes=False)
+@app.delete('/targets/<id>')
 def delete_target(id):
     # Deletion not supported at this time.
     return jsonify({'success': False, 'error': 'DELETE is currently not supported.'}), 501
 
 
-@app.route('/coordinates', methods=['GET'], strict_slashes=False)
+@app.get('/coordinates')
 def coordinates_get_all():
     # Get the list of all images with saved coordinates.
     coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
@@ -198,7 +198,7 @@ def coordinates_get_all():
     return jsonify({'success': True, 'coordinates': coords_data}), 200
 
 
-@app.route('/coordinates', methods=['DELETE'], strict_slashes=False)
+@app.delete('/coordinates')
 def coordinates_delete_all():
     # Clear all saved coordinates.
     coords_data_path = os.path.join(DATA_DIR, 'savedCoords.json')
@@ -206,7 +206,7 @@ def coordinates_delete_all():
     return jsonify({'success': True}), 200
 
 
-@app.route('/coordinates/<image_number>', methods=['GET'], strict_slashes=False)
+@app.get('/coordinates/<image_number>')
 def coordinates_get(image_number):
     response = validate_image_number(image_number)
     if not isinstance(response, tuple):
@@ -220,7 +220,7 @@ def coordinates_get(image_number):
     
 
 
-@app.route('/coordinates/<image_number>', methods=['POST'], strict_slashes=False)
+@app.post('/coordinates/<image_number>')
 def coordinates_post(image_number):
     response = validate_image_number(image_number)
     if not isinstance(response, tuple):
@@ -248,7 +248,7 @@ def coordinates_post(image_number):
     return jsonify({'success': True}), 201
 
 
-@app.route('/coordinates/<image_number>', methods=['DELETE'], strict_slashes=False)
+@app.delete('/coordinates/<image_number>')
 def coordinates_delete(image_number):
     response = validate_image_number(image_number)
     if not isinstance(response, tuple):
@@ -300,7 +300,7 @@ def coordinates_delete(image_number):
     return jsonify({'success': True}), 200
 
 
-@app.route('/images', methods=['GET'], strict_slashes=False)
+@app.get('/images')
 def get_images():
     # Check if the images directory exists.
     if not os.path.exists(IMAGES_DIR):
@@ -314,7 +314,7 @@ def get_images():
     return jsonify({'success': True, 'images': image_files}), 200
 
 
-@app.route('/images', methods=['DELETE'], strict_slashes=False)
+@app.delete('/images')
 def delete_images():
     # Check if the images directory exists.
     if not os.path.exists(IMAGES_DIR):
@@ -351,7 +351,7 @@ def delete_images():
     return jsonify({'success': success, 'files': files}), code
 
 
-@app.route('/images/<filename>', methods=['GET'], strict_slashes=False)
+@app.get('/images/<filename>')
 def get_image(filename):
     # Check directory, extension, and existence.
     if not os.path.exists(IMAGES_DIR):
@@ -365,7 +365,7 @@ def get_image(filename):
     return send_from_directory(IMAGES_DIR, filename)
 
 
-@app.route('/images/<filename>', methods=['DELETE'], strict_slashes=False)
+@app.delete('/images/<filename>')
 def delete_image(filename):
     # Check directory, extension, and existence.
     if not os.path.exists(IMAGES_DIR):
@@ -400,7 +400,7 @@ def delete_image(filename):
 
 
 
-@app.route('/images/data', methods=['GET'], strict_slashes=False)
+@app.get('/images/data')
 def image_data():
     # Return parsed JSON data for each image.
     image_data_dir = os.path.join(DATA_DIR, 'imageData')
@@ -436,7 +436,7 @@ def toggle_camera_state():
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/manualSelection-save', methods=['POST'])
+@app.post('/manualSelection-save')
 def manual_selection_save():
     data = request.get_json()
     saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
@@ -452,7 +452,7 @@ def manual_selection_save():
     save_json(saved_coords, coords_data)
     return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
 
-@app.route('/manualSelection-calculate', methods=['POST'])
+@app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for a manually selected target."""
     try:
@@ -479,7 +479,7 @@ def manual_selection_geo_calc():
 # AI Processing.
 # Workflow starts when the AI endpoint is called through the frontend.
 # The AI endpoint starts the worker threads, which run infinitely until the program is stopped.
-@app.route('/AI', methods=['POST'])
+@app.post('/AI')
 def start_AI_workers():
     """Starts the worker threads."""
     try:
@@ -488,7 +488,7 @@ def start_AI_workers():
     except Exception as e:
         return jsonify({"message": f"Error starting AI processing: {e}"}), 500
 
-@app.route('/AI-Shutdown', methods=['POST'])
+@app.post('/AI-Shutdown')
 def shutdown_workers():
     """Stops all running worker threads."""
     try:
@@ -497,7 +497,7 @@ def shutdown_workers():
     except Exception as e:
         return jsonify({"message": f"Error stopping AI processing: {e}"}), 500
 
-@app.route('/Clear-Detections-Cache', methods=['POST'])
+@app.post('/Clear-Detections-Cache')
 def ClearCache():
     """Clears the TargetInformation.json cache file."""
     target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
@@ -537,7 +537,7 @@ def set_altitude_takeoff():
 def set_altitude_goto():
     return jsonify({'success': True, 'message': 'Altitude set for waypoint'}), 200
 
-@app.route('/process-mapping', methods=['GET'])
+@app.get('/process-mapping')
 def process_mapping():
     try:
         # Simulate processing and replacing the image
@@ -548,7 +548,7 @@ def process_mapping():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/data/ODM/<filename>')
+@app.get('/data/ODM/<filename>')
 def serve_odm_image(filename):
     odm_dir = os.path.join(DATA_DIR, 'ODM')
     return send_from_directory(odm_dir, filename)
