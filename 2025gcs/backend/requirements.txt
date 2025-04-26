@@ -1,8 +1,9 @@
-# Required dependencies
 numpy==1.26.3
 opencv-python==4.9.0.80
 pillow==10.0.0
 flask==2.1.1
-dotenv==0.19.1
+Flask-Cors==5.0.0
+werkzeug==2.1.2
+python-dotenv==1.0.1
 inference-sdk
 inference-cli
