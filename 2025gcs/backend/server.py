@@ -131,7 +131,7 @@ def serve_image(filename):
     """Endpoint to serve an image file."""
     return send_from_directory(IMAGES_DIR, filename)
 
-@app.post('/deleteImage')
+@app.delete('/deleteImage')
 def delete_image():
     """Delete an image from the server"""
     data = request.get_json(silent=True) or {}
@@ -139,17 +139,21 @@ def delete_image():
 
     # No image provided. Delete all images
     if image_name is None:
-        errors = []
-        if os.path.exists(IMAGES_DIR):
-            for filename in os.listdir(IMAGES_DIR):
-                file_path = os.path.join(IMAGES_DIR, filename)
-                if os.path.isfile(file_path) and filename.endswith('.jpg'):
-                    try:
-                        os.remove(file_path)
-                    except Exception as e:
-                        errors.append(str(e))
-        if errors:
-            return jsonify({'success': False, 'error': 'Some files could not be deleted', 'details': errors}), 500
+        if not os.path.exists(IMAGES_DIR):
+            return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
+
+        failed_deletions = False
+        for filename in os.listdir(IMAGES_DIR):
+            file_path = os.path.join(IMAGES_DIR, filename)
+            if os.path.isfile(file_path) and filename.endswith('.jpg'):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    failed_deletions = True
+
+        if failed_deletions:
+            return jsonify({'success': False, 'message': f'Some files could not be deleted'}), 500
+
         return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
 
     # Image provided. Delete the specific image
@@ -158,8 +162,11 @@ def delete_image():
 
     image_path = os.path.join(IMAGES_DIR, image_name)
     if os.path.exists(image_path):
-        os.remove(image_path)
-        return jsonify({'success': True, 'message': f'{image_name} deleted successfully'})
+        try:
+            os.remove(image_path)
+            return jsonify({'success': True, 'message': f'{image_name} deleted successfully'}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error deleting {image_name}: {str(e)}'}), 500
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
 

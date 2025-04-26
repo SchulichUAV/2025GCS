@@ -99,7 +99,7 @@ const PhotoPanel = () => {
       return;
     }
     try {
-      const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`, {
+      const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`, {
         imageName: photoToDelete,
       });
 
@@ -162,11 +162,13 @@ const PhotoPanel = () => {
   const clearImages = async () => {
     if (window.confirm("Are you sure you want to clear all images?")) {
       try {
-        const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`);
-        if (response.success) {
+        const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`);
+        console.log(response);
+        if (response.status == 200) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
+          showMessage("Images cleared successfully")
         } else {
           showError("Error clearing images");
         }
