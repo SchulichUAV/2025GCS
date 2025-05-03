@@ -6,6 +6,7 @@ import { calculateDistance, outlierSeverity, computeMedian } from '../../../util
 const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   const [openClasses, setOpenClasses] = useState({});
   const [isAIActive, setIsAIActive] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [newDetections, setNewDetections] = useState({});
   const [error, setError] = useState(null);
   const [data, setData] = useState({});
@@ -146,10 +147,19 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const toggleDetectionModel = async () => {
     try {
-      const endpoint = isAIActive ? "/AI-Shutdown" : "/AI";
-      await axios.post(`http://${ENDPOINT_IP}${endpoint}`);
-      setIsAIActive(!isAIActive);
-    } catch (error) { showError("Request failed"); }
+      if (isAIActive) {
+        setIsStopping(true);
+        await axios.post(`http://${ENDPOINT_IP}/AI-Shutdown`);
+        setIsAIActive(false);
+      } else {
+        await axios.post(`http://${ENDPOINT_IP}/AI`);
+        setIsAIActive(true);
+      }
+    } catch (error) {
+      showError("Request failed");
+    } finally {
+      setIsStopping(false);
+    }
   };
 
   const clearDetectionsCache = async () => {
@@ -171,15 +181,22 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
     <div className="flex flex-col justify-center items-center py-4 px-5 w-full h-full mx-auto space-y-4 bg-white rounded-xl shadow-lg relative">
       <div className="top-0 z-10 flex items-center justify-between">
         <div className="flex">
-          <button
+        <button
             onClick={toggleDetectionModel}
             className={`px-4 py-2 mr-4 font-semibold text-sm rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isAIActive
+              isStopping
+                ? "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500"
+                : isAIActive
                 ? "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
                 : "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500"
             }`}
+            disabled={isStopping}
           >
-            {isAIActive ? "STOP DETECTING" : "START DETECTING"}
+            {isStopping
+              ? "AWAITING STOP"
+              : isAIActive
+              ? "STOP DETECTING"
+              : "START DETECTING"}
           </button>
           <button
             onClick={clearDetectionsCache}
