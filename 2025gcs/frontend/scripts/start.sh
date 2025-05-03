@@ -114,7 +114,6 @@ cd ../frontend
 # Install node dependencies only if package-lock.json has changed
 if [ -d "node_modules" ] && cmp -s package-lock.json .installed-lock; then
   echo "Node.js dependencies are already installed."
-  npm run postinstall
 else
   echo "Installing Node.js dependencies..."
   npm ci
