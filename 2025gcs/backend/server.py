@@ -27,7 +27,7 @@ targets_list = []  # List of pending targets
 completed_targets = []  # List of completed targets
 current_target = None
 
-ENDPOINT_IP = "192.168.1.66"
+ENDPOINT_IP = "10.13.33.133"
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
