@@ -17,9 +17,9 @@ function SavedCoords() {
     }
   };
 
-  const deleteCoord = async (image, index) => {
+  const deleteCoord = async (object, index) => {
     try {
-      const success = await deleteSavedCoordAPI(image, index);
+      const success = await deleteSavedCoordAPI(object, index);
       if (success) {
         fetchCoords();
       }

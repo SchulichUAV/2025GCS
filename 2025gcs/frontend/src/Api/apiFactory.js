@@ -77,14 +77,13 @@ export const fetchSavedCoordsAPI = async () => {
 };
 
 // Delete a specific coordinate
-export const deleteSavedCoordAPI = async (image, index) => {
+export const deleteSavedCoordAPI = async (object, index) => {
   try {
-    const response = await fetch(`http://${ENDPOINT_IP}/delete_coord`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image, index }),
+    const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
+      data: { object, index },
+      headers: { 'Content-Type': 'application/json' },
     });
-    const data = await response.json();
+    const data = response.data;
     if (data.success) {
       return true;
     } else {
