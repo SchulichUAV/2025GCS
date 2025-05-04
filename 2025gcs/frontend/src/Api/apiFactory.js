@@ -126,17 +126,6 @@ export const toggleDetectionModelAPI = async (isAIActive) => {
   }
 };
 
-// Clear detections cache
-export const clearDetectionsCacheAPI = async () => {
-  try {
-    const response = await axios.post(`http://${ENDPOINT_IP}/Clear-Detections`);
-    return response;
-  } catch (error) {
-    console.error("Error clearing detections cache:", error);
-    throw error;
-  }
-};
-
 
 // ----------------------------  Altitude Component Apis -------------------------- 
 
@@ -247,23 +236,26 @@ export const fetchImagesAPI = async () => {
 };
 
 // Manual selection send
-export const manualSelectionSendAPI = async () => {
+export const manualSelectionCalcAPI = async (selectedSendObject) => {
   try {
-    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-geo-calc`);
+    const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`, {
+      object: selectedSendObject,
+    });
     return response;
   } catch (error) {
-    console.error("Error sending manual selection:", error);
+    console.error("Error processing manual selection:", error);
     throw error;
   }
 };
 
 // Manual coordinate save
-export const manualCoordSaveAPI = async (normalizedX, normalizedY, mainPhoto) => {
+export const manualCoordSaveAPI = async (normalizedX, normalizedY, mainPhoto,selectedSaveObject) => {
   try {
     const response = await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
       selected_x: normalizedX,
       selected_y: normalizedY,
       file_name: mainPhoto,
+      object: selectedSaveObject,
     });
     return response;
   } catch (error) {

@@ -8,6 +8,8 @@ import {
   toggleCameraStateAPI,
   clearAllImagesAPI,
 } from "../../../Api/apiFactory";
+import { objectList } from "../../../utils/common";
+
 const PhotoPanel = () => {
   const visibleImagesCount = 10;
   const [photos, setPhotos] = useState([]);
@@ -16,8 +18,19 @@ const PhotoPanel = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [selectedSaveObject, setSelectedSaveObject] = useState(""); // for Save dropdown
+  const [selectedSendObject, setSelectedSendObject] = useState(""); // for Send dropdown
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const showError = (error, timeout = 1500) => {
+    setError(error);
+    setTimeout(() => setError(null), timeout);
+  };
+  const showMessage = (message, timeout = 1500) => {
+    setMessage(message);
+    setTimeout(() => setMessage(null), timeout);
+  };
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -46,17 +59,23 @@ const PhotoPanel = () => {
 
   const handleManualSelectionSend = async () => {
     try{
-      await manualSelectionSendAPI();
-      setMessage(`Selections Processed`);
-      setTimeout(() => setMessage(""), 3000);
+      if (!selectedSendObject) {
+        showError("Select object before sending.");
+        return;
+      }
+      await manualSelectionCalcAPI(selectedSendObject);
+      showMessage(`Selections Processed`);
     } catch (error) {
-        setError("Request failed");
-        setTimeout(() => setError(""), 3000);
+      showError("Request Failed")
       }
   };
 
   const handleManualCoordSave = async () => {
     if (mainPhoto && selectedPoint) {
+      if (!selectedSaveObject) {
+        showError("Select object before saving.");
+        return;
+      }
       const imgElement = document.querySelector(`img[alt="${mainPhoto}"]`);
       if (imgElement) {
         // Normalize selected point to 640x640 image size
@@ -66,11 +85,9 @@ const PhotoPanel = () => {
         const relativeY = selectedPoint.y / rect.height;
         const normalizedX = relativeX * 640;
         const normalizedY = relativeY * 640;
-  
-        await manualCoordSaveAPI(normalizedX, normalizedY, mainPhoto);
+        await manualCoordSaveAPI(normalizedX, normalizedY, mainPhoto,selectedSaveObject);
         setSelectedPoint(null);
-        setMessage("Selection saved");
-        setTimeout(() => setMessage(""), 3000);
+        showMessage("Selection saved");
       }
     }
   };
@@ -82,7 +99,7 @@ const PhotoPanel = () => {
     }
     try {
       const data = await deletePhotoAPI(photoToDelete);
-
+  
       if (data.success) {
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
         setPhotos(updatedPhotos);
@@ -99,15 +116,12 @@ const PhotoPanel = () => {
         if (photoToDelete === mainPhoto) {
           setMainPhoto(updatedPhotos[newStartIndex] || null);
         }
-        setMessage(`${photoToDelete} deleted`);
-        setTimeout(() => setMessage(""), 3000);
+        showMessage(`${photoToDelete} deleted`);
       } else {
-        setError("Error deleting image");
-        setTimeout(() => setError(""), 3000);
+        showError("Error deleting image");
       }
     } catch (error) {
-      setError("Error deleting image");
-      setTimeout(() => setError(""), 3000);
+      showError("Error deleting image");
     }
   };
 
@@ -127,58 +141,40 @@ const PhotoPanel = () => {
     }
   };
   
-
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
       const response = await toggleCameraStateAPI();
+
       if (response.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
       } else {
-        setError("Error toggling camera");
-        setTimeout(() => setError(""), 3000);
+        showError("Error toggling camera");
       }
     } catch (error) {
-      setError("Request failed");
-      setTimeout(() => setError(""), 3000);
+      showError("Request failed");
     }
   };
 
   const clearImages = async () => {
-    const userConfirmed = window.confirm(
-      "Are you sure you want to clear all images?"
-    );
-    if (userConfirmed) {
+    if (window.confirm("Are you sure you want to clear all images?")) {
       try {
-        const data = await clearAllImagesAPI();
+        const response = await deletePhotoAPI();
+        console.log(response);
         if (data.success) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
+          showMessage("Images cleared successfully")
         } else {
-          setError("Error clearing images");
-          setTimeout(() => setError(""), 3000);
+          showError("Error clearing images");
         }
       } catch (error) {
-        setError("Error clearing images");
-        setTimeout(() => setError(""), 3000);
+        showError("Error clearing images");
       }
     }
   };
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if ((event.key === 'Delete' || event.key === 'Backspace') 
-        && event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
-        setSelectedPoint(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const handleImageClick = (event) => {
     const rect = event.target.getBoundingClientRect();
@@ -200,20 +196,46 @@ const PhotoPanel = () => {
             >
               📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
             </button>
-
-            <div className="flex gap-2">
-              <button className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              disabled={!selectedPoint}
-              onClick={handleManualCoordSave}
-              >
-                Save
-              </button>
-              <button
-                onClick={handleManualSelectionSend}
-                className={`px-3 py-2 rounded w-1/2 bg-gray-300 hover:bg-gray-400`}
-              >
-                Send
-              </button>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!selectedPoint}
+                  onClick={handleManualCoordSave}
+                >
+                  Save
+                </button>
+                <select className="px-2 py-2 border rounded w-1/2"
+                  value={selectedSaveObject}
+                  onChange={(e) => setSelectedSaveObject(e.target.value)}
+                >
+                  <option id="saveObject" value=""></option>
+                  {objectList.map((item, index) => (
+                    <option key={index} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleManualSelectionSend}
+                  className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400 w-1/2"
+                >
+                  Send
+                </button>
+                <select className="px-2 py-2 border rounded w-1/2"
+                  value={selectedSendObject}
+                  onChange={(e) => setSelectedSendObject(e.target.value)}
+                >
+                  <option id="sendObject" value=""></option>
+                  {objectList.map((item, index) => (
+                    <option key={index} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button
               onClick={clearImages}
