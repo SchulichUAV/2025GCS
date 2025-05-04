@@ -275,7 +275,7 @@ def manual_selection_geo_calc():
 
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
             data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
-            response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers)  # ADD ENDPOINT NAME
+            response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
 
             if response.status_code == 200:
                 saved_coords.pop(requested_object, None)
@@ -386,12 +386,34 @@ def delete_prediction():
 @app.route('/current-target', methods=['GET', 'POST'])
 def current_target_handler():
     """Get or set the current target."""
+    data = load_json(os.path.join(DATA_DIR, 'TargetInformation.json'))
     global current_target
     if request.method == 'POST':
         current_target = request.get_json().get('target')
-        return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+
+        # Get the location data for the current target
+        target_data = data.get(current_target, [])
+        if not target_data:
+            return jsonify({'success': False, 'error': 'No data available for the current target'}), 404
+
+        # Calculate the average latitude and longitude
+        total_lat = sum(item['lat'] for item in target_data)
+        total_lon = sum(item['lon'] for item in target_data)
+        count = len(target_data)
+
+        avg_lat = total_lat / count
+        avg_lon = total_lon / count
+
+        # Set the mission to this target location
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        data = json.dumps({"latitude": avg_lat, "longitude": avg_lon})
+        response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+        else:
+            return jsonify({'success': False, 'message': f'Vehicle failed to set the mission for the target: {current_target}'}), 500
     elif request.method == 'GET':
-        data = load_json(os.path.join(DATA_DIR, 'TargetInformation.json'))
         avg_lat, avg_lon = 0, 0
         if current_target in data:
             target_data = data[current_target]
