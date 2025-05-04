@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ENDPOINT_IP } from "../../../config";
-import axios from 'axios';
+import { fetchSavedCoordsAPI, deleteSavedCoordAPI } from "../../../Api/apiFactory";
 
 function SavedCoords() {
   const [coords, setCoords] = useState({});
@@ -10,11 +9,9 @@ function SavedCoords() {
 
   const fetchCoords = async () => {
     try {
-      const response = await axios.get(`http://${ENDPOINT_IP}/get_saved_coords`);
-      if (response.data.success) {
-        setCoords(response.data.coordinates);
-        setSortedCoords(Object.entries(response.data.coordinates));
-      }
+      const coordinates = await fetchSavedCoordsAPI();
+      setCoords(coordinates);
+      setSortedCoords(Object.entries(coordinates));
     } catch (error) {
       console.error("Error fetching coordinates:", error);
     }
@@ -22,11 +19,8 @@ function SavedCoords() {
 
   const deleteCoord = async (object, index) => {
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete_coord`, {
-        data: { object, index },
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.data.success) {
+      const success = await deleteSavedCoordAPI(object, index);
+      if (success) {
         fetchCoords();
       }
     } catch (error) {

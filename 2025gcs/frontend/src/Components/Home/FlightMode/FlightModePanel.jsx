@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { DRONE_IP, ENDPOINT_IP } from "../../../config";
 import ReactSlider from "react-slider";
+import { setFlightModeAPI, takeoffAPI } from "../../../Api/apiFactory";
 
 const FlightControl = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -12,27 +12,13 @@ const FlightControl = () => {
   const handleSetFlightMode = async (mode_id) => {
     if (!isUnlocked) return;
     relockSlider();
-    const data = { mode_id };
-    await fetch(`http://${ENDPOINT_IP}/set_flight_mode`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    await setFlightModeAPI(mode_id);
   };
 
   const handleTakeoff = async (altitude) => {
     if (!isUnlocked) return;
     relockSlider();
-    const data = { altitude };
-    await fetch(`http://${DRONE_IP}:5000/takeoff`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    await takeoffAPI(altitude);
   };
 
   const unlockSlider = () => {

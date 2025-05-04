@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { ENDPOINT_IP } from "../../../config";
+import { setAltitudeAPI } from "../../../Api/apiFactory";
+
 
 const AltitudePanel = () => {
   const [takeoffAltitude, setTakeoffAltitude] = useState("");
@@ -25,7 +25,7 @@ const AltitudePanel = () => {
     } 
     else {
       try {
-        const response = await axios.post(`http://${ENDPOINT_IP}/set-altitude-${type}`, { altitude });
+        const response = await setAltitudeAPI(type, altitude);
         if (response.status === 200) {
           handleSuccess();
         } else {

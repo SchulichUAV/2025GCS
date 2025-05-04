@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ENDPOINT_IP } from "../../../config";
-import axios from "axios";
 import { InfinityIcon } from "lucide-react";
 import { calculateDistance, R } from "../../../utils/common";
-
+import { fetchCurrentTargetAPI } from "../../../Api/apiFactory";
 const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   const [payloadStatus, setPayloadStatus] = useState("Not Set"); // "Not Set", "Pending", "Released"
   const [currentTargetInfo, setCurrentTargetInfo] = useState({ name: "", latitude: 0, longitude: 0 });
@@ -37,8 +35,7 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   useEffect(() => {
     const fetchTargetInfo = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/current-target`);
-        const data = response.data;
+        const data = await fetchCurrentTargetAPI();
         if (data.success) {
           setCurrentTargetInfo({ name: currentTarget, latitude: data.coords[0], longitude: data.coords[1] });
           setPayloadStatus(currentTarget ? "Pending" : "Not Set");

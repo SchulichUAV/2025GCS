@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ENDPOINT_IP } from "../../../config";
-import axios from "axios";
+import {
+  fetchTargetInformationAPI,
+  setCurrentTargetAPI,
+  deletePredictionAPI,
+  toggleDetectionModelAPI,
+} from "../../../Api/apiFactory.js";
 import { calculateDistance, outlierSeverity, computeMedian } from '../../../utils/common.js';
 
 const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
@@ -25,17 +29,19 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   useEffect(() => {
     const fetchDetectionData = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
-        if (response.data) {
-          setData(response.data.targets);
-          setCurrentTarget(response.data.current_target);
-
-          if (completedTargets !== response.data.completed_targets) {
-            setCompletedTargets(response.data.completed_targets);
+        const response = await fetchTargetInformationAPI();
+        if (response) {
+          setData(response.targets);
+          setCurrentTarget(response.current_target);
+    
+          if (completedTargets !== response.completed_targets) {
+            setCompletedTargets(response.completed_targets);
             targetCompleted = true;
           }
         }
-      } catch (error) { showError("Failed to fetch detection data"); }
+      } catch (error) {
+        showError("Failed to fetch detection data");
+      }
     };
 
     fetchDetectionData();
@@ -46,10 +52,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
   const handleCurrentTarget = async (className) => {
     try{
       const targetToSet = currentTarget === className ? null : className;
-      const response = await axios.post(`http://${ENDPOINT_IP}/current-target`, 
-        { target: targetToSet },
-        { headers: { 'Content-Type': 'application/json' }, }
-      );
+      const response = await setCurrentTargetAPI(targetToSet);
       if (response.status === 200) {
         setCurrentTarget(targetToSet);
       } else { showError("Failed to set current target"); }
@@ -119,11 +122,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const handleDeletePrediction = async (className, index) => {
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/delete-prediction`, {
-        data: { class_name: className, index },
-        headers: { 'Content-Type': 'application/json' },
-      });
-  
+      const response = await deletePredictionAPI(className, index);
       if (response.status === 200) {
         setData((prevData) => {
           const updatedData = { ...prevData };
@@ -149,10 +148,10 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
     try {
       if (isAIActive) {
         setIsStopping(true);
-        await axios.post(`http://${ENDPOINT_IP}/AI-Shutdown`);
+        await toggleDetectionModelAPI(isAIActive);
         setIsAIActive(false);
       } else {
-        await axios.post(`http://${ENDPOINT_IP}/AI`);
+        await toggleDetectionModelAPI(isAIActive);
         setIsAIActive(true);
       }
     } catch (error) {
@@ -164,7 +163,7 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
 
   const clearDetectionsCache = async () => {
     try {
-      await axios.delete(`http://${ENDPOINT_IP}/delete-prediction`);
+      await deletePredictionAPI();
     } catch (error) { showError("Request failed"); }
   };
 

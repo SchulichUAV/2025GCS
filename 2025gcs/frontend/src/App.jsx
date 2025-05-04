@@ -3,8 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import NavBar from "./Components/NavBar/NavBar";
 import Home from "./Components/Home/Home";
 import DataPage from "./Components/Data/DataPage";
-import { ENDPOINT_IP } from "./config";
-import axios from 'axios';
+import { checkHeartbeatAPI } from "./Api/apiFactory"; 
 
 function App() {
   const [bgColor, setBgColor] = useState("#FF7F7F");    // State for background color
@@ -13,9 +12,7 @@ function App() {
   useEffect(() => {
     const checkHeartbeat = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/get_heartbeat`);
-        const data = response.data;
-
+        const data = await checkHeartbeatAPI(); 
         if (data.success === true)
         {
           setBgColor("#90EE90");

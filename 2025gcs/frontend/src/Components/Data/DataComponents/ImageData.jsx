@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
-import { ENDPOINT_IP } from "../../../config";
+import { fetchImageDataAPI } from "../../../Api/apiFactory";
 
 const ImageData = () => {
   const [imageData, setImageData] = useState([]);
@@ -24,19 +24,18 @@ const ImageData = () => {
     []
   );
 
-  const fetchImageData = async () => {
-    try {
-      const response = await fetch(`http://${ENDPOINT_IP}/getImageData`);
-      const data = await response.json();
-      if (data.success) {
-        setImageData(data.imageData);
-        setSortedData(data.imageData);
-      }
-    } catch (error) {}
-  };
-
   useEffect(() => {
-    fetchImageData();
+    const fetchData = async () => {
+      try {
+        const data = await fetchImageDataAPI();
+        setImageData(data);
+        setSortedData(data);
+      } catch (error) {
+        console.error("Failed to fetch image data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleSort = (key) => {
@@ -141,7 +140,7 @@ const ImageData = () => {
         </div>
         <div className="flex space-x-4">
           <button 
-            onClick={fetchImageData} 
+            onClick={fetchImageDataAPI} 
             className="p-2 px-4 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 duration-200">
             <RefreshCw className="w-5 h-5" />
           </button>

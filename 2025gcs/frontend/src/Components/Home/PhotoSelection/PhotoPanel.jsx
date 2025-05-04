@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ENDPOINT_IP } from "../../../config";
+import {
+  fetchImagesAPI,
+  manualSelectionCalcAPI,
+  manualCoordSaveAPI,
+  deletePhotoAPI,
+  toggleCameraStateAPI,
+} from "../../../Api/apiFactory";
 import { objectList } from "../../../utils/common";
 
 const PhotoPanel = () => {
@@ -28,9 +34,9 @@ const PhotoPanel = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/getImages`);
-        if (response.data.success) {
-          const loadedPhotos = response.data.images;
+        const data = await fetchImagesAPI();
+        if (data.success) {
+          const loadedPhotos = data.images;
           setPhotos(loadedPhotos);
           setVisiblePhotos(loadedPhotos.slice(currentStartIndex, currentStartIndex + visibleImagesCount)); // Preserve current start index
           if (!mainPhoto) {
@@ -56,9 +62,7 @@ const PhotoPanel = () => {
         showError("Select object before sending.");
         return;
       }
-      await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`, {
-        object: selectedSendObject
-      });
+      await manualSelectionCalcAPI(selectedSendObject);
       showMessage(`Selections Processed`);
     } catch (error) {
       showError("Request Failed")
@@ -80,13 +84,7 @@ const PhotoPanel = () => {
         const relativeY = selectedPoint.y / rect.height;
         const normalizedX = relativeX * 640;
         const normalizedY = relativeY * 640;
-  
-        await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
-          selected_x: normalizedX,
-          selected_y: normalizedY,
-          file_name: mainPhoto,
-          object: selectedSaveObject
-        });
+        await manualCoordSaveAPI(normalizedX, normalizedY, mainPhoto,selectedSaveObject);
         setSelectedPoint(null);
         showMessage("Selection saved");
       }
@@ -99,11 +97,10 @@ const PhotoPanel = () => {
       return;
     }
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`, {
-        imageName: photoToDelete,
-      });
-
-      if (response.data.success) {
+      console.log(photoToDelete)
+      const data = await deletePhotoAPI(photoToDelete);
+  
+      if (data.success) {
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
         setPhotos(updatedPhotos);
 
@@ -147,7 +144,8 @@ const PhotoPanel = () => {
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
-      const response = await axios.post(`http://${ENDPOINT_IP}/toggle_camera_state`);
+      const response = await toggleCameraStateAPI();
+
       if (response.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
@@ -162,9 +160,9 @@ const PhotoPanel = () => {
   const clearImages = async () => {
     if (window.confirm("Are you sure you want to clear all images?")) {
       try {
-        const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`);
+        const response = await deletePhotoAPI();
         console.log(response);
-        if (response.status == 200) {
+        if (response.success) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);

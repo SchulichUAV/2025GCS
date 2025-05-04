@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ENDPOINT_IP } from '../../../config';
-import axios from 'axios';
+import { releasePayloadAPI } from "../../../Api/apiFactory";
 
 const PayloadPanel = () => {
   const [droneType, setDroneType] = useState(() => {
@@ -81,11 +80,7 @@ const PayloadPanel = () => {
 
   const HandleRelease = async (index) => {
     try {
-      const response = await axios.post(`http://${ENDPOINT_IP}/payload-release`, {
-        bay: index + 1
-      }, {
-        headers: { "Content-Type": "application/json" }
-      });
+      const response = await releasePayloadAPI(index + 1);
       if (response.status === 200) {
         // handleDisableButton(index, 'release'); // Disable only the Release button
       }
