@@ -405,24 +405,6 @@ def current_target_handler():
         return jsonify({'success': True, 'coords': [avg_lat, avg_lon]}), 200
 # ======================== Detections ========================
 
-# ======================== ODM ========================
-@app.route('/process-mapping', methods=['GET'])
-def process_mapping():
-    try:
-        # Simulate processing and replacing the image
-        odm_dir = os.path.join(DATA_DIR, 'ODM')
-        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
-        print(f"Processing mapping image: {odm_image_path}")
-        return jsonify({'success': True}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/data/ODM/<filename>')
-def serve_odm_image(filename):
-    odm_dir = os.path.join(DATA_DIR, 'ODM')
-    return send_from_directory(odm_dir, filename)
-# ======================== ODM ========================
-
 @app.route('/set_flight_mode', methods=['POST'])
 def set_flight_mode():
     data = request.get_json()
