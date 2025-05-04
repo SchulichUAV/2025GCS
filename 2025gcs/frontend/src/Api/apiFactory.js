@@ -267,8 +267,9 @@ export const manualCoordSaveAPI = async (normalizedX, normalizedY, mainPhoto,sel
 // Delete photo
 export const deletePhotoAPI = async (photoToDelete) => {
   try {
-    const response = await axios.post(`http://${ENDPOINT_IP}/deleteImage`, {
-      imageName: photoToDelete,
+    const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`, {
+      data: { imageName: photoToDelete }, 
+      headers: { "Content-Type": "application/json" },
     });
     return response.data;
   } catch (error) {

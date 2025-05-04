@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { ENDPOINT_IP } from "../../../config";
 import {
   fetchImagesAPI,
-  manualSelectionSendAPI,
+  manualSelectionCalcAPI,
   manualCoordSaveAPI,
   deletePhotoAPI,
   toggleCameraStateAPI,
-  clearAllImagesAPI,
 } from "../../../Api/apiFactory";
 import { objectList } from "../../../utils/common";
 
@@ -98,6 +97,7 @@ const PhotoPanel = () => {
       return;
     }
     try {
+      console.log(photoToDelete)
       const data = await deletePhotoAPI(photoToDelete);
   
       if (data.success) {
@@ -162,7 +162,7 @@ const PhotoPanel = () => {
       try {
         const response = await deletePhotoAPI();
         console.log(response);
-        if (data.success) {
+        if (response.success) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
