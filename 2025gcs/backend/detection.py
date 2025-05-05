@@ -10,10 +10,11 @@ from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
 from geo import locate_target
-from helper import convert_to_txt, serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
+from helper import serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
 
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
+THREAD_NAMES = ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]
 
 image_queue = Queue()
 detection_queue = Queue()
@@ -86,9 +87,9 @@ def process_data_and_locate_target_(detection : dict, path : str) -> None:
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             json_data = json.load(json_file)
-        # Perform geomatics calculations and cache the detection
-        convert_to_txt(detection['x'], detection['y'], json_data)
-        lat, lon = locate_target()
+        json_data['x'] = detection['x']
+        json_data['y'] = detection['y']
+        lat, lon = locate_target(json_data)
         serialize(detection['class'], detection['confidence'], lat, lon)
     else:
         print(f"JSON file not found for {path} - Skipping detection.")
@@ -173,9 +174,9 @@ def image_watcher() -> None:
 #========================= Endpoint Utilities =========================
 def start_threads() -> None:
     threads = [
-        Thread(target=image_watcher, daemon=True, name="ImageWatcher"),
-        Thread(target=inference_worker, daemon=True, name="InferenceWorker"),
-        Thread(target=geomatics_worker, daemon=True, name="GeomaticsWorker"),
+        Thread(target=image_watcher, daemon=True, name=THREAD_NAMES[0]),
+        Thread(target=inference_worker, daemon=True, name=THREAD_NAMES[1]),
+        Thread(target=geomatics_worker, daemon=True, name=THREAD_NAMES[2]),
     ]
     # Start worker threads
     for thread in threads:
@@ -183,11 +184,12 @@ def start_threads() -> None:
 
 def stop_threads() -> None:
     """Sets the stop event to stop all threads."""
+    print("Workflow stop signaled...")
     stop_event.set()     # Signal threads to stop
     # Clean up queues
     image_queue.put(None)
     detection_queue.put(None)
     for thread in enumerate():
-        if thread.name in ["ImageWatcher", "InferenceWorker", "GeomaticsWorker"]:
+        if thread.name in THREAD_NAMES:
             thread.join()
     stop_event.clear()
