@@ -23,7 +23,7 @@ log.addFilter(FilterSpecificLogs())
 completed_targets = []
 current_target = None
 
-ENDPOINT_IP = "192.168.1.66" # make sure to configure this to whatever your IP is before you start
+ENDPOINT_IP = "10.13.20.192" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -56,6 +56,9 @@ vehicle_data = {
     "speed_uncertainty": 0,
     "heading_uncertainty": 0,
     "flight_mode": 0,
+    "battery_voltage": 0,
+    "battery_current": 0,
+    "battery_remaining": 0,
     "is_dropped": False
 }
 
