@@ -1,30 +1,31 @@
 import os
 import json
 
-ODM_TAGS = os.path.join(os.path.dirname(__file__), 'data', 'ODM', 'odm_geotags.txt')
-TARGETS_CACHE = os.path.join(os.path.dirname(__file__), 'data', 'TargetInformation.json')
-IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'images')
-IMAGE_DATA_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'imageData')
+DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
+TARGETS_CACHE = os.path.join(DATA_DIR, 'TargetInformation.json')
+IMAGES_DIR = os.path.join(DATA_DIR, 'images')
+IMAGEDATA_DIR = os.path.join(DATA_DIR, 'imageData')
 
-def convert_to_txt(x: float, y: float, json_data: dict) -> None:
-    """Converts JSON data to text with ordered field values."""
-    ordered_fields = [
-        'lat', 'lon', 'alt', 'yaw', 'pitch', 'roll',
-        'position_uncertainty', 'alt_uncertainty'
-    ]
-    # Extract the required fields from the JSON data
-    json_values = [str(json_data[field]) for field in ordered_fields]
-    detection_values = [str(x), str(y)]
-    with open(ODM_TAGS, 'a') as file:
-        file.write(','.join(detection_values + json_values) + '\n')
+# ========================= Common Utilities ========================
+def load_json(file_path : str):
+    """Utility to load JSON data from a file."""
+    try:
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
 
+def save_json(file_path : str, data) -> None:
+    """Utility to save JSON data to a file."""
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
+# ========================= Common Utilities ========================
 
 def serialize(class_name : str, conf : float, lat : float, lon : float) -> None:
     """Caches detections to JSON."""
     try:
         if os.path.exists(TARGETS_CACHE):
-            with open(TARGETS_CACHE, 'r') as file:
-                data = json.load(file)
+            data = load_json(TARGETS_CACHE)
         else:
             data = {}
 
@@ -37,8 +38,6 @@ def serialize(class_name : str, conf : float, lat : float, lon : float) -> None:
             'confidence': conf
         })
 
-        with open(TARGETS_CACHE, 'w') as file:
-            json.dump(data, file, indent=4)
-        print("Detection cached.")
+        save_json(TARGETS_CACHE, data)
     except Exception as e:
         print(f"Error appending to cache: {e}")

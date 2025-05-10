@@ -6,6 +6,7 @@ from flask_cors import CORS
 import requests
 from detection import stop_threads, start_threads
 from geo import locate_target
+from helper import load_json, save_json, DATA_DIR, IMAGES_DIR, IMAGEDATA_DIR
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -26,11 +27,6 @@ current_target = None
 ENDPOINT_IP = "192.168.1.66" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
-
-# Utilities
-DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
-IMAGES_DIR = os.path.join(DATA_DIR, 'images')
-IMAGEDATA_DIR = os.path.join(DATA_DIR, 'imageData')
 
 # Dictionary to maintain vehicle state
 vehicle_data = {
@@ -58,21 +54,6 @@ vehicle_data = {
     "flight_mode": 0,
     "is_dropped": False
 }
-
-# ========================= Common Utilities ========================
-def load_json(file_path):
-    """Utility to load JSON data from a file."""
-    try:
-        with open(file_path, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {}
-
-def save_json(file_path, data):
-    """Utility to save JSON data to a file."""
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
-# ========================= Common Utilities ========================
 
 @app.get('/get_heartbeat')
 def get_heartbeat():

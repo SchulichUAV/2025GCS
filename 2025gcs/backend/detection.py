@@ -3,14 +3,13 @@ import time
 import base64
 import cv2
 import numpy as np
-import json
 from queue import Queue, Empty
 from threading import Thread, Event, enumerate
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
 from geo import locate_target
-from helper import serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
+from helper import load_json, serialize, IMAGES_DIR, IMAGEDATA_DIR
 
 LAST_SCANNED_INDEX = 0
 BATCH_SIZE = 12
@@ -83,10 +82,9 @@ def detect_batch_(
 def process_data_and_locate_target_(detection : dict, path : str) -> None:
     """Processes detection data and performs geomatics calculations."""
     json_file_name = os.path.basename(path).replace('.jpg', '.json')  # Get corresponding JSON file
-    json_file_path = os.path.join(IMAGE_DATA_FOLDER, json_file_name)
+    json_file_path = os.path.join(IMAGEDATA_DIR, json_file_name)
     if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            json_data = json.load(json_file)
+        json_data = load_json(json_file_path)
         json_data['x'] = detection['x']
         json_data['y'] = detection['y']
         lat, lon = locate_target(json_data)
@@ -151,17 +149,17 @@ def geomatics_worker() -> None:
 # Infinitely run and monitor image folder for new images, add them to the queue until stop event is set.
 def image_watcher() -> None:
     """Continuously monitors the folder for new images and adds them to the queue."""
-    if not os.path.exists(IMAGE_FOLDER):
-        print(f"Error: Directory '{IMAGE_FOLDER}' does not exist.")
+    if not os.path.exists(IMAGES_DIR):
+        print(f"Error: Directory '{IMAGES_DIR}' does not exist.")
         return
     
     global LAST_SCANNED_INDEX
     while not stop_event.is_set():
         try:
-            new_files = sorted(os.listdir(IMAGE_FOLDER))[LAST_SCANNED_INDEX:]
+            new_files = sorted(os.listdir(IMAGES_DIR))[LAST_SCANNED_INDEX:]
             if new_files:
                 for file in new_files:
-                    file_path = os.path.join(IMAGE_FOLDER, file)
+                    file_path = os.path.join(IMAGES_DIR, file)
                     image_queue.put(file_path)
                     print(f"{file} added to queue")
                     LAST_SCANNED_INDEX += 1
