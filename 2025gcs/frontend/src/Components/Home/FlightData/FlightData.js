@@ -1,6 +1,6 @@
 import React from "react";
 
-function FlightData({ vehicleData }) {
+function FlightData({ vehicleData, averageVoltage }) {
   // Flight mode mapping
   const FLIGHT_MODES = {
     0: "Manual",
@@ -27,7 +27,8 @@ function FlightData({ vehicleData }) {
     flightModeId !== undefined
       ? FLIGHT_MODES[flightModeId] || "Unknown"
       : "N/A";
-  const batteryVoltage = vehicleData?.batteryVoltage || "N/A";
+  const batteryVoltage =
+    averageVoltage !== "N/A" ? `${averageVoltage} V` : "N/A";
   const airspeedMs = vehicleData?.airspeedMs || "0";
   const airspeedKmh = (airspeedMs * 3.6).toFixed(1);
   const altitudeAglM = vehicleData?.altitudeAglM || "0";
