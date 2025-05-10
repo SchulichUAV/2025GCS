@@ -27,7 +27,7 @@ function FlightData({ vehicleData, averageVoltage }) {
     flightModeId !== undefined
       ? FLIGHT_MODES[flightModeId] || "Unknown"
       : "N/A";
-  const batteryVoltage =
+  const battery_voltage =
     averageVoltage !== "N/A" ? `${averageVoltage} V` : "N/A";
   const airspeedMs = vehicleData?.airspeedMs || "0";
   const airspeedKmh = (airspeedMs * 3.6).toFixed(1);
@@ -55,7 +55,7 @@ function FlightData({ vehicleData, averageVoltage }) {
         {/* Battery */}
         <div className="bg-gray-50 rounded p-3">
           <p className="text-xs font-semibold text-gray-500 mb-1">BATTERY</p>
-          <p className="text-lg font-medium">{batteryVoltage}</p>
+          <p className="text-lg font-medium">{battery_voltage}</p>
         </div>
 
         {/* Airspeed */}

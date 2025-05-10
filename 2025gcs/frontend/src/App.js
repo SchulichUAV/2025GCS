@@ -73,7 +73,7 @@ function App() {
           <Route
             path="/"
             element={
-              <Home vehicleData={vehicleData} averageVoltage={averageVoltage} />
+              <Home vehicleData={vehicleData } averageVoltage={averageVoltage} />
             }
           />
           <Route path="/data" element={<DataPage />} />
