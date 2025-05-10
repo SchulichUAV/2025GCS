@@ -23,7 +23,7 @@ log.addFilter(FilterSpecificLogs())
 completed_targets = []
 current_target = None
 
-ENDPOINT_IP = "192.168.1.66" # make sure to configure ts to whatever your IP is before you start
+ENDPOINT_IP = "10.13.20.192" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -56,6 +56,9 @@ vehicle_data = {
     "speed_uncertainty": 0,
     "heading_uncertainty": 0,
     "flight_mode": 0,
+    "battery_voltage": 0,
+    "battery_current": 0,
+    "battery_remaining": 0,
     "is_dropped": False
 }
 
@@ -275,7 +278,7 @@ def manual_selection_geo_calc():
 
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
             data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
-            response = requests.post(VEHICLE_API_URL, '', data=data, headers=headers)  # ADD ENDPOINT NAME
+            response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
 
             if response.status_code == 200:
                 saved_coords.pop(requested_object, None)
@@ -386,12 +389,34 @@ def delete_prediction():
 @app.route('/current-target', methods=['GET', 'POST'])
 def current_target_handler():
     """Get or set the current target."""
+    data = load_json(os.path.join(DATA_DIR, 'TargetInformation.json'))
     global current_target
     if request.method == 'POST':
         current_target = request.get_json().get('target')
-        return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+
+        # Get the location data for the current target
+        target_data = data.get(current_target, [])
+        if not target_data:
+            return jsonify({'success': False, 'error': 'No data available for the current target'}), 404
+
+        # Calculate the average latitude and longitude
+        total_lat = sum(item['lat'] for item in target_data)
+        total_lon = sum(item['lon'] for item in target_data)
+        count = len(target_data)
+
+        avg_lat = total_lat / count
+        avg_lon = total_lon / count
+
+        # Set the mission to this target location
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        data = json.dumps({"latitude": avg_lat, "longitude": avg_lon})
+        response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': f'Current target set to {current_target}'}), 200
+        else:
+            return jsonify({'success': False, 'message': f'Vehicle failed to set the mission for the target: {current_target}'}), 500
     elif request.method == 'GET':
-        data = load_json(os.path.join(DATA_DIR, 'TargetInformation.json'))
         avg_lat, avg_lon = 0, 0
         if current_target in data:
             target_data = data[current_target]
@@ -404,24 +429,6 @@ def current_target_handler():
 
         return jsonify({'success': True, 'coords': [avg_lat, avg_lon]}), 200
 # ======================== Detections ========================
-
-# ======================== ODM ========================
-@app.route('/process-mapping', methods=['GET'])
-def process_mapping():
-    try:
-        # Simulate processing and replacing the image
-        odm_dir = os.path.join(DATA_DIR, 'ODM')
-        odm_image_path = os.path.join(odm_dir, 'ODMMap.jpg')
-        print(f"Processing mapping image: {odm_image_path}")
-        return jsonify({'success': True}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/data/ODM/<filename>')
-def serve_odm_image(filename):
-    odm_dir = os.path.join(DATA_DIR, 'ODM')
-    return send_from_directory(odm_dir, filename)
-# ======================== ODM ========================
 
 @app.route('/set_flight_mode', methods=['POST'])
 def set_flight_mode():
