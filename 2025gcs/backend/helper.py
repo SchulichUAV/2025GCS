@@ -3,6 +3,7 @@ import json
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 TARGETS_CACHE = os.path.join(DATA_DIR, 'TargetInformation.json')
+SAVED_COORDS = os.path.join(DATA_DIR, 'savedCoords.json')
 IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 IMAGEDATA_DIR = os.path.join(DATA_DIR, 'imageData')
 

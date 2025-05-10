@@ -6,7 +6,7 @@ from flask_cors import CORS
 import requests
 from detection import stop_threads, start_threads
 from geo import locate_target
-from helper import load_json, save_json, DATA_DIR, IMAGES_DIR, IMAGEDATA_DIR
+from helper import load_json, save_json, IMAGES_DIR, IMAGEDATA_DIR, TARGETS_CACHE, SAVED_COORDS
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -158,14 +158,12 @@ def delete_image():
 @app.get('/getImageData')
 def get_image_data():
     """Get the image data for display in the image data table"""
-    image_data_dir = os.path.join(DATA_DIR, 'imageData')
     image_data = []
-    for filename in sorted(os.listdir(image_data_dir)):
+    for filename in sorted(os.listdir(IMAGEDATA_DIR)):
         if filename.endswith('.json'):
-            with open(os.path.join(image_data_dir, filename), 'r') as file:
-                data = json.load(file)
-                data['image'] = filename.replace('.json', '.jpg')
-                image_data.append(data)
+            data = load_json(os.path.join(IMAGEDATA_DIR, filename))
+            data['image'] = filename.replace('.json', '.jpg')
+            image_data.append(data)
 
     return jsonify({'success': True, 'imageData': image_data})
 
@@ -203,8 +201,7 @@ def payload_release():
 def manual_selection_save():
     """Save the coordinates of a manually selected target."""
     data = request.get_json()
-    saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
-    coords_data = load_json(saved_coords)
+    coords_data = load_json(SAVED_COORDS)
 
     object_name = data.get('object')
     if object_name not in coords_data:
@@ -216,16 +213,14 @@ def manual_selection_save():
         'y': data['selected_y']
     })
 
-    save_json(saved_coords, coords_data)
+    save_json(SAVED_COORDS, coords_data)
     return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
 
 @app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for all manually selected targets."""
     try:
-        saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-        with open(saved_coords_path, "r") as file:
-            saved_coords = json.load(file)
+        saved_coords = load_json(SAVED_COORDS)
 
         data = request.get_json()
         requested_object = data.get('object')
@@ -241,8 +236,7 @@ def manual_selection_geo_calc():
                 if not os.path.exists(image_json_path):
                     continue
 
-                with open(image_json_path, "r") as json_file:
-                    image_data = json.load(json_file)
+                image_data = load_json(image_json_path)
 
                 # Process each coordinate
                 image_data["x"] = coord_entry["x"]
@@ -260,7 +254,7 @@ def manual_selection_geo_calc():
 
             if response.status_code == 200:
                 saved_coords.pop(requested_object, None)
-                save_json(saved_coords_path, saved_coords)
+                save_json(SAVED_COORDS, saved_coords)
                 return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
             else:
                 return jsonify({'success': False, 'error': 'Failed to send data'}), 500
@@ -272,8 +266,7 @@ def manual_selection_geo_calc():
 @app.get('/get_saved_coords')
 def get_saved_coords():
     """Get the saved coordinates for display in the saved coordinates data table"""
-    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-    coords_data = load_json(saved_coords_path)
+    coords_data = load_json(SAVED_COORDS)
     return jsonify({'success': True, 'coordinates': coords_data})
 
 @app.delete('/delete_coord')
@@ -283,17 +276,16 @@ def delete_coord():
     req_object = data.get('object')
     index = data.get('index')
 
-    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
-    coords_data = load_json(saved_coords_path) or {}
+    coords_data = load_json(SAVED_COORDS) or {}
 
     if req_object is None:
-        save_json(saved_coords_path, {})
+        save_json(SAVED_COORDS, {})
         return jsonify({'success': True, 'message': 'All coordinates deleted successfully'})
 
     if req_object and index is None:
         if req_object in coords_data:
             del coords_data[req_object]
-            save_json(saved_coords_path, coords_data)
+            save_json(SAVED_COORDS, coords_data)
             return jsonify({'success': True, 'message': 'All coordinates for object deleted successfully'})
         else:
             return jsonify({'success': False, 'error': 'Object not found'}), 404
@@ -302,7 +294,7 @@ def delete_coord():
         del coords_data[req_object][index]
         if not coords_data[req_object]:
             del coords_data[req_object]
-        save_json(saved_coords_path, coords_data)
+        save_json(SAVED_COORDS, coords_data)
         return jsonify({'success': True, 'message': 'Coordinate deleted successfully'})
     else:
         return jsonify({'success': False, 'error': 'Coordinate not found'}), 404
@@ -334,8 +326,7 @@ def fetch_TargetInformation():
     """Get the list of detections from the cache file."""
     global completed_targets
     global current_target
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
-    data = load_json(target_info_path)
+    data = load_json(TARGETS_CACHE)
     return jsonify({'targets': data, 'completed_targets': completed_targets, 'current_target': current_target}), 200
 
 @app.delete('/delete-prediction')
@@ -344,21 +335,20 @@ def delete_prediction():
     data = request.get_json(silent=True) or {}
     class_name = data.get('class_name')
     index = data.get('index')
-    target_info_path = os.path.join(DATA_DIR, 'TargetInformation.json')
 
     # No class or index provided, clear the cache
     if class_name is None or index is None:
-        save_json(target_info_path, {})
+        save_json(TARGETS_CACHE, {})
         return jsonify({"message": "TargetInformation cache cleared"}), 200
 
-    coords_data = load_json(target_info_path)
+    coords_data = load_json(TARGETS_CACHE)
     if class_name in coords_data:
         if 0 <= index < len(coords_data[class_name]):
             del coords_data[class_name][index]
             if not coords_data[class_name]:
                 del coords_data[class_name]
 
-            save_json(target_info_path, coords_data)
+            save_json(TARGETS_CACHE, coords_data)
             return jsonify({'success': True}), 200
 
         return jsonify({'success': False, 'message': 'Invalid index'}), 400
@@ -367,7 +357,7 @@ def delete_prediction():
 @app.route('/current-target', methods=['GET', 'POST'])
 def current_target_handler():
     """Get or set the current target."""
-    data = load_json(os.path.join(DATA_DIR, 'TargetInformation.json'))
+    data = load_json(TARGETS_CACHE)
     global current_target
     if request.method == 'POST':
         current_target = request.get_json().get('target')
