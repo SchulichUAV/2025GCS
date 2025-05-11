@@ -16,8 +16,8 @@ function FlightData({ vehicleData }) {
   };
 
   // Helper function to round to max 5 decimal places
-  const roundToFiveDecimals = (value) => {
-    const num = parseFloat(value);
+  const radToDeg = (value) => {
+    const num = parseFloat(value) * (180 / Math.PI);
     return isNaN(num) ? "0" : num.toFixed(5).replace(/\.?0+$/, "");
   };
 
@@ -33,9 +33,10 @@ function FlightData({ vehicleData }) {
   const altitudeAglM = vehicleData?.altitudeAglM || "0";
   const altitudeAglFt = (altitudeAglM * 3.28084).toFixed(1);
   const altitudeMslM = vehicleData?.altitudeMslM || "0";
-  const roll = roundToFiveDecimals(vehicleData?.roll || "0");
-  const pitch = roundToFiveDecimals(vehicleData?.pitch || "0");
-  const yaw = roundToFiveDecimals(vehicleData?.yaw || "0");
+  const roll = radToDeg(vehicleData?.roll || "0");
+  const pitch = radToDeg(vehicleData?.pitch || "0");
+  const yaw = radToDeg(vehicleData?.yaw || "0");
+
 
   return (
     <div className="bg-white border border-gray-300 rounded-xl shadow-sm p-4 w-full">
