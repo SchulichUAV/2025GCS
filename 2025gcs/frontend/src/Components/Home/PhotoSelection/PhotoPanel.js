@@ -98,21 +98,7 @@ const PhotoPanel = () => {
     }
   };
 
-  // currently the single delete feature deletes all images, also need to get rid of json data associated to each image
-  // needs a pop up message to confirm deletion of image (image and json data altogether get deleted with the confirmation)
   const handleDeletePhoto = async (indexToDelete) => {
-    /*
-      `use the image name as a parameter
-      search the folder with images for that image nanme
-      delete that image using js 
-
-      if the image isn't found -> pop up saying image not found
-      the API call should take an image name parameter and that's it
-
-    */
-
-    // window pop up are you sure ?
-
     const photoToDelete = visiblePhotos[indexToDelete];
     if (!photoToDelete.endsWith(".jpg")) {
       return;
@@ -359,7 +345,8 @@ const PhotoPanel = () => {
                   }`}
                 >
                   <img
-                    src={`http://${ENDPOINT_IP}/images/${photo}`} // remap our new single image delete endpoint
+                    src={`http://${ENDPOINT_IP}/images/${photo}`}
+                    s
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
