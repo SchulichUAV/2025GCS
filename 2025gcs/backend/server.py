@@ -4,8 +4,8 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-# from detection import stop_threads, start_threads
-# from geo import locate_target
+from detection import stop_threads, start_threads
+from geo import locate_target
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
