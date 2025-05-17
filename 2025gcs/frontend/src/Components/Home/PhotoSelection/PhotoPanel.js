@@ -32,7 +32,12 @@ const PhotoPanel = () => {
         if (response.data.success) {
           const loadedPhotos = response.data.images;
           setPhotos(loadedPhotos);
-          setVisiblePhotos(loadedPhotos.slice(currentStartIndex, currentStartIndex + visibleImagesCount)); // Preserve current start index
+          setVisiblePhotos(
+            loadedPhotos.slice(
+              currentStartIndex,
+              currentStartIndex + visibleImagesCount
+            )
+          ); // Preserve current start index
           if (!mainPhoto) {
             setMainPhoto(loadedPhotos[0]);
           }
@@ -51,18 +56,18 @@ const PhotoPanel = () => {
   }, [mainPhoto]);
 
   const handleManualSelectionSend = async () => {
-    try{
+    try {
       if (!selectedSendObject) {
         showError("Select object before sending.");
         return;
       }
       await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`, {
-        object: selectedSendObject
+        object: selectedSendObject,
       });
       showMessage(`Selections Processed`);
     } catch (error) {
-      showError("Request Failed")
-      }
+      showError("Request Failed");
+    }
   };
 
   const handleManualCoordSave = async () => {
@@ -80,12 +85,12 @@ const PhotoPanel = () => {
         const relativeY = selectedPoint.y / rect.height;
         const normalizedX = relativeX * 640;
         const normalizedY = relativeY * 640;
-  
+
         await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
           selected_y: normalizedY,
           file_name: mainPhoto,
-          object: selectedSaveObject
+          object: selectedSaveObject,
         });
         setSelectedPoint(null);
         showMessage("Selection saved");
@@ -93,15 +98,44 @@ const PhotoPanel = () => {
     }
   };
 
+  // currently the single delete feature deletes all images, also need to get rid of json data associated to each image
+  // needs a pop up message to confirm deletion of image (image and json data altogether get deleted with the confirmation)
   const handleDeletePhoto = async (indexToDelete) => {
+    /*
+      `use the image name as a parameter
+      search the folder with images for that image nanme
+      delete that image using js 
+
+      if the image isn't found -> pop up saying image not found
+      the API call should take an image name parameter and that's it
+
+    */
+
+    // window pop up are you sure ?
+
     const photoToDelete = visiblePhotos[indexToDelete];
-    if (!photoToDelete.endsWith('.jpg')) {
+    if (!photoToDelete.endsWith(".jpg")) {
       return;
     }
+
+    // Add confirmation dialog
+    const isConfirmed = window.confirm(
+      `Are you sure you want to delete ${photoToDelete}? This will delete both the image and its associated data.`
+    );
+    if (!isConfirmed) {
+      return;
+    }
+
     try {
-      const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`, {
-        imageName: photoToDelete,
-      });
+      const response = await axios.delete(
+        `http://${ENDPOINT_IP}/deleteSingleImage`,
+        {
+          data: { imageName: photoToDelete },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.data.success) {
         const updatedPhotos = photos.filter((photo) => photo !== photoToDelete);
@@ -132,22 +166,31 @@ const PhotoPanel = () => {
     if (currentStartIndex > 0) {
       const newStartIndex = Math.max(0, currentStartIndex - visibleImagesCount);
       setCurrentStartIndex(newStartIndex);
-      setVisiblePhotos(photos.slice(newStartIndex, newStartIndex + visibleImagesCount));
+      setVisiblePhotos(
+        photos.slice(newStartIndex, newStartIndex + visibleImagesCount)
+      );
     }
   };
-  
+
   const handleRightArrow = () => {
     if (currentStartIndex + visibleImagesCount < photos.length) {
-      const newStartIndex = Math.min(photos.length, currentStartIndex + visibleImagesCount);
+      const newStartIndex = Math.min(
+        photos.length,
+        currentStartIndex + visibleImagesCount
+      );
       setCurrentStartIndex(newStartIndex);
-      setVisiblePhotos(photos.slice(newStartIndex, newStartIndex + visibleImagesCount));
+      setVisiblePhotos(
+        photos.slice(newStartIndex, newStartIndex + visibleImagesCount)
+      );
     }
   };
-  
+
   const handleToggleCamera = async () => {
     try {
       setIsCameraOn(!isCameraOn);
-      const response = await axios.post(`http://${ENDPOINT_IP}/toggle_camera_state`);
+      const response = await axios.post(
+        `http://${ENDPOINT_IP}/toggle_camera_state`
+      );
       if (response.ok) {
         // console.log("data.cameraState is: " + data.cameraState);
         // setIsCameraOn(data.cameraState);
@@ -162,13 +205,15 @@ const PhotoPanel = () => {
   const clearImages = async () => {
     if (window.confirm("Are you sure you want to clear all images?")) {
       try {
-        const response = await axios.delete(`http://${ENDPOINT_IP}/deleteImage`);
+        const response = await axios.delete(
+          `http://${ENDPOINT_IP}/deleteImage`
+        );
         console.log(response);
         if (response.status == 200) {
           setPhotos([]);
           setVisiblePhotos([]);
           setMainPhoto(null);
-          showMessage("Images cleared successfully")
+          showMessage("Images cleared successfully");
         } else {
           showError("Error clearing images");
         }
@@ -193,10 +238,15 @@ const PhotoPanel = () => {
             <button
               onClick={handleToggleCamera}
               className={`px-3 py-2 rounded flex items-center justify-center w-full ${
-                isCameraOn ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+                isCameraOn
+                  ? "bg-green-500 hover:bg-green-600"
+                  : "bg-red-500 hover:bg-red-600"
               } text-white`}
             >
-              📸 <span className="ml-2">{isCameraOn ? "Camera On" : "Camera Off"}</span>
+              📸{" "}
+              <span className="ml-2">
+                {isCameraOn ? "Camera On" : "Camera Off"}
+              </span>
             </button>
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
@@ -207,7 +257,8 @@ const PhotoPanel = () => {
                 >
                   Save
                 </button>
-                <select className="px-2 py-2 border rounded w-1/2"
+                <select
+                  className="px-2 py-2 border rounded w-1/2"
                   value={selectedSaveObject}
                   onChange={(e) => setSelectedSaveObject(e.target.value)}
                 >
@@ -226,7 +277,8 @@ const PhotoPanel = () => {
                 >
                   Send
                 </button>
-                <select className="px-2 py-2 border rounded w-1/2"
+                <select
+                  className="px-2 py-2 border rounded w-1/2"
                   value={selectedSendObject}
                   onChange={(e) => setSelectedSendObject(e.target.value)}
                 >
@@ -301,17 +353,17 @@ const PhotoPanel = () => {
                   key={photo}
                   onClick={() => setMainPhoto(photo)}
                   className={`relative w-16 h-16 rounded bg-white flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-shadow ${
-                    mainPhoto === photo ? "border-2 border-blue-500" : "border border-gray-300"
+                    mainPhoto === photo
+                      ? "border-2 border-blue-500"
+                      : "border border-gray-300"
                   }`}
                 >
                   <img
-                    src={`http://${ENDPOINT_IP}/images/${photo}`}
+                    src={`http://${ENDPOINT_IP}/images/${photo}`} // remap our new single image delete endpoint
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />
-                  <div className="text-xs">
-                    {photo.replace(/[^\d]/g, "")}
-                  </div>
+                  <div className="text-xs">{photo.replace(/[^\d]/g, "")}</div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

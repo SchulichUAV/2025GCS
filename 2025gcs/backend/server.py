@@ -4,8 +4,8 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-from detection import stop_threads, start_threads
-from geo import locate_target
+# from detection import stop_threads, start_threads
+# from geo import locate_target
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -163,11 +163,14 @@ def delete_image():
 
         return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
 
+    image_path = os.path.join(IMAGES_DIR, image_name)
+    json_filename = os.path.splitext(image_name)[0] + '.json'
+    json_path = os.path.join(IMAGEDATA_DIR, json_filename)
+
     # Image provided. Delete the specific image
     if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
-    image_path = os.path.join(IMAGES_DIR, image_name)
     if os.path.exists(image_path):
         try:
             os.remove(image_path)
@@ -176,6 +179,94 @@ def delete_image():
             return jsonify({'success': False, 'error': f'Error deleting {image_name}: {str(e)}'}), 500
     else:
         return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    # Delete JSON
+    if os.path.exists(json_path):
+        try:
+            os.remove(json_path)
+            results['json_deleted'] = True
+        except Exception as e:
+            results['errors'].append(f'JSON deletion failed: {str(e)}')
+
+    if results['errors']:
+        return jsonify({'success': False, **results}), 500
+
+    return jsonify({'success': True, 'message': f'{image_name} and JSON data deleted successfully'}), 200
+
+    json_filename = os.path.splitext(image_name)[0] + '.json'
+    json_path = os.path.join(IMAGEDATA_DIR, json_filename)
+    # Delete JSON data if exists
+    if os.path.exists(json_path):
+        try:
+            os.remove(json_path)
+            results['json_deleted'] = True
+        except Exception as e:
+            results['errors'].append(f'JSON deletion failed: {str(e)}')
+
+@app.delete('/deleteSingleImage')
+def delete_single_image():
+    """Delete a single image and its associated JSON data"""
+
+    data = request.get_json(silent=True) or {}
+    image_name = data.get("imageName")
+
+    # Validation (same as your clear all endpoint)
+    if not image_name:
+        return jsonify({'success': False, 'error': 'No image name provided'}), 400
+
+    if not image_name.endswith('.jpg'):
+        return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
+
+    # Use your existing paths
+    image_path = os.path.join(IMAGES_DIR, image_name)
+    json_filename = os.path.splitext(image_name)[0] + '.json'
+    json_path = os.path.join(IMAGEDATA_DIR, json_filename)
+
+    # Track deletion success
+    results = {
+        'image_deleted': False,
+        'json_deleted': False,
+        'errors': []
+    }
+
+    # Delete image (using same logic as your clear all endpoint)
+    if os.path.exists(image_path):
+        try:
+            os.remove(image_path)
+            results['image_deleted'] = True
+        except Exception as e:
+            results['errors'].append(f'Image deletion failed: {str(e)}')
+    else:
+        results['errors'].append('Image file not found')
+
+    # Delete JSON data if exists
+    if os.path.exists(json_path):
+        try:
+            os.remove(json_path)
+            results['json_deleted'] = True
+        except Exception as e:
+            results['errors'].append(f'JSON deletion failed: {str(e)}')
+
+    # Return appropriate response
+    if results['image_deleted']:
+        message = f"{image_name} deleted"
+        if results['json_deleted']:
+            message += " with associated data"
+        elif os.path.exists(IMAGEDATA_DIR):  # Only mention JSON if directory exists
+            message += " (no associated data found)"
+        
+        if results['errors']:
+            return jsonify({
+                'success': True,
+                'message': message,
+                'warnings': results['errors']
+            }), 200
+        return jsonify({'success': True, 'message': message}), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': '; '.join(results['errors'])
+        }), 500
 
 @app.get('/getImageData')
 def get_image_data():
