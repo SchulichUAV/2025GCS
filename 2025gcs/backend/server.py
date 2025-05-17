@@ -140,42 +140,130 @@ def serve_image(filename):
 
 @app.delete('/deleteImage')
 def delete_image():
-    """Delete an image from the server"""
+    """Delete all images and their associated JSON data"""
     data = request.get_json(silent=True) or {}
     image_name = data.get("imageName")
 
-    # No image provided. Delete all images
-    if image_name is None:
-        if not os.path.exists(IMAGES_DIR):
-            return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
+    # If specific image provided, return error (this endpoint is for clear-all only)
+    if image_name:
+        return jsonify({
+            'success': False,
+            'error': 'Use /deleteSingleImage for single file deletion'
+        }), 400
 
-        failed_deletions = False
-        for filename in os.listdir(IMAGES_DIR):
-            file_path = os.path.join(IMAGES_DIR, filename)
-            if os.path.isfile(file_path) and filename.endswith('.jpg'):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    failed_deletions = True
+    # Verify directories exist
+    if not os.path.exists(IMAGES_DIR):
+        return jsonify({'success': False, 'error': 'Images directory does not exist'}), 404
+    if not os.path.exists(IMAGEDATA_DIR):
+        return jsonify({'success': False, 'error': 'JSON data directory does not exist'}), 404
 
-        if failed_deletions:
-            return jsonify({'success': False, 'message': f'Some files could not be deleted'}), 500
+    results = {
+        'images_deleted': 0,
+        'jsons_deleted': 0,
+        'errors': []
+    }
 
-        return jsonify({'success': True, 'message': 'All images deleted successfully'}), 200
+    # Process all JPG files
+    for filename in os.listdir(IMAGES_DIR):
+        if not filename.endswith('.jpg'):
+            continue
 
-    # Image provided. Delete the specific image
+        # Delete image
+        image_path = os.path.join(IMAGES_DIR, filename)
+        try:
+            os.remove(image_path)
+            results['images_deleted'] += 1
+        except Exception as e:
+            results['errors'].append(f'Image {filename}: {str(e)}')
+            continue  # Skip JSON if image deletion failed
+
+        # Delete corresponding JSON
+        json_filename = os.path.splitext(filename)[0] + '.json'
+        json_path = os.path.join(IMAGEDATA_DIR, json_filename)
+        if os.path.exists(json_path):
+            try:
+                os.remove(json_path)
+                results['jsons_deleted'] += 1
+            except Exception as e:
+                results['errors'].append(f'JSON {json_filename}: {str(e)}')
+
+    # Prepare response
+    if results['errors']:
+        return jsonify({
+            'success': results['images_deleted'] > 0,
+            'message': f"Deleted {results['images_deleted']} images and {results['jsons_deleted']} JSON files",
+            'warnings': results['errors']
+        }), 207 if results['images_deleted'] > 0 else 500
+
+    return jsonify({
+        'success': True,
+        'message': f"Cleared all images ({results['images_deleted']} images and {results['jsons_deleted']} JSON files)"
+    }), 200
+
+@app.delete('/deleteSingleImage')
+def delete_single_image():
+    """Delete a single image and its associated JSON data"""
+
+    data = request.get_json(silent=True) or {}
+    image_name = data.get("imageName")
+
+    # Validation (same as your clear all endpoint)
+    if not image_name:
+        return jsonify({'success': False, 'error': 'No image name provided'}), 400
+
     if not image_name.endswith('.jpg'):
         return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
 
+    # Use your existing paths
     image_path = os.path.join(IMAGES_DIR, image_name)
+    json_filename = os.path.splitext(image_name)[0] + '.json'
+    json_path = os.path.join(IMAGEDATA_DIR, json_filename)
+
+    # Track deletion success
+    results = {
+        'image_deleted': False,
+        'json_deleted': False,
+        'errors': []
+    }
+
+    # Delete image (using same logic as your clear all endpoint)
     if os.path.exists(image_path):
         try:
             os.remove(image_path)
-            return jsonify({'success': True, 'message': f'{image_name} deleted successfully'}), 200
+            results['image_deleted'] = True
         except Exception as e:
-            return jsonify({'success': False, 'error': f'Error deleting {image_name}: {str(e)}'}), 500
+            results['errors'].append(f'Image deletion failed: {str(e)}')
     else:
-        return jsonify({'success': False, 'error': 'File not found'}), 404
+        results['errors'].append('Image file not found')
+
+    # Delete JSON data if exists
+    if os.path.exists(json_path):
+        try:
+            os.remove(json_path)
+            results['json_deleted'] = True
+        except Exception as e:
+            results['errors'].append(f'JSON deletion failed: {str(e)}')
+
+    # Return appropriate response
+    if results['image_deleted']:
+        message = f"{image_name} deleted"
+        if results['json_deleted']:
+            message += " with associated data"
+        elif os.path.exists(IMAGEDATA_DIR):  # Only mention JSON if directory exists
+            message += " (no associated data found)"
+        
+        if results['errors']:
+            return jsonify({
+                'success': True,
+                'message': message,
+                'warnings': results['errors']
+            }), 200
+        return jsonify({'success': True, 'message': message}), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': '; '.join(results['errors'])
+        }), 500
 
 @app.get('/getImageData')
 def get_image_data():
