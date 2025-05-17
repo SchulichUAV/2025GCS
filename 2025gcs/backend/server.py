@@ -167,20 +167,19 @@ def delete_image():
     json_filename = os.path.splitext(image_name)[0] + '.json'
     json_path = os.path.join(IMAGEDATA_DIR, json_filename)
 
-    # Image provided. Delete the specific image
-    if not image_name.endswith('.jpg'):
-        return jsonify({'success': False, 'error': 'Invalid file name format'}), 400
+    results = {'success': True, 'json_deleted': False, 'errors': []}
 
+    # Delete image
     if os.path.exists(image_path):
         try:
             os.remove(image_path)
-            return jsonify({'success': True, 'message': f'{image_name} deleted successfully'}), 200
         except Exception as e:
-            return jsonify({'success': False, 'error': f'Error deleting {image_name}: {str(e)}'}), 500
+            results['success'] = False
+            results['errors'].append(f'Image deletion failed: {str(e)}')
     else:
-        return jsonify({'success': False, 'error': 'File not found'}), 404
+        return jsonify({'success': False, 'error': 'Image file not found'}), 404
 
-    # Delete JSON
+    # Delete associated JSON
     if os.path.exists(json_path):
         try:
             os.remove(json_path)
@@ -191,7 +190,7 @@ def delete_image():
     if results['errors']:
         return jsonify({'success': False, **results}), 500
 
-    return jsonify({'success': True, 'message': f'{image_name} and JSON data deleted successfully'}), 200
+    return jsonify({'success': True, 'message': f'{image_name} and associated JSON deleted successfully'}), 200
 
     json_filename = os.path.splitext(image_name)[0] + '.json'
     json_path = os.path.join(IMAGEDATA_DIR, json_filename)
