@@ -311,23 +311,44 @@ def payload_release():
 # ======================== Manual Selection ========================
 @app.post('/manualSelection-save')
 def manual_selection_save():
-    """Save the coordinates of a manually selected target."""
+    """Save the coordinates of a manually selected target with image metadata."""
     data = request.get_json()
     saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
     coords_data = load_json(saved_coords)
 
+    file_name = data['file_name']
     object_name = data.get('object')
+
     if object_name not in coords_data:
         coords_data[object_name] = []
 
+    # Remove .jpg extension and construct path to the .json metadata file in imageData directory
+    base_name = os.path.splitext(file_name)[0]
+    json_path = os.path.join(IMAGEDATA_DIR, base_name + '.json')
+
+    # Load metadata from corresponding .json file
+    metadata = {}
+    if os.path.exists(json_path):
+        metadata = load_json(json_path)
+    else:
+        print(f"[Warning] Metadata file not found: {json_path}")
+
+    # Append all data including the new fields
     coords_data[object_name].append({
-        'image': data['file_name'],
+        'image': file_name,
         'x': data['selected_x'],
-        'y': data['selected_y']
+        'y': data['selected_y'],
+        'lat': metadata.get('lat'),
+        'lon': metadata.get('lon'),
+        'rel_alt': metadata.get('rel_alt'),
+        'alt': metadata.get('alt'),
+        'roll': metadata.get('roll'),
+        'pitch': metadata.get('pitch'),
+        'yaw': metadata.get('yaw')
     })
 
     save_json(saved_coords, coords_data)
-    return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
+    return jsonify({'success': True, 'message': 'Coordinates and metadata saved successfully'})
 
 @app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
