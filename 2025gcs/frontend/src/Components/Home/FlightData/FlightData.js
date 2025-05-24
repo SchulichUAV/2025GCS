@@ -27,15 +27,17 @@ function FlightData({ vehicleData }) {
     flightModeId !== undefined
       ? FLIGHT_MODES[flightModeId] || "Unknown"
       : "N/A";
-  const batteryVoltage = vehicleData?.batteryVoltage || "N/A";
+  const batteryVoltage = (vehicleData?.battery_voltage / 1000.0).toFixed(3) || "N/A";
   const airspeedMs = vehicleData?.airspeedMs || "0";
   const airspeedKmh = (airspeedMs * 3.6).toFixed(1);
   const altitudeAglM = vehicleData?.altitudeAglM || "0";
-  const altitudeAglFt = (altitudeAglM * 3.28084).toFixed(1);
   const altitudeMslM = vehicleData?.altitudeMslM || "0";
+  const altitudeAglFt = (altitudeAglM * 3.28084).toFixed(1);
+  const altitudeMslFt = (altitudeMslM * 3.28084).toFixed(1);
   const roll = radToDeg(vehicleData?.roll || "0");
   const pitch = radToDeg(vehicleData?.pitch || "0");
   const yaw = radToDeg(vehicleData?.yaw || "0");
+  const batteryPercentage = vehicleData?.battery_remaining || "N/A";
 
 
   return (
@@ -52,9 +54,9 @@ function FlightData({ vehicleData }) {
           <p className="text-lg font-medium">{flightMode}</p>
         </div>
 
-        {/* Battery */}
+        {/* Battery Voltage */}
         <div className="bg-gray-50 rounded p-3">
-          <p className="text-xs font-semibold text-gray-500 mb-1">BATTERY</p>
+          <p className="text-xs font-semibold text-gray-500 mb-1">BATTERY (V)</p>
           <p className="text-lg font-medium">{batteryVoltage}</p>
         </div>
 
@@ -64,8 +66,16 @@ function FlightData({ vehicleData }) {
           <p className="text-lg font-medium">{airspeedMs} m/s</p>
           <p className="text-xs text-gray-500">{airspeedKmh} km/h</p>
         </div>
+        
+        {/* Battery Percentage */}
+        <div className="bg-gray-50 rounded p-3">
+          <p className="text-xs font-semibold text-gray-500 mb-1">
+            BATTERY (%)
+          </p>
+          <p className="text-lg font-medium">{batteryPercentage}</p>
+        </div>
 
-        {/* Altitude */}
+        {/* Altitude AGL */}
         <div className="bg-gray-50 rounded p-3">
           <p className="text-xs font-semibold text-gray-500 mb-1">
             ALTITUDE AGL
@@ -73,12 +83,12 @@ function FlightData({ vehicleData }) {
           <p className="text-lg font-medium">{altitudeAglM} m</p>
           <p className="text-xs text-gray-500">{altitudeAglFt} ft</p>
         </div>
-      </div>
-
-      {/* Altitude MSL */}
-      <div className="bg-gray-50 rounded p-3 mb-4">
-        <p className="text-xs font-semibold text-gray-500 mb-1">ALTITUDE MSL</p>
-        <p className="text-lg font-medium">{altitudeMslM} m</p>
+        {/* Altitude MSL */}
+        <div className="bg-gray-50 rounded p-3">
+          <p className="text-xs font-semibold text-gray-500 mb-1">ALTITUDE MSL</p>
+          <p className="text-lg font-medium">{altitudeMslM} m</p>
+          <p className="text-xs text-gray-500">{altitudeMslFt} ft</p>
+        </div>
       </div>
 
       {/* Orientation - All in one row */}
