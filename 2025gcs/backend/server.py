@@ -338,7 +338,9 @@ def manual_selection_save():
         'alt': metadata.get('alt'),
         'roll': metadata.get('roll'),
         'pitch': metadata.get('pitch'),
-        'yaw': metadata.get('yaw')
+        'yaw': metadata.get('yaw'),
+        'position_uncertainty': metadata.get('position_uncertainty'),
+        'alt_uncertainty': metadata.get('alt_uncertainty'),
     })
 
     save_json(saved_coords, coords_data)
