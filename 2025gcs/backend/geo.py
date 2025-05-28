@@ -463,19 +463,6 @@ def parametric_model(target_object_key, target_entries):
     zone = zone_drone[0]  # Assuming consistent zone
     lat, lon = utm_to_lat_long(easting_est, northing_est, zone, northern=True)
 
-    # Save to TargetLocations.json
-    output_path = os.path.join(DATA_DIR, 'TargetLocations.json')
-    if os.path.exists(output_path):
-        with open(output_path, 'r') as f:
-            output_data = json.load(f)
-    else:
-        output_data = {}
-
-    output_data[target_object_key] = {"lat": lat, "lon": lon}
-
-    with open(output_path, 'w') as f:
-        json.dump(output_data, f, indent=4)
-
     return lat, lon
 
 def single_target_coordinate(target_object_key, target_entries):
@@ -522,6 +509,22 @@ def get_target_coordinates(target_object_key):
             return lat, lon
         else:
             lat, lon = single_target_coordinate(target_object_key, target_entries)
+
+        # Save to TargetLocations.json
+        output_path = os.path.join(DATA_DIR, 'TargetLocations.json')
+        if os.path.exists(output_path):
+            with open(output_path, 'r') as f:
+                output_data = json.load(f)
+        else:
+            output_data = {}
+
+        output_data[target_object_key] = {"lat": lat, "lon": lon}
+
+        with open(output_path, 'w') as f:
+            json.dump(output_data, f, indent=4)
+        
+        return lat, lon
+
     except Exception as e:
         print(f"Error retrieving target coordinates: {e}")
         return None, None
