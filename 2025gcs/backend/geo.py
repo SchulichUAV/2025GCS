@@ -366,7 +366,7 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     else:
         return easting_target_est, northing_target_est
 
-def retrieve_target_coordinates(target_object_key):
+def retrieve_target_entries(target_object_key):
     """
     Retrieve the most recent (last) target coordinates from the JSON file 
     based on the target object key.
@@ -402,7 +402,7 @@ def retrieve_target_coordinates(target_object_key):
 
     return target_entries
 
-def parametric_model(target_object_key):
+def parametric_model(target_object_key, target_entries):
     """
     Runs the parametric adjustment model using target entries and writes the 
     estimated coordinates to TargetLocations.json.
@@ -414,10 +414,7 @@ def parametric_model(target_object_key):
     Returns:
     tuple: Estimated (latitude, longitude) after parametric adjustment.
     """
-    
-    # Pull list of target entries from JSON file
-    target_entries = retrieve_target_coordinates(target_object_key)
-    
+
     # Extract vector data
     vectors = {
         'lat': [entry['lat'] for entry in target_entries],
@@ -479,13 +476,60 @@ def parametric_model(target_object_key):
     with open(output_path, 'w') as f:
         json.dump(output_data, f, indent=4)
 
-    return lat, lon 
+    return lat, lon
+
+def single_target_coordinate(target_object_key, target_entries):
+    """
+    If only one entry exists, return its coordinates directly.
+
+    Parameters:
+    target_object_key (str): The key for the target object in the JSON file.
+    target_entries (list): A list of dictionaries containing target observations.
+
+    Returns:
+    tuple: A tuple containing (latitude, longitude) of the single target location.
+    """
+    
+    if len(target_entries) != 1:
+        raise ValueError(f"Expected exactly one entry for '{target_object_key}', found {len(target_entries)}.")
+
+    entry = target_entries[0]
+    
+    # TODO: Implement the logic to get a target lat and lon from a single entry
+
+    return None, None
+
+def get_target_coordinates(target_object_key):
+    """
+    Get the target coordinates from the JSON file.
+
+    Parameters:
+    target_object_key (str): The key for the target object in the JSON file.
+
+    Returns:
+    tuple: A tuple containing (latitude, longitude) of the last known target location.
+    """
+    
+    # Pull list of target entries from JSON file
+    target_entries = retrieve_target_entries(target_object_key)
+    if not target_entries:
+        print(f"No entries found for target object '{target_object_key}'.")
+        return None, None
+
+    try:
+        if len(target_entries) > 1:
+            lat, lon = parametric_model(target_object_key, target_entries)
+            return lat, lon
+        else:
+            lat, lon = single_target_coordinate(target_object_key, target_entries)
+    except Exception as e:
+        print(f"Error retrieving target coordinates: {e}")
+        return None, None
 
 if __name__ == "__main__":
     target_key = "car"
     try:
-        target_entries = retrieve_target_coordinates(target_key)
-        lat, lon = parametric_model(target_key, target_entries)
+        lat, lon = get_target_coordinates(target_key)
         print(f"Estimated coordinates for '{target_key}': Latitude: {lat}, Longitude: {lon}")
     except Exception as e:
         print(f"Error processing parametric model for '{target_key}': {e}")
