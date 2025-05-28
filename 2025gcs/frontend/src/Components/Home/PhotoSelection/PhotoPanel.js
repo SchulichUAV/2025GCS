@@ -415,7 +415,6 @@ const PhotoPanel = () => {
                 >
                   <img
                     src={`http://${ENDPOINT_IP}/images/${photo}`}
-                    s
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />

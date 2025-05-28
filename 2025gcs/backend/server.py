@@ -4,7 +4,7 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-# from geo import locate_target
+from geo import get_target_coordinates
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -426,41 +426,24 @@ def manual_selection_geo_calc():
         data = request.get_json()
         requested_object = data.get('object')
         if requested_object is None or requested_object not in saved_coords:
+            print(f"Requested object '{requested_object}' not found in saved coordinates.")
             return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
 
         position_data = [0, 0]  # latitude, longitude
         count = len(saved_coords[requested_object])  # count of number of saved coords processed for averaging
         if count > 0:
-            for coord_entry in saved_coords[requested_object]:
-                image_name = coord_entry["image"]
-                image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
-                if not os.path.exists(image_json_path):
-                    continue
-
-                with open(image_json_path, "r") as json_file:
-                    image_data = json.load(json_file)
-
-                # Process each coordinate
-                image_data["x"] = coord_entry["x"]
-                image_data["y"] = coord_entry["y"]
-                latitude, longitude = locate_target(image_data)
-                position_data[0] += latitude
-                position_data[1] += longitude
-
-            position_data[0] /= count  # Average latitude
-            position_data[1] /= count  # Average longitude
-
+            lat, lon = get_target_coordinates(requested_object)
+            print(f"Calculated coordinates for {requested_object}: lat={lat}, lon={lon}")
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-            data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
+            data = json.dumps({"latitude": lat, "longitude": lon})
             response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
 
             if response.status_code == 200:
-                saved_coords.pop(requested_object, None)
-                save_json(saved_coords_path, saved_coords)
                 return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
             else:
                 return jsonify({'success': False, 'error': 'Failed to send data'}), 500
         else:
+            print(f"No valid coordinates found for {requested_object}")
             return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

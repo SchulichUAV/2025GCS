@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.stats as stats
-import matplotlib.pyplot as plt
 from pyproj import CRS, Transformer
 import json
 import os
@@ -329,9 +328,6 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     easting_target_est = np.mean(easting_target)
     northing_target_est = np.mean(northing_target)
 
-    # Holds coordinate plot of mean target observations
-    plt.scatter(easting_target_est, northing_target_est, label = 'Mean Target Location')
-
     # Iteration count
     iteration = 0
 
@@ -385,22 +381,6 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     # Plot data and adjusted target point
     print("\nEstimated post adjustment: ", "Easting: ", easting_target_est, "Northing: ", northing_target_est)
 
-    plt.scatter(easting_drone, northing_drone, label = 'Drone Observation Points')
-    plt.scatter(easting_target, northing_target, label = 'Target Observations')
-    plt.scatter(easting_target_est, northing_target_est, label = 'Adjust Target Point')
-
-    for i, (x_val, y_val) in enumerate(zip(easting_drone, northing_drone)): 
-        plt.annotate(f'{i}', (x_val, y_val), textcoords="offset points", xytext=(0,10), ha='center')
-
-    for i, (x_val, y_val) in enumerate(zip(easting_target, northing_target)): 
-        plt.annotate(f'{i}', (x_val, y_val), textcoords="offset points", xytext=(0,10), ha='center')
-
-    plt.title('Plot') 
-    plt.xlabel('Easting') 
-    plt.ylabel('Northing')
-    plt.legend()
-    plt.show()
-
     # Data snooping
     standardized_r_hat = r / np.sqrt(np.diag(Cr_hat))
 
@@ -439,20 +419,24 @@ def retrieve_target_entries(target_object_key):
     }
 
     if target_object_key not in valid_targets:
+        print(f"Valid target keys are: {sorted(valid_targets)}")
         raise ValueError(f"Invalid target key '{target_object_key}'. Must be one of: {sorted(valid_targets)}")
 
     json_file_path = os.path.join(DATA_DIR, 'savedCoords.json')
     if not os.path.exists(json_file_path):
+        print(f"JSON file not found at {json_file_path}. Please ensure the file exists.")
         raise FileNotFoundError(f"JSON file not found at {json_file_path}")
 
     with open(json_file_path, 'r') as json_file:
         data = json.load(json_file)
 
     if target_object_key not in data or not isinstance(data[target_object_key], list):
+        print(f"Target object '{target_object_key}' not found or has invalid format in JSON data.")
         raise KeyError(f"Target object '{target_object_key}' not found or has invalid format in JSON data.")
 
     target_entries = data[target_object_key]
     if not target_entries:
+        print(f"No entries found for target object '{target_object_key}'.")
         raise ValueError(f"No entries found for target object '{target_object_key}'.")
 
     return target_entries
@@ -552,7 +536,7 @@ def get_target_coordinates(target_object_key):
     tuple: A tuple containing (latitude, longitude) of the last known target location.
     """
     
-    # Pull list of target entries from JSON file
+    # Pull list of target entries from JSON file    
     target_entries = retrieve_target_entries(target_object_key)
     if not target_entries:
         print(f"No entries found for target object '{target_object_key}'.")
