@@ -271,7 +271,6 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     # Assuming number of observed horizontal distances is equal to n where A distance is calculating using the 2D range equation (refer to function name 'model')
     u = 2
     n = easting_target.size
-    print("Number of observations (n):", n)
     
     if n > 3:
         # Calculate IQR and thresholds for easting
@@ -305,8 +304,6 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
 
         # Update n to reflect the new size of the filtered dataset
         n = easting_target.size
-        print("Number of observations after outlier removal (n):", n)
-
     
     # Degrees of freedom
     dof = n - u
