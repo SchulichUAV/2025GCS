@@ -317,21 +317,46 @@ const PayloadPanel = () => {
                     className="p-2 border border-gray-300 rounded-md flex flex-col items-center w-full"
                   >
                     <h3 className="text-lg font-bold mb-2">{bay}</h3>
-                    <div className="flex space-x-3">
+                    <div className="flex flex-col space-y-1 items-center">
+                      {/* Release Button with Confirmation */}
                       <button
                         disabled={disabledRelease[index]}
-                        className={`bg-blue-400 hover:bg-blue-500 text-white px-3 py-1 rounded-md ${
+                        className={`bg-blue-400 hover:bg-blue-500 text-white text-xs px-2 py-0.5 rounded ${
                           disabledRelease[index] ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
-                        onClick={() => HandleRelease(index)}
+                        onClick={() => {
+                          const confirmRelease = window.confirm(`Release payload for ${bay}?`);
+                          if (confirmRelease) HandleRelease(index);
+                        }}
                       >
                         Release
+                      </button>
+                      {/* Open Button */}
+                      <button
+                        className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const confirmOpen = window.confirm(`Open ${bay}?`);
+                          if (confirmOpen) handleOpen(index);
+                        }}
+                      >
+                        Open
+                      </button>
+
+                      {/* Close Button */}
+                      <button
+                        className="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const confirmClose = window.confirm(`Close ${bay}?`);
+                          if (confirmClose) handleClose(index);
+                        }}
+                      >
+                        Close
                       </button>
                     </div>
                   </div>
                 ))}
                 {/* Full-width Action Buttons */}
-                <div className="col-span-2 mt-2 flex justify-center space-x-3">
+                <div className="col-span-2 mt-2 flex justify-center space-x-2">
                   {/* Pickle / Release All */}
                   <button
                     onClick={() => {
@@ -342,7 +367,7 @@ const PayloadPanel = () => {
                         handleReleaseAll();
                       }
                     }}
-                    className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-1 rounded-md"
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded"
                   >
                     Pickle
                   </button>
@@ -357,7 +382,7 @@ const PayloadPanel = () => {
                         handleOpenAll();
                       }
                     }}
-                    className="bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-1 rounded-md"
+                    className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-2 py-0.5 rounded"
                   >
                     Open All
                   </button>
@@ -372,7 +397,7 @@ const PayloadPanel = () => {
                         handleCloseAll();
                       }
                     }}
-                    className="bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium px-4 py-1 rounded-md"
+                    className="bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium px-2 py-0.5 rounded"
                   >
                     Close All
                   </button>
