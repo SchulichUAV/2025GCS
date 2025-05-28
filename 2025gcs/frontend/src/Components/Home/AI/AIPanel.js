@@ -22,26 +22,26 @@ const AIPanel = ({ currentTarget, setCurrentTarget, targetCompleted }) => {
     setTimeout(() => setError(null), timeout);
   };
 
-  useEffect(() => {
-    const fetchDetectionData = async () => {
-      try {
-        const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
-        if (response.data) {
-          setData(response.data.targets);
-          setCurrentTarget(response.data.current_target);
+  // useEffect(() => {
+  //   const fetchDetectionData = async () => {
+  //     try {
+  //       const response = await axios.get(`http://${ENDPOINT_IP}/fetch-TargetInformation`);
+  //       if (response.data) {
+  //         setData(response.data.targets);
+  //         setCurrentTarget(response.data.current_target);
 
-          if (completedTargets !== response.data.completed_targets) {
-            setCompletedTargets(response.data.completed_targets);
-            targetCompleted = true;
-          }
-        }
-      } catch (error) { showError("Failed to fetch detection data"); }
-    };
+  //         if (completedTargets !== response.data.completed_targets) {
+  //           setCompletedTargets(response.data.completed_targets);
+  //           targetCompleted = true;
+  //         }
+  //       }
+  //     } catch (error) { showError("Failed to fetch detection data"); }
+  //   };
 
-    fetchDetectionData();
-    const intervalId = setInterval(fetchDetectionData, 2000);
-    return () => clearInterval(intervalId);
-  }, []);
+  //   fetchDetectionData();
+  //   const intervalId = setInterval(fetchDetectionData, 2000);
+  //   return () => clearInterval(intervalId);
+  // }, []);
 
   const handleCurrentTarget = async (className) => {
     try{
