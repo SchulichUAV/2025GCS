@@ -114,74 +114,132 @@ def utm_to_lat_long(easting, northing, zone, northern=True):
     
     return lat, lon
 
-# fiducial centre pix (728, 544)
-# x rotation(pitch)
-# y rotation(roll)
-# z rotation(yaw)
-# assuming y axis within image space is dirction of travel (provides greatest swath perpendicular to direction of travel)
-# assuming x axis within image space is perpendicular to direction of travel
-# assuming z axis within image space is down
-# if these changes aren't met, rotation squences will need to be changed
-# positive pitch raises nose of UAV
-# positive roll is right bank, i.e. right wing down
-# positive yaw is right turn, i.e. nose of UAV turns right relative to positive north
-def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
+# # fiducial centre pix (728, 544)
+# # x rotation(pitch)
+# # y rotation(roll)
+# # z rotation(yaw)
+# # assuming y axis within image space is dirction of travel (provides greatest swath perpendicular to direction of travel)
+# # assuming x axis within image space is perpendicular to direction of travel
+# # assuming z axis within image space is down
+# # if these changes aren't met, rotation squences will need to be changed
+# # positive pitch raises nose of UAV
+# # positive roll is right bank, i.e. right wing down
+# # positive yaw is right turn, i.e. nose of UAV turns right relative to positive north
+# def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
 
-    focal_length = 0.0125 # meters (m)
-    pixel_spacing = 0.00345 # mm per pix
-    # fiducial centre (mm)
-    x_fiducial = 2.5116
-    y_fiducial = -1.8768
+#     focal_length = 0.0125 # meters (m)
+#     pixel_spacing = 0.00345 # mm per pix
+#     # fiducial centre (mm)
+#     x_fiducial = 2.5116
+#     y_fiducial = -1.8768
 
-    scale = agl / focal_length
+#     scale = agl / focal_length
 
-    # image x and y (mm)
-    image = np.array([(x_pix * pixel_spacing) - x_fiducial, ((-y_pix * pixel_spacing) - y_fiducial)])
+#     # image x and y (mm)
+#     image = np.array([(x_pix * pixel_spacing) - x_fiducial, ((-y_pix * pixel_spacing) - y_fiducial)])
 
-    # object x and y in m relative to drone
-    #                                        check if agl should be negative or positive (was originally positive)
-    obj = np.array([((scale * image[0]) / 1000), ((scale * image[1]) / 1000), agl])
+#     # object x and y in m relative to drone
+#     #                                        check if agl should be negative or positive (was originally positive)
+#     obj = np.array([((scale * image[0]) / 1000), ((scale * image[1]) / 1000), agl])
     
-    # y is direction of travel therefore conventional roll and pitch rotations are swapped
-    # roll is rotation about y axis, pitch is rotation about x axis
-    Rx = np.array([
-        [1, 0, 0],
-        [0, np.cos(pitch), np.sin(pitch)],
-        [0, -np.sin(pitch), np.cos(pitch)]
-    ])
+#     # y is direction of travel therefore conventional roll and pitch rotations are swapped
+#     # roll is rotation about y axis, pitch is rotation about x axis
+#     Rx = np.array([
+#         [1, 0, 0],
+#         [0, np.cos(pitch), np.sin(pitch)],
+#         [0, -np.sin(pitch), np.cos(pitch)]
+#     ])
 
-    Ry = np.array([
-        [np.cos(roll), 0, -np.sin(roll)],
-        [0, 1, 0],
-        [np.sin(roll), 0, np.cos(roll)]
-    ])
+#     Ry = np.array([
+#         [np.cos(roll), 0, -np.sin(roll)],
+#         [0, 1, 0],
+#         [np.sin(roll), 0, np.cos(roll)]
+#     ])
 
-    Rz = np.array([
-        [np.cos(yaw), np.sin(yaw), 0],
-        [-np.sin(yaw), np.cos(yaw), 0],
-        [0, 0, 1]
-    ])
+#     Rz = np.array([
+#         [np.cos(yaw), np.sin(yaw), 0],
+#         [-np.sin(yaw), np.cos(yaw), 0],
+#         [0, 0, 1]
+#     ])
 
-    R = Rz @ Rx @ Ry
+#     R = Rz @ Rx @ Ry
 
-    # Target coordinates relative to drone position, not intersecting ground plane though
-    # Therefore must compute intersection coordinates with ground plane by scaling by t
+#     # Target coordinates relative to drone position, not intersecting ground plane though
+#     # Therefore must compute intersection coordinates with ground plane by scaling by t
     
-    target = R @ obj.transpose()
+#     target = R @ obj.transpose()
 
 
-    vertical_depth = target[2]
+#     vertical_depth = target[2]
     
-    #                                        check if agl should be negative or positive (was originally positive)
-    t = agl / vertical_depth
+#     #                                        check if agl should be negative or positive (was originally positive)
+#     t = agl / vertical_depth
 
-    target[0] = target[0] * t
-    target[1] = target[1] * t
+#     target[0] = target[0] * t
+#     target[1] = target[1] * t
 
-    easting_target = easting_drone + target[0]
-    northing_target = northing_drone + target[1]
+#     easting_target = easting_drone + target[0]
+#     northing_target = northing_drone + target[1]
 
-    return easting_target, northing_target
+#     return easting_target, northing_target
+
+def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, roll, pitch): 
+
+        focal_length = 0.006 # meters (m)
+        pixel_spacing = 0.00345 # mm per pix
+        # fiducial centre (mm)
+        x_fiducial = 2.5116
+        y_fiducial = -1.8768
+
+        scale = agl / focal_length
+
+        # image x and y (mm)
+        image = np.array([(x_pix * pixel_spacing) - x_fiducial, ((-y_pix * pixel_spacing) - y_fiducial)])
+
+        # object x and y in m relative to drone
+        #                                        check if agl should be negative or positive (was originally positive)
+        obj = np.array([((scale * image[0]) / 1000), ((scale * image[1]) / 1000), agl])
+        
+        # y is direction of travel therefore conventional roll and pitch rotations are swapped
+        # roll is rotation about y axis, pitch is rotation about x axis
+        Rx = np.array([
+            [1, 0, 0],
+            [0, np.cos(pitch), np.sin(pitch)],
+            [0, -np.sin(pitch), np.cos(pitch)]
+        ])
+
+        Ry = np.array([
+            [np.cos(roll), 0, -np.sin(roll)],
+            [0, 1, 0],
+            [np.sin(roll), 0, np.cos(roll)]
+        ])
+
+        Rz = np.array([
+            [np.cos(yaw - 1.517), np.sin(yaw - 1.517), 0],
+            [-np.sin(yaw - 1.517), np.cos(yaw - 1.517), 0],
+            [0, 0, 1]
+        ])
+
+        R = Rz @ Rx @ Ry
+
+        # Target coordinates relative to drone position, not intersecting ground plane though
+        # Therefore must compute intersection coordinates with ground plane by scaling by t
+        
+        target = R @ obj.transpose()
+    
+
+        vertical_depth = target[2]
+        
+        #                                        check if agl should be negative or positive (was originally positive)
+        t = agl / vertical_depth
+
+        target[0] = target[0] * t
+        target[1] = target[1] * t
+
+        easting_target = easting_drone + target[0]
+        northing_target = northing_drone + target[1]
+
+        return easting_target, northing_target
 
 # Functional parametric model
 def model(easting_drone, northing_drone, easting_target, northing_target):
