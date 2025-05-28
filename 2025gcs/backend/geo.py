@@ -8,6 +8,50 @@ import os
 # Utilities
 DATA_DIR = os.path.join(os.path.dirname(__file__), '.', 'data')
 
+def retrieve_target_coordinates(target_object_key):
+    """
+    Retrieve the target coordinates from the JSON file based on the target object key.
+    
+    Parameters:
+    target_object_key (str): The key for the target object in the JSON file.
+    
+    Returns:
+    tuple: A tuple containing latitude and longitude of the target object.
+    """
+
+    """
+    Valid target options for the model:
+    "baseball bat",
+    "bed",
+    "boat",
+    "bus",
+    "car",
+    "football",
+    "motorcycle",
+    "person",
+    "plane",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "stop sign",
+    "suitcase",
+    "tennis racket",
+    "umbrella"
+    """
+
+    json_file_path = os.path.join(DATA_DIR, 'savedCoords.json')
+    
+    if not os.path.exists(json_file_path):
+        raise FileNotFoundError(f"JSON file not found at {json_file_path}")
+    
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+    
+    if target_object_key not in data:
+        raise KeyError(f"Target object '{target_object_key}' not found in JSON data.")
+    
+    return data[target_object_key]['lat'], data[target_object_key]['lon']
+
 def parametric_model(file_path):
     #--------------------------------------------------Functions-----------------------------------------------------
     def parse_json_to_vectors(file_path):
