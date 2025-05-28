@@ -4,8 +4,7 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-from detection import stop_threads, start_threads
-from geo import locate_target
+# from geo import locate_target
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -23,7 +22,7 @@ log.addFilter(FilterSpecificLogs())
 completed_targets = []
 current_target = None
 
-ENDPOINT_IP = "10.13.20.192" # make sure to configure this to whatever your IP is before you start
+ENDPOINT_IP = "192.168.1.66" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -306,6 +305,76 @@ def payload_release():
         status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
         print(f"Request Error ({status_code}): {str(e)}")
         return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+    
+@app.post('/payload_release_all')
+def payload_release_all():
+    """Release all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_release_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_open_all')
+def payload_open_all():
+    """Open all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_open_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_close_all')
+def payload_close_all():
+    """Close all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_close_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+    
+@app.post('/payload_open')
+def payload_open():
+    """Open the payload for a specified bay."""
+    data = request.get_json()
+    send_data = json.dumps({"bay": data.get("bay")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_open', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_close')
+def payload_close():
+    """Close the payload for a specified bay."""
+    data = request.get_json()
+    send_data = json.dumps({"bay": data.get("bay")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_close', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
 # ======================== Payload ========================
 
 # ======================== Manual Selection ========================
