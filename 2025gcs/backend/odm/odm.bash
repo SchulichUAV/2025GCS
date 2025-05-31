@@ -39,6 +39,6 @@ docker run -ti --rm -v "/Users/liammah/Documents/datasets:/datasets" \
 
 echo "✅ ODM processing complete."
 
-mv /Users/liammah/Documents/datasets/code/opensfm/stats/ortho.png /Users/liammah/Desktop/University/Schulich UAV/2025/2025GCS/2025gcs/backend/odm/map.png
+cp /Users/liammah/Documents/datasets/code/opensfm/stats/ortho.png /Users/liammah/Desktop/University/"Schulich UAV"/2025/2025GCS/2025gcs/backend/odm/map.png
 
 echo "✅ Orthophoto copied to odm_ortho.png in geo folder."
