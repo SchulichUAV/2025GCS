@@ -429,19 +429,22 @@ def manual_selection_geo_calc():
             print(f"Requested object '{requested_object}' not found in saved coordinates.")
             return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
 
-        position_data = [0, 0]  # latitude, longitude
         count = len(saved_coords[requested_object])  # count of number of saved coords processed for averaging
         if count > 0:
             lat, lon = get_target_coordinates(requested_object)
             print(f"Calculated coordinates for {requested_object}: lat={lat}, lon={lon}")
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
             data = json.dumps({"latitude": lat, "longitude": lon})
-            response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
 
-            if response.status_code == 200:
-                return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
-            else:
-                return jsonify({'success': False, 'error': 'Failed to send data'}), 500
+            try:
+                response = requests.post(VEHICLE_API_URL + 'payload_drop_mission', data=data, headers=headers)
+                response.raise_for_status()  # Raise an exception for HTTP errors
+                print("Successfully sent mission upload.")
+            except requests.exceptions.RequestException as e:
+                status_code = getattr(e.response, "status_code", 500)
+                print(f"Request Error ({status_code}): {str(e)}")
+                return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
         else:
             print(f"No valid coordinates found for {requested_object}")
             return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
