@@ -459,6 +459,19 @@ def get_saved_coords():
     coords_data = load_json(saved_coords_path)
     return jsonify({'success': True, 'coordinates': coords_data})
 
+@app.post('/clear_saved_coords')
+def clear_saved_coords():
+    """Clear all manually saved coordinates."""
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+
+    try:
+        # Overwrite with an empty dictionary
+        save_json(saved_coords_path, {})
+        return jsonify({'success': True, 'message': 'Saved coordinates cleared'})
+    except Exception as e:
+        print(f"[Error] Failed to clear saved coordinates: {e}")
+        return jsonify({'success': False, 'message': 'Failed to clear saved coordinates'}), 500
+
 @app.delete('/delete_coord')
 def delete_coord():
     """Delete a specific coordinate from the saved coordinates."""
