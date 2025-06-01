@@ -371,7 +371,7 @@ const PhotoPanel = () => {
               onClick={clearImages}
               className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
             >
-              Clear
+              Clear all images
             </button>
             {message && (
               <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded relative mt-2">
