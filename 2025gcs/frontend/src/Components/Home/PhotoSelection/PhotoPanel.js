@@ -140,8 +140,10 @@ const PhotoPanel = () => {
         const rect = imgElement.getBoundingClientRect();
         const relativeX = selectedPoint.x / rect.width;
         const relativeY = selectedPoint.y / rect.height;
-        const normalizedX = relativeX * 1456;
-        const normalizedY = relativeY * 1088;
+        // const normalizedX = relativeX * 1456;
+        // const normalizedY = relativeY * 1088;
+        const normalizedX = relativeX * 2028;
+        const normalizedY = relativeY * 1520;
 
         await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
