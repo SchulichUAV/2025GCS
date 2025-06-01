@@ -53,8 +53,8 @@ for filename in os.listdir(json_directory):
                     continue  
 
                 # Extract GPS data
-                lat = data.get("lon", 0.0)
-                lon = data.get("lat", 0.0)
+                lat = data.get("lat", 0.0)
+                lon = data.get("lon", 0.0)
                 alt = data.get("rel_alt", 0.0)
                 yaw = data.get("yaw", 0.0)
                 pitch = data.get("pitch", 0.0)
