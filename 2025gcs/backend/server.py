@@ -425,6 +425,7 @@ def manual_selection_geo_calc():
 
         data = request.get_json()
         requested_object = data.get('object')
+        bay = data.get('bay')
         if requested_object is None or requested_object not in saved_coords:
             print(f"Requested object '{requested_object}' not found in saved coordinates.")
             return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
@@ -434,7 +435,7 @@ def manual_selection_geo_calc():
             lat, lon = get_target_coordinates(requested_object)
             print(f"Calculated coordinates for {requested_object}: lat={lat}, lon={lon}")
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-            data = json.dumps({"latitude": lat, "longitude": lon})
+            data = json.dumps({"latitude": lat, "longitude": lon, "bay": bay})
 
             try:
                 response = requests.post(VEHICLE_API_URL + 'payload_drop_mission', data=data, headers=headers)
