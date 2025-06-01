@@ -23,6 +23,31 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
     setCurrentTargetInfo({ name: "", latitude: 0, longitude: 0 });
   };
 
+  const handleAutomatedDrop = async () => {
+    const confirmed = window.confirm("Are you sure you want to monitor and initiate a payload drop?");
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`http://${ENDPOINT_IP}/monitor_and_drop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error initiating automated drop:", error);
+      alert("Failed to communicate with the backend.");
+    }
+};
+
+
   const clearSavedCoords = async () => {
     const confirmed = window.confirm("Are you sure you want to clear all saved coordinate selections?");
     if (!confirmed) return;
@@ -160,6 +185,13 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
       >
         Clear saved coordinates
       </button>
+      <button
+        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+        onClick={handleAutomatedDrop}
+      >
+        Monitor and Drop
+      </button>
+
     </div>
   );
 };

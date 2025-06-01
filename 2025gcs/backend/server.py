@@ -21,6 +21,7 @@ log.addFilter(FilterSpecificLogs())
 
 completed_targets = []
 current_target = None
+current_payload_bay = None
 
 ENDPOINT_IP = "192.168.1.66" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
@@ -418,6 +419,7 @@ def manual_selection_save():
 @app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for all manually selected targets."""
+    global current_payload_bay
     try:
         saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
         with open(saved_coords_path, "r") as file:
@@ -425,7 +427,7 @@ def manual_selection_geo_calc():
 
         data = request.get_json()
         requested_object = data.get('object')
-        bay = data.get('bay')
+        current_payload_bay = data.get('bay')
         if requested_object is None or requested_object not in saved_coords:
             print(f"Requested object '{requested_object}' not found in saved coordinates.")
             return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
@@ -435,7 +437,7 @@ def manual_selection_geo_calc():
             lat, lon = get_target_coordinates(requested_object)
             print(f"Calculated coordinates for {requested_object}: lat={lat}, lon={lon}")
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-            data = json.dumps({"latitude": lat, "longitude": lon, "bay": bay})
+            data = json.dumps({"latitude": lat, "longitude": lon})
 
             try:
                 response = requests.post(VEHICLE_API_URL + 'payload_drop_mission', data=data, headers=headers)
@@ -451,6 +453,27 @@ def manual_selection_geo_calc():
             return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.post('/monitor_and_drop')
+def monitor_and_drop():
+    """Monitor the current target and drop payload if conditions are met."""
+    global current_payload_bay
+
+    if current_payload_bay is None:
+        return jsonify({'success': False, 'error': 'No payload bay selected'}), 400
+
+    try:
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        data = json.dumps({"bay": current_payload_bay})
+        response = requests.post(VEHICLE_API_URL + 'monitor_mission_and_drop', data=data, headers=headers)
+        response.raise_for_status()
+
+        return jsonify({'success': True, 'message': f'Payload drop initiated for bay {current_payload_bay}'}), 200
+
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
 
 @app.get('/get_saved_coords')
 def get_saved_coords():
