@@ -127,13 +127,10 @@ def utm_to_lat_long(easting, northing, zone, northern=True):
 def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
 
     focal_length = 0.0125 # meters (m)
-    # pixel_spacing = 0.00345 # mm per pix (GS CAMERA)
-    pixel_spacing = 0.00310 # mm per pix (HQ CAMERA)
+    pixel_spacing = 0.00345 # mm per pix
     # fiducial centre (mm)
-    # x_fiducial = 2.5116 # (GS CAMERA)
-    # y_fiducial = -1.8768 # (GS CAMERA)
-    x_fiducial = 3.1434 # (HQ CAMERA)
-    y_fiducial = -2.3560 # (HQ CAMERA)
+    x_fiducial = 2.5116
+    y_fiducial = -1.8768
 
     scale = agl / focal_length
 
