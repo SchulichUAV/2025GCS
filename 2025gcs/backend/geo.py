@@ -126,7 +126,7 @@ def utm_to_lat_long(easting, northing, zone, northern=True):
 # positive yaw is right turn, i.e. nose of UAV turns right relative to positive north
 def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
 
-    focal_length = 0.0125 # meters (m)
+    focal_length = 0.004425 # meters (m)
     pixel_spacing = 0.00345 # mm per pix
     # fiducial centre (mm)
     x_fiducial = 2.5116
