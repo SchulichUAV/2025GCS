@@ -23,7 +23,7 @@ completed_targets = []
 current_target = None
 current_payload_bay = None
 
-ENDPOINT_IP = "192.168.1.66" # make sure to configure this to whatever your IP is before you start
+ENDPOINT_IP = "192.168.1.67" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
