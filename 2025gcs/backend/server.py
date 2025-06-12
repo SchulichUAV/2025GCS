@@ -457,11 +457,11 @@ def manual_selection_geo_calc():
 @app.post('/monitor_and_drop')
 def monitor_and_drop():
     """Monitor the current target and drop payload if conditions are met."""
-    global current_payload_bay
+    # global current_payload_bay
 
-    if current_payload_bay is None:
-        return jsonify({'success': False, 'error': 'No payload bay selected'}), 400
-
+    # if current_payload_bay is None:
+    #     return jsonify({'success': False, 'error': 'No payload bay selected'}), 400
+    current_payload_bay = 2
     try:
         headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
         data = json.dumps({"bay": current_payload_bay})
