@@ -15,7 +15,7 @@ filtered_images_directory = f"/Users/{user}/Documents/datasets/code/images"  # F
 output_file = f"/Users/{user}/Documents/datasets/code/odm_geotags.txt"
 
 # Distance threshold for filtering (in meters) (higher value will filter out LESS images, and vice versa for lower)
-DISTANCE_THRESHOLD = 6
+DISTANCE_THRESHOLD = 7
  
 # Ensure filtered images directory is clean
 if os.path.exists(filtered_images_directory):

@@ -125,8 +125,7 @@ def utm_to_lat_long(easting, northing, zone, northern=True):
 # positive roll is right bank, i.e. right wing down
 # positive yaw is right turn, i.e. nose of UAV turns right relative to positive north
 def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
-
-    focal_length = 0.003 # meters (m)
+    focal_length = 0.0026 # meters (m)
     pixel_spacing = 0.00345 # mm per pix
     # fiducial centre (mm)
     x_fiducial = 2.5116
@@ -145,14 +144,14 @@ def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw,
     # roll is rotation about y axis, pitch is rotation about x axis
     Rx = np.array([
         [1, 0, 0],
-        [0, np.cos(pitch), np.sin(pitch)],
-        [0, -np.sin(pitch), np.cos(pitch)]
+        [0, np.cos(pitch), -np.sin(pitch)],
+        [0, np.sin(pitch), np.cos(pitch)]
     ])
 
     Ry = np.array([
-        [np.cos(roll), 0, -np.sin(roll)],
+        [np.cos(roll), 0, np.sin(roll)],
         [0, 1, 0],
-        [np.sin(roll), 0, np.cos(roll)]
+        [-np.sin(roll), 0, np.cos(roll)]
     ])
 
     Rz = np.array([
@@ -161,7 +160,7 @@ def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw,
         [0, 0, 1]
     ])
 
-    R = Rz @ Rx @ Ry
+    R = Rz @ Ry @ Rx
 
     # Target coordinates relative to drone position, not intersecting ground plane though
     # Therefore must compute intersection coordinates with ground plane by scaling by t
@@ -212,39 +211,6 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     # Assuming number of observed horizontal distances is equal to n where A distance is calculating using the 2D range equation (refer to function name 'model')
     u = 2
     n = easting_target.size
-    
-    if n > 3:
-        # Calculate IQR and thresholds for easting
-        Q1_easting = np.percentile(easting_target, 25)
-        Q3_easting = np.percentile(easting_target, 75)
-        IQR_easting = Q3_easting - Q1_easting
-        lower_bound_easting = Q1_easting - 1.5 * IQR_easting
-        upper_bound_easting = Q3_easting + 1.5 * IQR_easting
-
-        # Calculate IQR and thresholds for northing
-        Q1_northing = np.percentile(northing_target, 25)
-        Q3_northing = np.percentile(northing_target, 75)
-        IQR_northing = Q3_northing - Q1_northing
-        lower_bound_northing = Q1_northing - 1.5 * IQR_northing
-        upper_bound_northing = Q3_northing + 1.5 * IQR_northing
-
-        # Create masks for each dimension
-        mask_easting = (easting_target > lower_bound_easting) & (easting_target < upper_bound_easting)
-        mask_northing = (northing_target > lower_bound_northing) & (northing_target < upper_bound_northing)
-
-        # Combine the masks to retain only paired values that are not outliers in either dimension
-        combined_mask = mask_easting & mask_northing
-
-        # Apply the mask to both arrays
-        easting_target = easting_target[combined_mask]
-        northing_target = northing_target[combined_mask]
-        easting_drone = easting_drone[combined_mask]
-        northing_drone = northing_drone[combined_mask]
-        agl_drone = agl_drone[combined_mask]
-        obs_std = obs_std[combined_mask]
-
-        # Update n to reflect the new size of the filtered dataset
-        n = easting_target.size
     
     # Degrees of freedom
     dof = n - u
