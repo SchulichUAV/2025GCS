@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Check for required arguments
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <lower_index> <upper_index>"
+    exit 1
+fi
+
+# Read in CLI args for image index bounds
+LOWER_INDEX=$1
+UPPER_INDEX=$2
+
 # Set variables
 USER_NAME="$USER"
 TARGET_DIR="/Users/${USER_NAME}/Documents/datasets/code"
@@ -15,10 +25,11 @@ mkdir -p "${TARGET_DIR}/json_files"
 
 echo "✅ Directory cleaned and folders created."
 
-# Step 3: Run the Python filter script
-echo "🚀 Running Python script..."
-"$PYTHON_EXEC" "$PYTHON_SCRIPT"
+# Step 3: Run the Python filter script with the provided range
+echo "🚀 Running Python script with image bounds $LOWER_INDEX to $UPPER_INDEX..."
+"$PYTHON_EXEC" "$PYTHON_SCRIPT" "$LOWER_INDEX" "$UPPER_INDEX"
 echo "✅ Python script completed."
+
 
 # Step 4: Run ODM with Docker
 # echo "🐳 Starting ODM Docker container..."
