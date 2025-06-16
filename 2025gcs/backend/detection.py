@@ -9,7 +9,6 @@ from threading import Thread, Event, enumerate
 from inference_sdk import InferenceHTTPClient
 from PIL import Image
 from dotenv import load_dotenv
-from geo import locate_target
 from helper import serialize, IMAGE_FOLDER, IMAGE_DATA_FOLDER
 
 LAST_SCANNED_INDEX = 0

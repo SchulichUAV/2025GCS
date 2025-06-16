@@ -23,6 +23,46 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
     setCurrentTargetInfo({ name: "", latitude: 0, longitude: 0 });
   };
 
+  const handleAutomatedDrop = async () => {
+    const confirmed = window.confirm("Are you sure you want to monitor and initiate a payload drop?");
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`http://${ENDPOINT_IP}/monitor_and_drop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error initiating automated drop:", error);
+      alert("Failed to communicate with the backend.");
+    }
+};
+
+
+  const clearSavedCoords = async () => {
+    const confirmed = window.confirm("Are you sure you want to clear all saved coordinate selections?");
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.post(`http://${ENDPOINT_IP}/clear_saved_coords`);
+      if (response.data.success) {
+        setCurrentTargetInfo({ name: "", latitude: 0, longitude: 0 });
+        setPayloadStatus("Not Set");
+      }
+    } catch (error) {
+      handleError("Error clearing saved coordinates");
+    }
+  };
+
   function formatTime(seconds) {
     if (seconds < 60) return `${seconds} s`;
     const mins = Math.floor(seconds / 60);
@@ -32,7 +72,7 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
 
   function formatDistance(distance) {
     return distance.toLocaleString("en-US").replace(/,/g, " ");
-  }  
+  }
 
   useEffect(() => {
     const fetchTargetInfo = async () => {
@@ -43,7 +83,9 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
           setCurrentTargetInfo({ name: currentTarget, latitude: data.coords[0], longitude: data.coords[1] });
           setPayloadStatus(currentTarget ? "Pending" : "Not Set");
         }
-      } catch (error) { handleError("Error fetching target"); }
+      } catch (error) {
+        handleError("Error fetching target");
+      }
     };
 
     fetchTargetInfo();
@@ -61,45 +103,41 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
     }
   }, [targetCompleted]);
 
+  // Get a new lat/lon point offset by `distance` (in meters) along `heading` (in degrees)
+  function getReleasePoint(lat, lon, headingDeg, distanceBackwards) {
+    const headingRad = (headingDeg + 180) * Math.PI / 180; // Reverse the heading
+    const dByR = distanceBackwards / R;
 
-// Get a new lat/lon point offset by `distance` (in meters) along `heading` (in degrees)
-function getReleasePoint(lat, lon, headingDeg, distanceBackwards) {
-  const headingRad = (headingDeg + 180) * Math.PI / 180; // Reverse the heading
-  const dByR = distanceBackwards / R;
+    const lat1 = lat * Math.PI / 180;
+    const lon1 = lon * Math.PI / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dByR) + Math.cos(lat1) * Math.sin(dByR) * Math.cos(headingRad));
+    const lon2 = lon1 + Math.atan2(Math.sin(headingRad) * Math.sin(dByR) * Math.cos(lat1), Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat2));
 
-  const lat1 = lat * Math.PI / 180;
-  const lon1 = lon * Math.PI / 180;
-  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dByR) + Math.cos(lat1) * Math.sin(dByR) * Math.cos(headingRad));
-  const lon2 = lon1 + Math.atan2(Math.sin(headingRad) * Math.sin(dByR) * Math.cos(lat1), Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat2));
+    return {
+      latitude: lat2 * 180 / Math.PI,
+      longitude: lon2 * 180 / Math.PI
+    };
+  }
 
-  return {
-    latitude: lat2 * 180 / Math.PI,
-    longitude: lon2 * 180 / Math.PI
-  };
-}
+  useEffect(() => {
+    const estimatedReleaseDist = 8; // Estimated release distance for the payload from the target in meters
 
-useEffect(() => {
-  const estimatedReleaseDist = 8; // Estimated release distance for the payload from the target in meters
+    const calculateETA = () => {
+      if (!currentTargetInfo || !vehicleInfo.latitude || !vehicleInfo.longitude || !vehicleInfo.speed 
+          || vehicleInfo.speed <= 0 || vehicleInfo.heading === undefined) return;
 
-  const calculateETA = () => {
-    if (!currentTargetInfo || !vehicleInfo.latitude || !vehicleInfo.longitude || !vehicleInfo.speed 
-        || vehicleInfo.speed <= 0 || vehicleInfo.heading === undefined) return;
-  
-    // Get release point based on estimatedReleaseDist (m) backwards from the target along heading
-    const releasePoint = getReleasePoint(currentTargetInfo.latitude, currentTargetInfo.longitude, vehicleInfo.heading, estimatedReleaseDist);
-  
-    // Distance from UAV to release point
-    const distanceToRelease = calculateDistance(vehicleInfo.latitude, vehicleInfo.longitude, releasePoint.latitude, releasePoint.longitude);
-    const ETA = distanceToRelease / vehicleInfo.speed;
-  
-    setPayloadETA({
-      distance: formatDistance(Math.round(distanceToRelease)),
-      ETA: ETA === Infinity ? "∞" : formatTime(Math.round(ETA))
-    });
-  };
-  
-  calculateETA();
-}, [vehicleInfo, currentTargetInfo]);
+      const releasePoint = getReleasePoint(currentTargetInfo.latitude, currentTargetInfo.longitude, vehicleInfo.heading, estimatedReleaseDist);
+      const distanceToRelease = calculateDistance(vehicleInfo.latitude, vehicleInfo.longitude, releasePoint.latitude, releasePoint.longitude);
+      const ETA = distanceToRelease / vehicleInfo.speed;
+
+      setPayloadETA({
+        distance: formatDistance(Math.round(distanceToRelease)),
+        ETA: ETA === Infinity ? "∞" : formatTime(Math.round(ETA))
+      });
+    };
+
+    calculateETA();
+  }, [vehicleInfo, currentTargetInfo]);
 
   return (
     <div className="flex flex-col gap-3 p-5 w-full h-full bg-white rounded-2xl shadow-md text-sm">
@@ -139,6 +177,21 @@ useEffect(() => {
           <div><span className="font-semibold">Lon</span>: {currentTargetInfo.longitude.toFixed(6)}</div>
         </div>
       </div>
+
+      {/* Clear Coordinates Button */}
+      <button
+        onClick={clearSavedCoords}
+        className="mt-2 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+      >
+        Clear saved coordinates
+      </button>
+      <button
+        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+        onClick={handleAutomatedDrop}
+      >
+        Monitor and Drop
+      </button>
+
     </div>
   );
 };

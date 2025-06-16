@@ -92,6 +92,72 @@ const PayloadPanel = () => {
     } catch (error) {}
   };
 
+  const handleReleaseAll = async () => {
+    try {
+      const response = await axios.post(
+        `http://${ENDPOINT_IP}/payload_release_all`,
+        {}, // Empty request body
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to release all payloads:", error);
+    }
+  };
+
+  const handleClose = async (index) => {
+    try {
+      const response = await axios.post(`http://${ENDPOINT_IP}/payload_close`, {
+        bay: index + 1
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      console.error("Failed to close payload:", error);
+    }
+  };
+
+  const handleOpen = async (index) => {
+    try {
+      const response = await axios.post(`http://${ENDPOINT_IP}/payload_open`, {
+        bay: index + 1
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      console.error("Failed to open payload:", error);
+    }
+  };
+
+  const handleCloseAll = async () => {
+    try {
+      const response = await axios.post(
+        `http://${ENDPOINT_IP}/payload_close_all`,
+        {}, // Empty request body
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to close all payloads:", error);
+    }
+  };
+
+  const handleOpenAll = async () => {
+    try {
+      const response = await axios.post(
+        `http://${ENDPOINT_IP}/payload_open_all`,
+        {}, // Empty request body
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to open all payloads:", error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setInputValues((prev) => ({ ...prev, [id]: value }));
@@ -246,19 +312,96 @@ const PayloadPanel = () => {
             {droneType === 'Fixed Wing' && (
               <div className="grid grid-cols-2 gap-3 w-full">
                 {['Bay 1', 'Bay 2', 'Bay 3', 'Bay 4'].map((bay, index) => (
-                  <div key={index} className="p-2 border border-gray-300 rounded-md flex flex-col items-center w-full">
+                  <div
+                    key={index}
+                    className="p-2 border border-gray-300 rounded-md flex flex-col items-center w-full"
+                  >
                     <h3 className="text-lg font-bold mb-2">{bay}</h3>
-                    <div className="flex space-x-3">
+                    <div className="flex flex-col space-y-1 items-center">
+                      {/* Release Button with Confirmation */}
                       <button
                         disabled={disabledRelease[index]}
-                        className={`bg-blue-400 hover:bg-blue-500 text-white px-3 py-1 rounded-md ${disabledRelease[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => HandleRelease(index)}
+                        className={`bg-blue-400 hover:bg-blue-500 text-white text-xs px-2 py-0.5 rounded ${
+                          disabledRelease[index] ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        onClick={() => {
+                          const confirmRelease = window.confirm(`Release payload for ${bay}?`);
+                          if (confirmRelease) HandleRelease(index);
+                        }}
                       >
                         Release
+                      </button>
+                      {/* Open Button */}
+                      <button
+                        className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const confirmOpen = window.confirm(`Open ${bay}?`);
+                          if (confirmOpen) handleOpen(index);
+                        }}
+                      >
+                        Open
+                      </button>
+
+                      {/* Close Button */}
+                      <button
+                        className="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const confirmClose = window.confirm(`Close ${bay}?`);
+                          if (confirmClose) handleClose(index);
+                        }}
+                      >
+                        Close
                       </button>
                     </div>
                   </div>
                 ))}
+                {/* Full-width Action Buttons */}
+                <div className="col-span-2 mt-2 flex justify-center space-x-2">
+                  {/* Pickle / Release All */}
+                  <button
+                    onClick={() => {
+                      const confirmRelease = window.confirm(
+                        'Are you sure you want to release all payloads?'
+                      );
+                      if (confirmRelease) {
+                        handleReleaseAll();
+                      }
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded"
+                  >
+                    Pickle
+                  </button>
+
+                  {/* Open All */}
+                  <button
+                    onClick={() => {
+                      const confirmOpen = window.confirm(
+                        'Are you sure you want to open all servos?'
+                      );
+                      if (confirmOpen) {
+                        handleOpenAll();
+                      }
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-2 py-0.5 rounded"
+                  >
+                    Open All
+                  </button>
+
+                  {/* Close All */}
+                  <button
+                    onClick={() => {
+                      const confirmClose = window.confirm(
+                        'Are you sure you want to close all servos?'
+                      );
+                      if (confirmClose) {
+                        handleCloseAll();
+                      }
+                    }}
+                    className="bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium px-2 py-0.5 rounded"
+                  >
+                    Close All
+                  </button>
+                </div>
               </div>
             )}
           </div>

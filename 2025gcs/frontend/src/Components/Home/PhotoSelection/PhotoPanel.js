@@ -16,6 +16,7 @@ const PhotoPanel = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [imageNumberInput, setImageNumberInput] = useState("");
+  const [selectedServo, setSelectedServo] = useState(""); // for Servo motor mapping
 
   const showError = (error, timeout = 1500) => {
     setError(error);
@@ -109,14 +110,22 @@ const PhotoPanel = () => {
         showError("Select object before sending.");
         return;
       }
+      if (!selectedServo) {
+        showError("Select servo before sending.");
+        return;
+      }
+
       await axios.post(`http://${ENDPOINT_IP}/manualSelection-calc`, {
         object: selectedSendObject,
+        bay: parseInt(selectedServo), // Send as integer
       });
+
       showMessage(`Selections Processed`);
     } catch (error) {
       showError("Request Failed");
     }
   };
+
 
   const handleManualCoordSave = async () => {
     if (mainPhoto && selectedPoint) {
@@ -131,8 +140,8 @@ const PhotoPanel = () => {
         const rect = imgElement.getBoundingClientRect();
         const relativeX = selectedPoint.x / rect.width;
         const relativeY = selectedPoint.y / rect.height;
-        const normalizedX = relativeX * 640;
-        const normalizedY = relativeY * 640;
+        const normalizedX = relativeX * 1456;
+        const normalizedY = relativeY * 1088;
 
         await axios.post(`http://${ENDPOINT_IP}/manualSelection-save`, {
           selected_x: normalizedX,
@@ -326,31 +335,43 @@ const PhotoPanel = () => {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleManualSelectionSend}
-                  className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 w-1/2"
-                >
-                  Send
-                </button>
-                <select
-                  className="px-2 py-1 border rounded w-1/2"
-                  value={selectedSendObject}
-                  onChange={(e) => setSelectedSendObject(e.target.value)}
-                >
-                  <option id="sendObject" value=""></option>
-                  {objectList.map((item, index) => (
-                    <option key={index} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <button
+                onClick={handleManualSelectionSend}
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 w-1/3"
+              >
+                Send
+              </button>
+              <select
+                className="px-2 py-1 border rounded w-1/3"
+                value={selectedSendObject}
+                onChange={(e) => setSelectedSendObject(e.target.value)}
+              >
+                <option value="">Object</option>
+                {objectList.map((item, index) => (
+                  <option key={index} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="px-2 py-1 border rounded w-1/3"
+                value={selectedServo}
+                onChange={(e) => setSelectedServo(e.target.value)}
+              >
+                <option value="">Servo</option>
+                {[1, 2, 3, 4].map((num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
             </div>
             <button
               onClick={clearImages}
               className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
             >
-              Clear
+              Clear all images
             </button>
             {message && (
               <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded relative mt-2">
@@ -415,7 +436,6 @@ const PhotoPanel = () => {
                 >
                   <img
                     src={`http://${ENDPOINT_IP}/images/${photo}`}
-                    s
                     alt={photo}
                     className="w-16 h-16 object-cover rounded"
                   />

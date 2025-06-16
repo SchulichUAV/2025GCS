@@ -33,8 +33,6 @@ function Home({ vehicleData }) {
               <div className="flex justify-center items-center flex-1 rounded-xl shadow-lg">
                 <PayloadInfo 
                   currentTarget={currentTarget}
-                  //vehicleInfo={{ latitude: vehicleData?.lat || Infinity, longitude: vehicleData?.lon || Infinity, 
-                  //               speed: vehicleData?.airspeed || 0, heading: vehicleData?.heading || 0 }}
                   vehicleInfo={{ latitude: 50.976200, longitude: -114.072100, speed: 11, heading: 135 }}
                   targetCompleted={vehicleData?.is_dropped || false}
                 />

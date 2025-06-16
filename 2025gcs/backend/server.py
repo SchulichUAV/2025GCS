@@ -4,8 +4,7 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
-from detection import stop_threads, start_threads
-from geo import locate_target
+from geo import get_target_coordinates
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -22,8 +21,9 @@ log.addFilter(FilterSpecificLogs())
 
 completed_targets = []
 current_target = None
+current_payload_bay = None
 
-ENDPOINT_IP = "10.13.20.192" # make sure to configure this to whatever your IP is before you start
+ENDPOINT_IP = "192.168.1.67" # make sure to configure this to whatever your IP is before you start
 VEHICLE_API_URL = f"http://{ENDPOINT_IP}:5000/"
 CAMERA_STATE = False
 
@@ -46,15 +46,9 @@ vehicle_data = {
     "dlon": 0,
     "dalt": 0,
     "heading": 0,
-    "airspeed": 0,
     "groundspeed": 0,
     "throttle": 0,
     "climb": 0,
-    "num_satellites": 0,
-    "position_uncertainty": 0,
-    "alt_uncertainty": 0,
-    "speed_uncertainty": 0,
-    "heading_uncertainty": 0,
     "flight_mode": 0,
     "battery_voltage": 0,
     "battery_current": 0,
@@ -306,32 +300,126 @@ def payload_release():
         status_code = getattr(e.response, "status_code", 500)  # Default to 500 if no response
         print(f"Request Error ({status_code}): {str(e)}")
         return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+    
+@app.post('/payload_release_all')
+def payload_release_all():
+    """Release all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_release_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_open_all')
+def payload_open_all():
+    """Open all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_open_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_close_all')
+def payload_close_all():
+    """Close all payloads."""
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_close_all', headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+    
+@app.post('/payload_open')
+def payload_open():
+    """Open the payload for a specified bay."""
+    data = request.get_json()
+    send_data = json.dumps({"bay": data.get("bay")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_open', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
+@app.post('/payload_close')
+def payload_close():
+    """Close the payload for a specified bay."""
+    data = request.get_json()
+    send_data = json.dumps({"bay": data.get("bay")})
+    headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+    try:
+        response = requests.post(VEHICLE_API_URL + 'payload_close', data=send_data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify({'success': True}), 200
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
 # ======================== Payload ========================
 
 # ======================== Manual Selection ========================
 @app.post('/manualSelection-save')
 def manual_selection_save():
-    """Save the coordinates of a manually selected target."""
+    """Save the coordinates of a manually selected target with image metadata."""
     data = request.get_json()
     saved_coords = os.path.join(DATA_DIR, 'savedCoords.json')
     coords_data = load_json(saved_coords)
 
+    file_name = data['file_name']
     object_name = data.get('object')
+
     if object_name not in coords_data:
         coords_data[object_name] = []
 
+    # Remove .jpg extension and construct path to the .json metadata file in imageData directory
+    base_name = os.path.splitext(file_name)[0]
+    json_path = os.path.join(IMAGEDATA_DIR, base_name + '.json')
+
+    # Load metadata from corresponding .json file
+    metadata = {}
+    if os.path.exists(json_path):
+        metadata = load_json(json_path)
+    else:
+        print(f"[Warning] Metadata file not found: {json_path}")
+
+    # Append all data including the new fields
     coords_data[object_name].append({
-        'image': data['file_name'],
+        'image': file_name,
         'x': data['selected_x'],
-        'y': data['selected_y']
+        'y': data['selected_y'],
+        'lat': metadata.get('lat'),
+        'lon': metadata.get('lon'),
+        'rel_alt': metadata.get('rel_alt'),
+        'alt': metadata.get('alt'),
+        'roll': metadata.get('roll'),
+        'pitch': metadata.get('pitch'),
+        'yaw': metadata.get('yaw'),
+        'position_uncertainty': metadata.get('position_uncertainty'),
+        'alt_uncertainty': metadata.get('alt_uncertainty'),
     })
 
     save_json(saved_coords, coords_data)
-    return jsonify({'success': True, 'message': 'Coordinates saved successfully'})
+    return jsonify({'success': True, 'message': 'Coordinates and metadata saved successfully'})
 
 @app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
     """Perform geomatics calculations for all manually selected targets."""
+    global current_payload_bay
     try:
         saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
         with open(saved_coords_path, "r") as file:
@@ -339,45 +427,53 @@ def manual_selection_geo_calc():
 
         data = request.get_json()
         requested_object = data.get('object')
+        current_payload_bay = data.get('bay')
         if requested_object is None or requested_object not in saved_coords:
+            print(f"Requested object '{requested_object}' not found in saved coordinates.")
             return jsonify({'success': False, 'error': 'Object has no saved entries'}), 500
 
-        position_data = [0, 0]  # latitude, longitude
         count = len(saved_coords[requested_object])  # count of number of saved coords processed for averaging
         if count > 0:
-            for coord_entry in saved_coords[requested_object]:
-                image_name = coord_entry["image"]
-                image_json_path = os.path.join(IMAGEDATA_DIR, f"{image_name.replace('.jpg', '')}.json")
-                if not os.path.exists(image_json_path):
-                    continue
-
-                with open(image_json_path, "r") as json_file:
-                    image_data = json.load(json_file)
-
-                # Process each coordinate
-                image_data["x"] = coord_entry["x"]
-                image_data["y"] = coord_entry["y"]
-                latitude, longitude = locate_target(image_data)
-                position_data[0] += latitude
-                position_data[1] += longitude
-
-            position_data[0] /= count  # Average latitude
-            position_data[1] /= count  # Average longitude
-
+            lat, lon = get_target_coordinates(requested_object)
+            print(f"Calculated coordinates for {requested_object}: lat={lat}, lon={lon}")
             headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
-            data = json.dumps({"latitude": position_data[0], "longitude": position_data[1]})
-            response = requests.post(VEHICLE_API_URL, '/payload_drop_mission', data=data, headers=headers)
+            data = json.dumps({"latitude": lat, "longitude": lon})
 
-            if response.status_code == 200:
-                saved_coords.pop(requested_object, None)
-                save_json(saved_coords_path, saved_coords)
-                return jsonify({'success': True, 'message': 'Data sent successfully to vehicle'}), 200
-            else:
-                return jsonify({'success': False, 'error': 'Failed to send data'}), 500
+            try:
+                response = requests.post(VEHICLE_API_URL + 'payload_drop_mission', data=data, headers=headers)
+                response.raise_for_status()  # Raise an exception for HTTP errors
+                print("Successfully sent mission upload.")
+            except requests.exceptions.RequestException as e:
+                status_code = getattr(e.response, "status_code", 500)
+                print(f"Request Error ({status_code}): {str(e)}")
+                return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
+
         else:
+            print(f"No valid coordinates found for {requested_object}")
             return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.post('/monitor_and_drop')
+def monitor_and_drop():
+    """Monitor the current target and drop payload if conditions are met."""
+    # global current_payload_bay
+
+    # if current_payload_bay is None:
+    #     return jsonify({'success': False, 'error': 'No payload bay selected'}), 400
+    current_payload_bay = 2
+    try:
+        headers = {"Content-Type": "application/json", "Host": "localhost", "Connection": "close"}
+        data = json.dumps({"bay": current_payload_bay})
+        response = requests.post(VEHICLE_API_URL + 'monitor_mission_and_drop', data=data, headers=headers)
+        response.raise_for_status()
+
+        return jsonify({'success': True, 'message': f'Payload drop initiated for bay {current_payload_bay}'}), 200
+
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Request Error ({status_code}): {str(e)}")
+        return jsonify({'success': False, 'error': f"Error {status_code}: {str(e)}"}), status_code
 
 @app.get('/get_saved_coords')
 def get_saved_coords():
@@ -385,6 +481,19 @@ def get_saved_coords():
     saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
     coords_data = load_json(saved_coords_path)
     return jsonify({'success': True, 'coordinates': coords_data})
+
+@app.post('/clear_saved_coords')
+def clear_saved_coords():
+    """Clear all manually saved coordinates."""
+    saved_coords_path = os.path.join(DATA_DIR, 'savedCoords.json')
+
+    try:
+        # Overwrite with an empty dictionary
+        save_json(saved_coords_path, {})
+        return jsonify({'success': True, 'message': 'Saved coordinates cleared'})
+    except Exception as e:
+        print(f"[Error] Failed to clear saved coordinates: {e}")
+        return jsonify({'success': False, 'message': 'Failed to clear saved coordinates'}), 500
 
 @app.delete('/delete_coord')
 def delete_coord():
