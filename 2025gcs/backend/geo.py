@@ -125,8 +125,12 @@ def utm_to_lat_long(easting, northing, zone, northern=True):
 # positive roll is right bank, i.e. right wing down
 # positive yaw is right turn, i.e. nose of UAV turns right relative to positive north
 def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw, pitch, roll): 
-    focal_length = 0.0026 # meters (m)
+    focal_length = 0.002845 # meters (m)
     pixel_spacing = 0.00345 # mm per pix
+
+    pitch += 0.04
+    roll += 0.02
+
     # fiducial centre (mm)
     x_fiducial = 2.5116
     y_fiducial = -1.8768
@@ -138,7 +142,7 @@ def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw,
 
     # object x and y in m relative to drone
     #                                        check if agl should be negative or positive (was originally positive)
-    obj = np.array([((scale * image[0]) / 1000), ((scale * image[1]) / 1000), agl])
+    obj = np.array([((scale * image[0]) / 1000), ((scale * image[1]) / 1000) - 9, agl])
     
     # y is direction of travel therefore conventional roll and pitch rotations are swapped
     # roll is rotation about y axis, pitch is rotation about x axis
@@ -182,23 +186,23 @@ def image_to_object_space(easting_drone, northing_drone, agl, x_pix, y_pix, yaw,
     return easting_target, northing_target
 
 # Functional parametric model
-def model(easting_drone, northing_drone, easting_target, northing_target):
+def model(easting_drone, northing_drone, easting_target, northing_target, agl_drone):
     x_delta = easting_drone - easting_target
     y_delta = northing_drone - northing_target
-    range = np.sqrt(x_delta**2 + y_delta**2)
+    range = np.sqrt(x_delta**2 + y_delta**2 + (agl_drone**2))
     return range
 
 # df/dxTarget
-def f_dx_target(easting_drone, northing_drone, easting_target, northing_target):
+def f_dx_target(easting_drone, northing_drone, easting_target, northing_target, agl_drone):
     x_delta = easting_drone - easting_target
     y_delta = northing_drone - northing_target
-    return -x_delta / np.sqrt(x_delta**2 + y_delta**2)
+    return -x_delta / np.sqrt(x_delta**2 + y_delta**2 + (agl_drone**2))
 
 # df/dyTarget
-def f_dy_target(easting_drone, northing_drone, easting_target, northing_target):
+def f_dy_target(easting_drone, northing_drone, easting_target, northing_target, agl_drone):
     x_delta = easting_drone - easting_target
     y_delta = northing_drone - northing_target
-    return -y_delta / np.sqrt(x_delta**2 + y_delta**2)
+    return -y_delta / np.sqrt(x_delta**2 + y_delta**2 + (agl_drone**2))
 
 # Create covariance matrix of observations
 def covariance_matrix_obs(obs_std, n):
@@ -245,12 +249,12 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     while iteration == 0 or abs(np.max(d_hat)) > threshold:
         # Populating design matrix A
         for i in range(A.shape[0]):
-            A[i, 0] = f_dx_target(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est)
-            A[i, 1] = f_dy_target(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est)
+            A[i, 0] = f_dx_target(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est, agl_drone[i])
+            A[i, 1] = f_dy_target(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est, agl_drone[i])
 
         # Populating misclosure vector w (w = l - f(xo)) convention
         for i in range(w.size):
-            w[i] = (model(easting_drone[i], northing_drone[i], easting_target[i], northing_target[i]) - model(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est))
+            w[i] = (model(easting_drone[i], northing_drone[i], easting_target[i], northing_target[i], agl_drone[i]) - model(easting_drone[i], northing_drone[i], easting_target_est, northing_target_est, agl_drone[i]))
 
         N = (A.transpose()) @ P @ A
         U = (A.transpose()) @ P @ w
@@ -294,7 +298,7 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
 
     # Computes critical values of student-t distribution
     # Significance level (alpha)
-    alpha = 0.10
+    alpha = 0.15
 
     # Critical value for two-tailed test
     critical_value = stats.t.ppf(1 - alpha/2, dof)
@@ -302,7 +306,7 @@ def parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_targ
     if (np.max(standardized_r_hat) > critical_value) or (np.min(standardized_r_hat) < -critical_value):
         for i in range(standardized_r_hat.size):
             if (standardized_r_hat[i] > critical_value) or (standardized_r_hat[i] < -critical_value):
-                obs_std[i] = obs_std[i] * 1.5
+                obs_std[i] = obs_std[i] * 8
 
         return parametric_adjustment(easting_drone, northing_drone, agl_drone, easting_target, northing_target, obs_std)
     
