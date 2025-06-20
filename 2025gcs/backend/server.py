@@ -413,7 +413,7 @@ def manual_selection_save():
     })
 
     save_json(saved_coords, coords_data)
-    return jsonify({'success': True, 'message': 'Coordinates and metadata saved successfully'})
+    return jsonify({'success': True, 'message': 'Coordinates and metadata saved successfully'}), 200
 
 @app.post('/manualSelection-calc')
 def manual_selection_geo_calc():
@@ -450,6 +450,8 @@ def manual_selection_geo_calc():
             return jsonify({'success': False, 'error': 'No valid coordinates to process'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+    
+    return jsonify({'success': True, 'message': 'Mission upload completed successfully.'}), 200
 
 @app.post('/monitor_and_drop')
 def monitor_and_drop():
