@@ -9,6 +9,7 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   const [currentTargetInfo, setCurrentTargetInfo] = useState({ name: "", latitude: 0, longitude: 0 });
   const [payloadETA, setPayloadETA] = useState({ distance : "∞", ETA : "∞" });
   const [error, setError] = useState(null);
+  const [selectedServo, setSelectedServo] = useState("");
 
   const statusColors = {
     "Not Set": "bg-gray-400",
@@ -24,6 +25,11 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
   };
 
   const handleAutomatedDrop = async () => {
+    if (!selectedServo) {
+      alert("Please select a servo before initiating a payload drop.");
+      return;
+    }
+
     const confirmed = window.confirm("Are you sure you want to monitor and initiate a payload drop?");
     if (!confirmed) return;
 
@@ -32,12 +38,14 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({ bay: selectedServo })
       });
 
       const result = await response.json();
 
       if (result.success) {
+        // Optional: show confirmation or update status here
       } else {
         alert("Error: " + result.error);
       }
@@ -45,8 +53,7 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
       console.error("Error initiating automated drop:", error);
       alert("Failed to communicate with the backend.");
     }
-};
-
+  };
 
   const clearSavedCoords = async () => {
     const confirmed = window.confirm("Are you sure you want to clear all saved coordinate selections?");
@@ -176,6 +183,21 @@ const PayloadInfo = ({ currentTarget, vehicleInfo, targetCompleted }) => {
           <div><span className="font-semibold">Lat</span>: {currentTargetInfo.latitude.toFixed(6)}</div>
           <div><span className="font-semibold">Lon</span>: {currentTargetInfo.longitude.toFixed(6)}</div>
         </div>
+      </div>
+
+      <div className="flex justify-center">
+        <select
+          className="px-2 py-1 border rounded w-1/3"
+          value={selectedServo}
+          onChange={(e) => setSelectedServo(e.target.value)}
+        >
+          <option value="">Servo</option>
+          {[1, 2, 3, 4].map((num) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Clear Coordinates Button */}
